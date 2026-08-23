@@ -1,77 +1,99 @@
 # Nova
 
-Et general-purpose programmeringssprog: **C++ performance + Python enkelhed + Java økosystem** — bygget om én stærk kerne (compiler + typesystem + IR + runtime) med alle andre features ovenpå.
+A general-purpose programming language: **C++ performance + Python simplicity +
+Java ecosystem** — built around one strong kernel (compiler + typesystem + IR +
+runtime) with every other feature layered on top.
 
-> **Status: v0.14-bootstrap** — Python-fortolkeren i `bootstrap/` er grøn på hele end-to-end testsuiten (`python tests/run_tests.py`, 211 tests inkl. begge eksempler). **G0-gaten er lukket; G1 (T1 komplet) er i gang.** Implementeret: kompakt shorthand-skin, Optional/`?`, ægte moduler med navnerum, stdlib v0 (`use the standard X library`: json/file/random/time/math/text/list), interaktiv REPL (`python bootstrap/nova_cli.py repl`) og hukommelses-modellens værdi-/reference-semantik med `a copy of X`. Se [project-notes.md](project-notes.md) §5.
+> **Status: v0.14-bootstrap** — the Python interpreter in `bootstrap/` is green on
+> the full end-to-end suite (`python tests/run_tests.py`, 223 tests incl. both
+> examples). **Gate G0 is closed; G1 (T1 complete) is in progress.** Implemented:
+> compact shorthand skin, Optional/`?`, real modules with namespaces, stdlib v0
+> (`use the standard X library`: json/file/random/time/math/text/list), an
+> interactive REPL (`python bootstrap/nova_cli.py repl`), and the memory model's
+> value/reference semantics with `a copy of X`. All diagnostics are English.
+> See [project-notes.md](project-notes.md) §5.
 
 ```
-# Nova Natural (primær syntax — læses som sætninger):
+# Nova Natural (primary syntax — reads like sentences):
 when the program starts
     secret is a random number between 1 and 100
     repeat until the guess is the secret
-        answer is ask "Dit gæt: "
-        if answer is not a number then say "Det er ikke et tal."
-        otherwise if guess is less than secret then say "Højere!"
-        otherwise if guess is greater than secret then say "Lavere!"
+        answer is ask "Your guess: "
+        if answer is not a number then say "That is not a number."
+        otherwise if guess is less than secret then say "Higher!"
+        otherwise if guess is greater than secret then say "Lower!"
         otherwise
-            say "Rigtigt! Tallet var {secret}."
+            say "Correct! The number was {secret}."
             stop the loop
         done
     done
 done
 
-# Kompakt shorthand (samme AST — ekspert-stenografi; implementeret i C01):
-x = 10                          # inference → i32, mutable binding
+# Compact shorthand (same AST — expert stenography):
+x = 10                          # inference -> i32, mutable binding
 nums = [1, 2, 3].map(x => x * 2).filter(x => x > 4)
 fn read(path: String) -> Result<String, IoError> { Ok(File.read(path)?) }
 ```
 
-## Dokumentation
+## Documentation
 
-| Dokument | Indhold |
+| Document | Contents |
 |---|---|
-| [docs/ITERATION_PLAN.md](docs/ITERATION_PLAN.md) | **Levende plan: workflow, prioriteter, fasegates, 1.0-kriterier, status/changelog — altid opdateret** |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Compiler-pipeline, Nova IR, backends, runtime, VM, tooling |
-| [specs/natural_syntax.md](specs/natural_syntax.md) | **Nova Natural: den engelske sætnings-syntax** — fuld ordforrådstabel + desugaring |
-| [specs/language_reference.md](specs/language_reference.md) | Komplet sprogreference: alle constructs, operatorer, collections |
-| [specs/syntax/grammar.md](specs/syntax/grammar.md) | Formel EBNF-grammatik |
-| [specs/syntax/lexical.md](specs/syntax/lexical.md) | Tokens, literals, keywords, operatorer |
-| [specs/type_system.md](specs/type_system.md) | Statisk/dynamisk typing, inference, generics, traits, unions |
-| [specs/memory_model.md](specs/memory_model.md) | ARC-standard, ownership, unsafe, GC-profiler |
+| [docs/ITERATION_PLAN.md](docs/ITERATION_PLAN.md) | **Living plan: workflow, priorities, phase gates, 1.0 criteria, status/changelog — always current** |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Compiler pipeline, Nova IR, backends, runtime, VM, tooling |
+| [specs/natural_syntax.md](specs/natural_syntax.md) | **Nova Natural: the English sentence syntax** — full vocabulary table + desugaring |
+| [specs/language_reference.md](specs/language_reference.md) | Complete language reference: all constructs, operators, collections |
+| [specs/syntax/grammar.md](specs/syntax/grammar.md) | Formal EBNF grammar |
+| [specs/syntax/lexical.md](specs/syntax/lexical.md) | Tokens, literals, keywords, operators |
+| [specs/type_system.md](specs/type_system.md) | Static/dynamic typing, inference, generics, traits, unions |
+| [specs/memory_model.md](specs/memory_model.md) | ARC default, ownership, unsafe, GC profiles |
 | [specs/error_handling.md](specs/error_handling.md) | Result/Optional/`?`, panics, exceptions |
 | [specs/concurrency.md](specs/concurrency.md) | async/await, parallel, channels, select, structured concurrency |
-| [specs/metaprogramming.md](specs/metaprogramming.md) | Compile-time eval, derive-macros, reflection |
-| [specs/module_system.md](specs/module_system.md) | Moduler, packages, `project.nova`, dependency-håndtering |
-| [specs/standard_library.md](specs/standard_library.md) | Komplet stdlib-overflade med Python-paritetstabel |
-| [examples/tour.nova](examples/tour.nova) | Hele sproget i ét kommenteret program |
-| [docs/EXTENSIONS.md](docs/EXTENSIONS.md) | 16 foreslåede udvidelser: units, signals, actors, contracts, time-travel debug m.m. |
-| [specs/unique_features.md](specs/unique_features.md) | **De 13 unikke features** der kun Nova kan: Flow, Table, undo/historik, taint, tilstandsmaskiner m.fl. |
-| [docs/ROADMAP.md](docs/ROADMAP.md) | Milepæle M0–M8 |
+| [specs/metaprogramming.md](specs/metaprogramming.md) | Compile-time eval, derive macros, reflection |
+| [specs/module_system.md](specs/module_system.md) | Modules, packages, `project.nova`, dependency handling |
+| [specs/standard_library.md](specs/standard_library.md) | Full stdlib surface with a Python-parity table |
+| [examples/tour.nova](examples/tour.nova) | The whole language in one commented program |
+| [docs/EXTENSIONS.md](docs/EXTENSIONS.md) | 16 proposed extensions: units, signals, actors, contracts, time-travel debug etc. |
+| [specs/unique_features.md](specs/unique_features.md) | **The 13 unique features only Nova has**: Flow, Table, undo/history, taint, state machines and more |
+| [docs/ROADMAP.md](docs/ROADMAP.md) | Milestones M0–M8 |
 
-## Beslutningslog (open questions besvaret)
+## Decision log (open questions answered)
 
-| Spørgsmål | Beslutning | Begrundelse |
+| Question | Decision | Rationale |
 |---|---|---|
-| Memory model | **ARC som default** + compile-time escape analysis (fjerner retain/release hvor muligt). `owned` opt-in, `unsafe` raw pointers. GC kun via `--runtime full`. Cykler håndteres af cycle collector i full-runtime; i minimal kræves `weak`. | Deterministisk deallokering, kan implementeres som IR-pass tidligt, Swift har bevist modellen. Fuld GC udskydes uden at blokere frontend. |
-| Dynamic typing | `dynamic` = komplet runtime-system (tagged value + inline caches i VM / vtable native). Specialisering er en senere optimering (typeprofilering fra VM → guarded fast paths), ikke forudsætning. | Kernen skal fungere 100% dynamisk først; specialisering er additivt. |
-| C++ interop | **C ABI først** + automatisk header-import for C. Ægte C++ interop via genererede shims, senere. ABI antager aldrig C++-semantik (ingen exceptions/RTTI i ABI'et). | Fuldt C++ interop er et projekt på størrelse med selve compileren. |
-| Java interop | Ingen JVM-backend i første version. Bridge via JNI-lignende grænseflade gennem C ABI. JVM-backend genovervejes når Nova IR er stabil. | En JVM-backend låser IR-designet til Javas typesystem (ingen unsigned, ingen værdityper). |
-| Runtime | To profiler fra dag 1: `--runtime minimal` (ARC-core, ingen scheduler/reflection-data) og `--runtime full`. Stdlib-core kalder aldrig runtime direkte, kun gennem capability-interfacers. | Tvinger ren lagdeling; gør embedded/single-file builds mulige. |
-| Concurrency | `parallel` = compiler-styret (work-stealing task scheduler), plus eksplicitte primitiver (`spawn`, `Channel`, `Mutex`, `select`) til fuld kontrol. Structured concurrency som grundprincip. | De to niveauer er komplementære; `parallel` er syntakt sukker over task-systemet. |
-| Syntax | **Nova Natural som primær syntax**: almindelige engelske ord i faste fraser — `say`, `ask ... and remember it as`, `set x to`, `if ... then ... otherwise ... done`, `repeat until ... done`, `to greet with name ... done`. Blokke termineres med `done` (éntydigt, ingen indentation-følsomhed). Kompakt shorthand (`{}`, `=>`, symbol-operatorer, `x = 10`) forbliver gyldig ekspert-form — **begge skins kompilerer til identisk AST**. Eksplicit typer påkrævet på offentlige API-signaturer (kompakt form). | Brugerens kernekrav: kode skal kunne skrives ord for ord som man ville forklare idéen til et menneske. `done`-terminatorer undgår JS-agtig ASI-fejlsource og Python-indentation-skørehed; to-skins-designet bevarer fuld udtrykskraft uden at duplikere semantik. |
-| Extensions | **Alle 16 udvidelser godkendt**: refinement types, units (dimensional analysis), verificerede format-strenge, pipelines/`then`, signals, actors, contracts, capability-tilladelser, reproducible builds, time-travel debugger, notebook/literate mode, `nova explain`, API-diff, undervisningspakke + blok-editor, embedding-API, native hot reload. Integreret i kernens specs — se [docs/EXTENSIONS.md](docs/EXTENSIONS.md). | Udvider sprogets dækning fra "kan alt" til "har det bedste værktøj til det"; alle bygger ovenpå kernen uden at ændre den. |
-| Unikke features | **13 features der gør Nova unik** (se [specs/unique_features.md](specs/unique_features.md)): Flow<T> (ét API for lister/streams/kanaler), Table som sprog-primitiv med SQL-pushdown, undo/redo + variabel-historik-forespørgsler (`track`/`undo`/`ever`), typet tillids-sporing (taint), tilstandsmaskiner i kernen, `exact`-matematik-blokke, deterministisk sim-test standard, `@incremental`, tidsudtryk (`every day at 09:00`), `nova why`, grammatik-literals og **pure-Nova stacken** (stdlib afhænger kun af OS-syscalls — egen regex/TLS/db/kompression). | Brugerens krav: features ingen andre sprog har — uden at gå på kompromis med læsbarhed. Ærlig sammenligningstabel pr. feature ligger i spec'en; unikheden ligger i integrationen: én historik-motor driver undo + debugging + revision, én Flow-motor driver iteratorer + streams + kanaler. |
+| Native implementation language | **Rust** (owner decision 2026-08-23). Toolchain installed and verified (rustc/cargo 1.98). LLVM via `inkwell` when E03/E04 start. | Memory safety without a borrow-checker on our own IR passes, best-in-class LLVM bindings, faster iteration than C++ for a solo dev. Replaces the earlier C++ assumption throughout ROADMAP/ARCHITECTURE. |
+| Human language of docs & diagnostics | **English everywhere** (owner decision 2026-08-23). Example *programs* may keep Danish UI text for now. | International release ambition; centralized message catalog (`bootstrap/nova_messages.py`) keeps future localization cheap. |
+| Memory model | **ARC as default** + compile-time escape analysis (removes retain/release pairs where possible). `owned` opt-in, `unsafe` raw pointers. GC only via `--runtime full`; cycles handled by a cycle collector in the full runtime; minimal profile requires `weak`. Bootstrap cut (C13): value/reference semantics pinned + `a copy of X` deep copy. | Deterministic deallocation, implementable as an early IR pass, proven by Swift. Full GC deferred without blocking the frontend. |
+| Equality semantics | **Pinned by tests (2026-08-23):** bools are never equal to numbers; numbers compare across int/float; text/lists/dicts compare structurally; things/functions/modules compare by identity. | Removes a Python-behaviour leak (`true == 1`); differential tester (E06) needs this fixed now. |
+| Dynamic typing | `dynamic` = complete runtime system (tagged value + inline caches in VM / vtable native). Specialization is a later optimization. | The kernel must work 100% dynamically first; specialization is additive. |
+| C++ interop | **C ABI first** + automatic header import for C. True C++ interop via generated shims later. The ABI never assumes C++ semantics (no exceptions/RTTI in the ABI). | Full C++ interop is a project the size of the compiler itself. |
+| Java interop | No JVM backend in v1. Bridge through a JNI-like interface over the C ABI. JVM backend revisited when Nova IR is stable. | A JVM backend locks the IR design to Java's typesystem (no unsigned ints, no value types). |
+| Runtime | Two profiles from day 1: `--runtime minimal` (ARC core, no scheduler/reflection data) and `--runtime full`. Stdlib core never calls the runtime directly, only through capability interfaces. | Forces clean layering; makes embedded/single-file builds possible. |
+| Concurrency | `parallel` = compiler-managed (work-stealing task scheduler), plus explicit primitives (`spawn`, `Channel`, `Mutex`, `select`) for full control. Structured concurrency as a ground principle. | The two levels are complementary; `parallel` is syntactic sugar over the task system. |
+| Syntax | **Nova Natural as primary syntax**: common English words in fixed phrases — `say`, `ask ... and remember it as`, `set x to`, `if ... then ... otherwise ... done`, `repeat until ... done`, `to greet with name ... done`. Blocks terminate with `done` (unambiguous, no indentation sensitivity). Compact shorthand (`{}`, `=>`, symbol operators, `x = 10`) stays valid expert form — **both skins compile to identical ASTs**. Explicit types required on public API signatures (compact form). | Owner's core requirement: code should read word-for-word like explaining the idea to a human. `done` terminators avoid JS-style ASI errors and Python indentation fragility; the two-skin design keeps full expressive power without duplicating semantics. |
+| Phrase operand binding | Built-in value phrases (`the number value / first item / last item / length of ...`, `how many items are in ...`) bind their operand at **factor level** (2026-08-23). Phrases with trailing keyword clauses (`contents of X parsed as json`, `every item of X turned into a T`) stay greedy. | Greedy binding made `(nv x?) + 1` impossible and broke arithmetic composition; factor binding matches operator-precedence intuition while trailing-clause phrases need greediness to consume their keywords. |
+| Extensions | **All 16 extensions approved**: refinement types, units (dimensional analysis), verified format strings, pipelines/`then`, signals, actors, contracts, capability permissions, reproducible builds, time-travel debugger, notebook/literate mode, `nova explain`, API diff, teaching pack + block editor, embedding API, native hot reload. Integrated into the kernel specs — see [docs/EXTENSIONS.md](docs/EXTENSIONS.md). | Extends coverage from "can do anything" to "has the best tool for it"; all build on the kernel without changing it. |
+| Unique features | **13 features that make Nova unique** (see [specs/unique_features.md](specs/unique_features.md)): Flow<T> (one API for lists/streams/channels), Table as a language primitive with SQL pushdown, undo/redo + variable-history queries (`track`/`undo`/`ever`), typed taint tracking, state machines in the kernel, `exact` math blocks, deterministic sim-test standard, `@incremental`, time expressions (`every day at 09:00`), `nova why`, grammar literals and the **pure-Nova stack** (stdlib depends only on OS syscalls — own regex/TLS/db/compression). | Owner requirement: features no other language has — without sacrificing readability. Honest per-feature comparison table lives in the spec; the uniqueness lies in the integration: one history engine drives undo + debugging + revisions, one Flow engine drives iterators + streams + channels. |
 
-### Yderligere fastlagte kernedecisioner
+### Further settled kernel decisions
 
 - **String**: UTF-8, immutable `String` + `StringBuilder`; `char` = Unicode scalar value.
-- **Heltal**: fixed-width default (`i32` inferres for int-literals); overflow-check i debug, wrapping i release (opt-in `@checked`). `BigInt` i stdlib.
-- **Floats**: IEEE-754 `f32`/`f64`; `Decimal` og `Rational` i stdlib.
-- **Error model**: `Result<T,E>`/`Optional<T>` primær; `throw`/`try-catch` = panic-handler til undtagelsestilfælde, aldrig kontrolflow.
-- **Contracts (v0.11)**: `requires` evalueres eager ved kald; `ensures` udskydes til funktionsafslutning og evalueres i funktions-lokalt scope — post-betingelser kan referere sluttilstanden. Fejl → `NovaError`, fangbar med `try ... if it fails`.
-- **Type unions**: anonyme sumtyper tilladt: `i32 | String`.
-- **Fil-endelse**: `.nova`.
+- **Integers**: fixed-width default (`i32` inferred for int literals); overflow check in
+  debug, wrapping in release (opt-in `@checked`). `BigInt` in stdlib. *Bootstrap note:
+  the Python interpreter uses arbitrary-precision integers until M1.*
+- **Floats**: IEEE-754 `f32`/`f64`; `Decimal` and `Rational` in stdlib. *Bootstrap note:
+  `divided` is always real division (`7 divided by 2` = `3.5`); integer division arrives
+  with the native type system.*
+- **Error model**: `Result<T,E>`/`Optional<T>` primary; `throw`/`try-catch` = panic handler
+  for exceptional cases, never control flow.
+- **Contracts (v0.11)**: `requires` evaluated eagerly at call; `ensures` deferred to
+  function exit and evaluated in the function-local scope — postconditions can reference
+  the final state. Failure → `NovaError`, catchable with `try ... if it fails`.
+- **Type unions**: anonymous sum types allowed: `i32 | String`.
+- **File extension**: `.nova`.
 
-## Kerneprincip
+## Core principle
 
-> Nova implementerer ikke Python, Java og C++ som tre systemer. Én kerne — compiler, typesystem, IR, runtime — og derefter Python-dynamik, Java-reflection og C++-kontrol ovenpå samme kerne.
+> Nova does not implement Python, Java and C++ as three systems. One kernel —
+> compiler, typesystem, IR, runtime — then Python-dynamism, Java-reflection and
+> C++-control layered on top of that same kernel.

@@ -18,6 +18,7 @@ python tests/run_tests.py                                   # full suite — mus
 python bootstrap/nova_cli.py run examples/guessing_game.nova --seed 7
 python bootstrap/nova_cli.py run examples/todo.nova         # interactive; needs UTF-8 stdin
 python bootstrap/nova_cli.py parse examples/todo.nova       # AST dump
+python bootstrap/nova_cli.py repl                           # interactive REPL
 ```
 
 ## Hard rules
@@ -30,23 +31,31 @@ python bootstrap/nova_cli.py parse examples/todo.nova       # AST dump
 - Never leave the repo red: `tests/run_tests.py` green + both examples running before
   you finish a session or commit.
 - No scope creep: park new ideas in ITERATION_PLAN §10 parking lot instead.
-- User-facing error messages are sentences with a fix hint ("Det er ikke et tal — prøv
-  igen."), never bare Python exceptions.
+- User-facing error messages are sentences with a fix hint ("That is not a number —
+  try again."), never bare Python exceptions. **All diagnostics are English** and
+  should migrate toward the catalog in `bootstrap/nova_messages.py`.
 - Docs to touch per completed item: ITERATION_PLAN.md (status + changelog),
   project-notes.md (if internals changed), relevant spec, README only for decisions.
 - Commit per item: `<ID>: short summary` (e.g. `C01: compact-shorthand lexer skin`).
 
+## Standing owner directives (2026-08-23)
+
+1. **Decouple from Python.** The Python interpreter is a bootstrap/oracle only.
+   The native pipeline is written in **Rust** (owner decision 2026-08-23, recorded
+   in README decision log). E00 toolchain is installed; E01 CI comes next.
+2. **All documentation and all diagnostics are English.** Example *programs* may
+   keep Danish UI text for now; new example programs are written in English.
+3. Fix known semantic gaps before adding surface features (see plan §12).
+
 ## Current state (update this date when it changes)
 
-- v0.14-bootstrap (G0 lukket; G1 i gang): Python interpreter, **211/211** tests green,
-  guessing_game + todo done.
+- v0.14-bootstrap (G0 closed; G1 in progress): Python interpreter, **223/223**
+  tests green, guessing_game + todo done. Diagnostics fully English.
 - Done 2026-08-22: B05 golden dumps · B01 error audit · B02 reserved words ·
   C01 shorthand skin · C02 equivalence pairs · B04 unary minus.
-- Done 2026-08-23: C03 Optional (`?` hele-udtryksgift; golden 18; par6; NumVal
-  factor-binding; plus type-mismatch-sætning) · C05 modules (navnerum, parentes-kald,
-  cirkulær-fejl; golden 19; par7) · B03+C06+C07+C08 stdlib v0 (use binder ægte
-  BuiltinFunction-moduler: json/file/random/time/math/text/list; 191 tests).
-- Next up per plan §7: C09 REPL → E00+E01 toolchain+CI (P0) → D01/D05/D06.
-- Udenfor §7 (bruger-prioriteret): C13 memory-model bootstrap-udsnit ✅ 2026-08-23.
+- Done 2026-08-23: C03 Optional (`?`) · C05 modules · B03+C06+C07+C08 stdlib v0 ·
+  C09 REPL · C13 memory-model cut · docs-audit · i18n-to-English · semantic-equality
+  pinning · mod-zero guard · factor-level phrase binding.
+- Next up per plan §7: E00+E01 toolchain+CI (E00 done → E01 next) → D01/D05/D06.
 - Golden dumps: after BEVIDSTE grammar/format changes run
   `python tests/run_tests.py --update-goldens` and review the diff.
