@@ -38,7 +38,8 @@ python bootstrap/nova_cli.py parse examples/todo.nova       # AST dump
 
 ## Current state (update this date when it changes)
 
-- v0.12-bootstrap (G0 lukket): Python interpreter, **191/191** tests green, guessing_game + todo done.
+- v0.13-bootstrap (G0 lukket; G1 i gang): Python interpreter, **199/199** tests green,
+  guessing_game + todo done.
 - Done 2026-08-22: B05 golden dumps · B01 error audit · B02 reserved words ·
   C01 shorthand skin · C02 equivalence pairs · B04 unary minus.
 - Done 2026-08-23: C03 Optional (`?` hele-udtryksgift; golden 18; par6; NumVal

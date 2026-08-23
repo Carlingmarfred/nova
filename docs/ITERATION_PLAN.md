@@ -1,4 +1,4 @@
-# Nova — Iteration Plan (v0.11 → 1.0)
+# Nova — Iteration Plan (v0.12 → 1.0)
 
 > ## ⚠ MAINTENANCE RULE — READ FIRST
 > **This file is the single source of truth for what to do next and what is done.**
@@ -41,22 +41,22 @@ Rules that make "describe it and it's built" true:
 Nova 1.0 is "on par" when every row reaches the level of Python (usability) +
 Java (ecosystem/tooling) + C++ (performance). This matrix is audited each phase gate.
 
-| Area | Parity bar (measurable) | Status v0.11 |
+| Area | Parity bar (measurable) | Status v0.13 |
 |---|---|---|
-| Syntax & semantics | Two skins → identical AST; full spec implemented; exhaustive match | 🟡 bootstrap subset only |
-| Type system | HM-local inference, unions, Option/Result, generics+traits | 🔴 dynamic-only in bootstrap |
+| Syntax & semantics | Two skins → identical AST; full spec implemented; exhaustive match | 🟡 begge skins + equivalence-harness ✓ (C01/C02); fuld spec mangler |
+| Type system | HM-local inference, unions, Option/Result, generics+traits | 🔴 dynamic-only in bootstrap (Optional/`?` ✓ C03, Result → C04) |
 | Memory model | ARC default, escape analysis, `owned`/`unsafe` opt-in, cycle collector (full) | 🔴 GC'd by host (Python) |
-| Error handling | Result/Optional + `?`; catchable runtime errors w/ codes+hints | 🟡 NovaError + try/catch |
+| Error handling | Result/Optional + `?`; catchable runtime errors w/ codes+hints | 🟡 Optional/`?` ✓, sætnings-fejl + hints ✓, catchable ✓; typed Result mangler |
 | Concurrency | async/await, structured concurrency, channels/select, `parallel` | 🔴 |
-| Stdlib | io/fs/net/http/json/csv/time/math/random/test/cli ≥ Python-parity table (specs/standard_library.md) | 🔴 ~5 builtins |
-| Tooling | REPL, formatter, linter, LSP, debugger(DAP), test runner, doc generator | 🔴 CLI only |
+| Stdlib | io/fs/net/http/json/csv/time/math/random/test/cli ≥ Python-parity table (specs/standard_library.md) | 🟡 v0: json/file/random/time/math/text/list via `use` (B03+C06–C08) |
+| Tooling | REPL, formatter, linter, LSP, debugger(DAP), test runner, doc generator | 🟡 CLI (run/parse/version) + REPL (C09); rest 🔴 |
 | Package ecosystem | semver registry, lockfile, workspaces, `project.nova` | 🔴 |
 | Performance | fib/matmul/sort within 2× of C++ (LLVM), 100× of CPython on hot loops | 🔴 interpreter |
 | Distribution | Single-file static executables; cross-compile matrix | 🔴 needs Python |
-| Docs & learnability | Language reference complete, tutorial, playground, error index | 🟡 specs done, tutorial missing |
-| Unique differentiators | Flow, Table, track/undo, taint, state machines, time statements… | 🟡 track/undo only |
+| Docs & learnability | Language reference complete, tutorial, playground, error index | 🟡 specs done + bootstrap-udsnit; tutorial missing |
+| Unique differentiators | Flow, Table, track/undo, taint, state machines, time statements… | 🟡 track/undo + REPL-:undo; rest 🔴 |
 
-## 3. Current status dashboard (v0.12-bootstrap — G0 CLOSED 2026-08-23)
+## 3. Current status dashboard (v0.13-bootstrap — G0 closed; G1 in progress)
 
 - ✅ G0 closed: suite green (191 tests), both examples perfect, error audit done (B01)
 - ✅ Python bootstrap lexer/parser/tree-interpreter, Natural + shorthand skins
@@ -317,6 +317,7 @@ units/refinement types, actors/signals, GPU backend, grammar literals, `@increme
 
 | Date | Change |
 |---|---|
+| 2026-08-23 | **v0.13.0-bootstrap**: versionsbump efter docs-audit + C09 REPL-klyngen. §2-paritetstabellen opdateret til v0.13-virkelighed (stdlib 🟡, tooling 🟡, error-handling 🟡). Næste: E00+E01 toolchain+CI (P0!) → D01/D05/D06. |
 | 2026-08-23 | **C09 ✅**: `nova repl [--seed N]` — én persistent Interp; `>>> `/`..>`-prompter; multiline ved 'done'-familie-parsefejl (buffer fortsætter); udtryks-linjer echoes som `→ værdi` (fallback når sætnings-parse fejler — fix for tal-startede linjer); meta: `:ast <linje>` (udtryk først, fald tilbage til sætninger), `:undo` (dyb kopi af globals/funcs/things, stak max 100, output/fil-I/O kan ikke rulles tilbage), `:quit/:q`, `:help`, ukendt → venlig henvisning. Fejl dræber ALDRIG sessionen. Spec: docs/ARCHITECTURE.md §10. 8 repl-tests. Suite: 199/199. Næste: E00+E01 toolchain+CI (P0!) → D01/D05/D06. |
 | 2026-08-23 | **docs-audit**: forældede påstande rettet (README shorthand-kommentar "planlagt" → implementeret; project-notes kendte-huller omskrevet til v0.12-virkelighed inkl. phrase-vs-feltnavn-kollision og prik-adgang-workaround; AGENTS.md 191/191). lab/unique/tour.nova verificeret at fejle med pæne sætninger (rc=1, ingen tracebacks). |
 | 2026-08-23 | **v0.12.0-bootstrap + G0 LUKKET**: versionsbump (CLI + cli/version-test), §3-dashboard opdateret, README-statuslinje fikset (var forældet: 49 tests / "shorthand ikke implementeret"). G0-kriterier: suite grøn (191), begge eksempler perfekte, fejl-audit B01 ✅. Næste gate: G1 (T1 komplet) — C04/C09/C10/C11/C12 + D01/D05/D06. |
