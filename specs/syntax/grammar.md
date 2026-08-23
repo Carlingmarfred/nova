@@ -1,8 +1,8 @@
-# Nova Grammatik (EBNF)
+# Nova Grammar (EBNF)
 
-Normativ. `~` = undtagelse, `?` = valgfri, `*` = nul eller mere, `+` = en eller mere.
+Normative. `~` = exception, `?` = optional, `*` = zero or more, `+` = one or more.
 
-## 1. Program- og deklarationsniveau
+## 1. Program and declaration level
 
 ```ebnf
 program        = { newline }, { top_item } ;
@@ -90,12 +90,12 @@ parallel_block = "parallel" , [ "(" , par_opts , ")" ] , block ;
 async_block    = "async" , block ;
 ```
 
-Newline-regel (lexer): et statement afsluttes ved newline medmindre linjen slutter på operator, komma, åben bracket/brace eller `=>`, eller næste linje starter med lukkebracket/binær operator. `;` kan altid bruges som separator.
+Newline rule (lexer): a statement ends at a newline unless the line ends with an operator, comma, open bracket/brace or `=>`, or the next line starts with a closing bracket / binary operator. `;` can always be used as a separator.
 
 ## 3. Patterns
 
 ```ebnf
-pattern        = or_pattern , [ "where" , expression ] ;   (* kun i match-arme *)
+pattern        = or_pattern , [ "where" , expression ] ;   (* only in match arms *)
 or_pattern     = primary_pattern , { "|" , primary_pattern } ;
 primary_pattern= literal
                | range
@@ -115,17 +115,17 @@ subpattern     = literal | range | struct_pattern | variant_pattern | array_patt
 range          = int_literal , (".." | "..=") , int_literal ;
 ```
 
-## 4. Udtryk og præcedens
+## 4. Expressions and precedence
 
 ```ebnf
 expression     = assignment_expr ;
-assignment_expr= or_expr , [ assign_op , assignment_expr ] ;    (* højre-assoc. *)
+assignment_expr= or_expr , [ assign_op , assignment_expr ] ;    (* right-assoc. *)
 assign_op      = "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "//=" | "**="
                | "&=" | "|=" | "^=" | "<<=" | ">>=" | "?=" ;
 or_expr        = and_expr , { ("||"|"or") , and_expr } ;
 and_expr       = not_expr , { ("&&"|"and") , not_expr } ;
 not_expr       = [ "!"|"not" ] , comparison ;
-comparison     = bitwise_or , [ compare_op , bitwise_or ] ;     (* ikke-kædbar! *)
+comparison     = bitwise_or , [ compare_op , bitwise_or ] ;     (* non-chainable! *)
 compare_op     = "==" | "!=" | "<" | "<=" | ">" | ">=" | "<=>" 
                | "is" [ "not" ] , type_or_trait | [ "not" ] , "in" ;
 bitwise_or     = bitwise_xor , { ("|"|"^") , bitwise_xor } ;
@@ -133,7 +133,7 @@ bitwise_and    = shift , { "&" , shift } ;
 shift          = additive , { ("<<"|">>") , additive } ;
 additive       = multiplicative , { ("+"|"-") , multiplicative } ;
 multiplicative = power , { ("*"|"/"|"%"|"//") , power } ;
-power          = unary , [ "**" , power ] ;                     (* højre-assoc. *)
+power          = unary , [ "**" , power ] ;                     (* right-assoc. *)
 unary          = [ "-" | "+" | "~" ] , unary
                | "*" unary              (* deref, unsafe *)
                | "&" unary              (* addr-of, unsafe *)
@@ -143,13 +143,13 @@ postfix_op     = "(" , [ call_args ] , ")"
                | "[" , index_or_slice , "]"
                | "." , ident , [ "(" , [call_args] , ")" ]
                | "?." , ident , [ "(" , [call_args] , ")" ]
-               | "?"                    (* error-propagation *)
+               | "?"                    (* error propagation *)
                | "!"                    (* unwrap-or-panic *)
                | "as" , type ;
 primary        = literal | ident | type_path | "(" , expression , ")"
                | tuple | array_lit | map_lit | set_lit
                | lambda | if_expr | match_expr
-               | block                  (* block-udtryk *)
+               | block                  (* block expression *)
                | comprehension ;
 lambda         = ident , "=>" , expression
                | "(" , lambda_params? , ")" , "=>" , ( expression | block )
@@ -160,7 +160,7 @@ comprehension  = "[" , expr_or_kv , "for" , pattern , "in" , expression ,
 type_path      = ident , { "::" , ident } , [ generics_args ] ;
 ```
 
-Slice: `[ start? , ":" , end? , [ ":" , step? ] ]` eller Range-objekt `a..b`, negativt indeks via `^n`.
+Slice: `[ start? , ":" , end? , [ ":" , step? ] ]` or a Range object `a..b`; negative indexing via `^n`.
 
 ## 5. Typer
 
@@ -177,6 +177,6 @@ prim_type      = "i8|i16|i32|i64|i128|u8|u16|u32|u64|u128"
                | "isize|usize|f32|f64|bool|char|String|BigInt|dynamic|()" ;
 ```
 
-## 6. Lexical (referencer)
+## 6. Lexical (references)
 
-Se lexical.md for tokens/literals.
+See lexical.md for tokens/literals.

@@ -1,75 +1,75 @@
 # Nova Concurrency
 
-## 1. Model-oversigt
+## 1. Model overview
 
 ```text
-Lag 1: async/await      — I/O-konkurrense på én tråd (eller få), M:N tasks
-Lag 2: parallel { }     — compiler-styret dataparallelisme (work-stealing)
-Lag 3: spawn/channels   — eksplicitte tråde/tasks, message passing
-Lag 4: sync-primitiver  — Mutex, RwLock, Atomics, Condvar, Once, Barrier
+Layer 1: async/await      — I/O concurrency on one (or few) threads, M:N tasks
+Layer 2: parallel { }     — compiler-managed data parallelism (work-stealing)
+Layer 3: spawn/channels   — explicit threads/tasks, message passing
+Layer 4: sync primitives  — Mutex, RwLock, Atomics, Condvar, Once, Barrier
 Lag 5: GPU             — @gpu kernels (se ARCHITECTURE §backend)
 ```
 
-Grundprincip: **structured concurrency** — børne-tasks kan ikke overleve deres scope.
+Ground principle: **structured concurrency** — child tasks cannot outlive their scope.
 
 ## 2. async / await
 
 ```text
 async fn fetch_json(url: String) -> dynamic {
-    resp = await http.get(url)          # suspenderer task, ikke tråd
+    resp = await http.get(url)          # suspends the task, not the thread
     json.parse(resp.body_text())
 }
 
 async fn main_async() {
-    # Sekventielt
+    # Sequential
     a = await fetch_json(u1)
 
-    # Konkurrentielt — begge starter nu
+    # Concurrent — both start now
     (b, c) = await join(fetch_json(u2), fetch_json(u3))
 
-    # Fejltolerant race
-    first = await any([fetch_json(m1), fetch_json(m2)])     # første succes
+    # Fault-tolerant race
+    first = await any([fetch_json(m1), fetch_json(m2)])     # first success
 
-    # Med timeout og cancellation
+    # With timeout and cancellation
     d = await timeout(fetch_json(u4), seconds(5))
 }
 
 fn main() {
-    async_runtime.run(main_async())     # eller: top-level await i scripts
+    async_runtime.run(main_async())     # or: top-level await in scripts
 }
 ```
 
-- `await` kan kun stå i `async fn`/`async {}` — effect-systemet håndhæver det (compile-fejl: "blocking call in async context" for synkrone tungere operationer markeret `@blocking`).
-- Async-fns oversættes til state machines (heap-allokeret kun ved flugt); zero-cost ved ikke-suspenderede punkter.
+- `await` may only appear inside `async fn`/`async {}` — the effect system enforces this (compile error "blocking call in async context" for synchronous heavier operations marked `@blocking`).
+- Async fns lower to state machines (heap-allocated only on escape); zero-cost at non-suspension points.
 - `gather`, `join`, `any`, `race`, `timeout`, `sleep`, `yield_now` i `std.async`.
-- Cancellation er kooperativ: token-baseret (`ctx.cancelled()?` kastes som `Cancelled`-Err ved checkpoints).
+- Cancellation is cooperative: token-based (`ctx.cancelled()?` raises a `Cancelled` Err at checkpoints).
 
 ## 3. parallel { }
 
 ```text
 parallel {
-    result_a = calculate_a()       # kører som task
-    result_b = calculate_b()       # kører som task
-}                                   # scope venter på begge; værdier tilgængelige her
+    result_a = calculate_a()       # runs as a task
+    result_b = calculate_b()       # runs as a task
+}                                   # scope waits for both; values available here
 print(result_a + result_b)
 ```
 
 Semantik:
 
-1. Uafhængige statements deklareres til tasks (afhængighedsanalyse via dataflow).
-2. Scheduler (work-stealing, N=kerner) fordeler.
-3. Scope-exit join'er alle; exceptions propageres deterministisk.
-4. Variabler skrevet i parallellblokken læses bagefter; delte mutable variabler på tværs af branches = compile-fejl (ingen dataracer ved konstruktion).
+1. Independent statements become tasks (dependency analysis via dataflow).
+2. The scheduler (work-stealing, N=cores) distributes.
+3. Scope-exit joins all; exceptions propagate deterministically.
+4. Variables written inside the parallel block read afterwards; shared mutable variables across branches = compile error (no data races by construction).
 
 Dataparallelisme:
 
 ```text
 results = parallel_map(items, heavy_fn)
 parallel_for 0..pixels.len() |i| { render(i) }
-sum = xs.parallel().map(f).reduce(0, +)      # paralelle iterator-pipelines
+sum = xs.parallel().map(f).reduce(0, +)      # parallel iterator pipelines
 ```
 
-## 4. Tråde, tasks, channels
+## 4. Threads, tasks, channels
 
 ```text
 handle = spawn {
@@ -81,7 +81,7 @@ handle = spawn {
 (ch_tx, ch_rx) = Channel<i32>.bounded(64)
 
 ch_tx.send(42)
-val = ch_rx.recv()                  # blokerende
+val = ch_rx.recv()                  # blocking
 val = ch_rx.try_recv()              # Result
 val = ch_rx.recv_timeout(ms(100))
 
@@ -94,11 +94,11 @@ select {
 handle.join()
 ```
 
-- OS-tråde via `Thread.spawn` (når man virkelig skal); default `spawn` = task på scheduleren.
-- Channels: bounded (backpressure), unbounded, oneshot, broadcast, MPSC/SPSC-varianter.
-- `select!` på vilkårligt mange kanaler + timers.
+- OS threads via `Thread.spawn` (when you really need one); default `spawn` = task on the scheduler.
+- Channels: bounded (backpressure), unbounded, oneshot, broadcast, MPSC/SPSC variants.
+- `select!` over any number of channels + timers.
 
-## 5. Delt tilstand
+## 5. Shared state
 
 ```text
 counter = Atomic<i64>
@@ -114,21 +114,21 @@ rw = RwLock<Config>()
 cfg = rw.read().clone()
 ```
 
-Regler:
+Rules:
 
-- Data sendt mellem tasks/tråde skal være `Send`; delt data `Sync` (auto-traiets, som Rust). Compileren verificerer — ingen dataracer i safe kode.
-- Deadlock-detektion i debug-builds (lock-order-graph).
-- `@local`-typer er garanteret single-threaded (non-atomare refcounts, hurtigere).
+- Data sent between tasks/threads must be `Send`; shared data `Sync` (auto traits, like Rust). The compiler verifies — no data races in safe code.
+- Deadlock detection in debug builds (lock-order graph).
+- `@local` types are guaranteed single-threaded (non-atomic refcounts, faster).
 
-## 6. VM/JIT-integration
+## 6. VM/JIT integration
 
-- Tasks er billige (~200 bytes): millioner af dem er normalt.
-- IO-reactor pr. runtime (IOCP/epoll/kqueue); fil/net/dns er async-native i stdlib.
-- Blocking-FFI kald auto-wrappes til blocking pool.
+- Tasks are cheap (~200 bytes): millions of them are normal.
+- One IO reactor per runtime (IOCP/epoll/kqueue); file/net/dns are async-native in stdlib.
+- Blocking FFI calls auto-wrap onto a blocking pool.
 
 ## 7. Actors — BESLUTTET
 
-En actor = task + privat tilstand + mailbox. Behandler **én besked ad gangen** → ingen locks, dataracer umulige mod actorens tilstand.
+An actor = task + private state + mailbox. Processes **one message at a time** → no locks, data races against the actor's state are impossible.
 
 ### 7.1 Syntax
 
@@ -144,7 +144,7 @@ a BankAccount is an actor keeping
             take amount from my balance
             reply with "ok"
         otherwise
-            reply with "ikke dækning"
+            reply with "insufficient funds"
     done
 done
 
@@ -154,27 +154,27 @@ answer is ask account to "withdraw" with 150     # request/response
 ```
 
 ```text
-# Kompakt
+# Compact
 actor BankAccount {
     balance: f64 = 0
 
     on deposit(amount: f64) { self.balance += amount }
     on withdraw(amount: f64) -> String {
         if self.balance >= amount { self.balance -= amount; "ok" }
-        else { "ikke dækning" }
+        else { "insufficient funds" }
     }
 }
 
 acc = BankAccount()
 acc.send(.deposit(100))
-answer = acc.request(.withdraw(150))      # await under motorhjelmen i async-kontekst
+answer = acc.request(.withdraw(150))      # awaited under the hood in async context
 ```
 
 ### 7.2 Semantik
 
-- Actor-instanser kører som tasks; hver actor har en bounded mailbox (samme backpressure-semantik som channels).
-- `send` = fire-and-forget; `request` = await'et svar via one-shot channel.
-- Actorens felter kan **kun** tilgås fra dens egne `on`-handlere — compileren håndhæver det (ingen ekstern felt-adgang). Al deling sker via beskeder.
-- Beskeder skal være `Send`; handlers må være `async`.
-- Supervision: `link(a, b)` + `on crash`-handler med genstart-strategier (Erlang-inspireret, simpelt subset).
-- Implementering: ren syntaktisk sukker over Task + Channel + select — ingen ny runtime-komponent.
+- Actor instances run as tasks; each actor has a bounded mailbox (same backpressure semantics as channels).
+- `send` = fire-and-forget; `request` = awaited reply via a one-shot channel.
+- An actor's fields can **only** be accessed from its own `on` handlers — enforced by the compiler (no external field access). All sharing happens via messages.
+- Messages must be `Send`; handlers may be `async`.
+- Supervision: `link(a, b)` + an `on crash` handler with restart strategies (Erlang-inspired, simple subset).
+- Implementation: pure syntactic sugar over Task + Channel + select — no new runtime component.

@@ -1,10 +1,12 @@
 # Nova Error Handling
 
-## 1. Filosofi
+## 1. Philosophy
 
-- **Forventede fejl** (fil findes ikke, netværk nede, bad input) = værdier: `Result<T,E>`, `Optional<T>`.
-- **Uoprettelige fejl** (brudt invariant, OOM, indeks-fejl) = panic (unwind eller abort).
-- Exceptions (`try/catch`) findes men er panic-handling — aldrig kontrolflow. Linter flagger catch i normal flow-logik.
+- **Expected errors** (file missing, network down, bad input) = values: `Result<T,E>`,
+  `Optional<T>`.
+- **Unrecoverable errors** (broken invariant, OOM, index errors) = panic (unwind or abort).
+- Exceptions (`try/catch`) exist but are panic handling — never control flow. The linter
+  flags catch in normal flow logic.
 
 ## 2. Optional<T> ≡ T?
 
@@ -13,97 +15,101 @@ find_user(id) -> User?
 
 u = find_user(42)
 if u == none { return }
-print(u.name)                 # flow-typing: u er User her
+print(u.name)                 # flow typing: u is User here
 
 u?.email?.primary             # chaining → String?
 name = u?.name ?? "anonym"    # coalescing
-forced = u!                   # unwrap-or-panic (kun med god grund; lint)
+forced = u!                   # unwrap-or-panic (only with good reason; lint)
 ```
 
-Flow-sensitive typing: efter `if x == none { return }` er `x` kendt non-none. Gælder også efter `?`, assert, match.
+Flow-sensitive typing: after `if x == none { return }` x is known non-none. Also holds
+after `?`, assert, match.
 
-### 2.1 Bootstrap-udsnit (v0.11+, item C03) — IMPLEMENTERET i bootstrap v0.12
+### 2.1 Bootstrap cut (v0.11+, item C03) — IMPLEMENTED in bootstrap v0.12
 
-Bootstrap'en implementerer én præcis delregel af `?` — **hele-udtryksgift**:
+The bootstrap implements one precise sub-rule of `?` — **whole-expression poisoning**:
 
-> Hvis NOGEN del af et udtryk er `nothing`, og udtrykket indeholder en `?`,
-> bliver hele udtrykket `nothing`. Uden `?` fejler det som altid med en
-> venlig fejlmeddelelse.
+> If ANY part of an expression is `nothing`, and the expression carries a `?`, the WHOLE
+> expression becomes `nothing`. Without `?` it fails as always with a friendly message.
 
 ```text
-n = the number value of answer? + 1     # answer = "abc"  →  n = nothing (ikke crash)
+n = the number value of answer? + 1     # answer = "abc"  →  n = nothing (no crash)
 v = the number value of "41"? + 1       #                  →  v = 42
-say "{the text of maybe?}"              # maybe = nothing  →  "nothing"
+say "{the text of maybe?}"              # maybe = nothing  →  prints nothing
 ```
 
-Præcise regler (C03-kontrakten i ITERATION_PLAN §4.5):
-1. **Hele-udtryksgift — én regel, sætningsformet:** hvis NOGEN del af et udtryk er
-   `nothing`, og udtrykket bærer en `?`, er HELE udtrykket `nothing`.
-2. **Markerens placering er fri:** `q? plus 1` og `q plus 1?` er SAMME udtryk.
-   Ved parse fjernes alle `?`-markere, og hele det færdige træ pakkes præcis ét
-   sted (`QuestionE`). Der findes aldrig indlejrede markere i det dumpede AST —
-   kun én rod-pakning (fastlåst af golden 18-optional og kryds-skin-par).
-3. **KUN fravær-af-værdi propagater** — nøjagtigt to throw-sites i fortolkeren:
-   - regne-/rækkefølge-operationer på `nothing` (`plus/minus/times/divided/mod`,
+Precise rules (C03 contract, ITERATION_PLAN §4.5):
+1. **Whole-expression poisoning — one rule, sentence-shaped:** if any part of an
+   expression is `nothing`, and the expression carries a `?`, the WHOLE expression is
+   `nothing`.
+2. **Marker position is free:** `q? plus 1` and `q plus 1?` are the SAME expression.
+   At parse time all `?` markers are stripped and the finished tree is wrapped exactly
+   once (`QuestionE`). Dumped ASTs never contain nested markers — only one root wrapper
+   (pinned by golden 18-optional and cross-skin pair 6).
+3. **ONLY absence-of-value propagates** — exactly two throw-sites in the interpreter:
+   - arithmetic/ordering operations on `nothing` (`plus/minus/times/divided/mod`,
      `gt/gte/lt/lte`),
-   - felt-læsning fra `nothing` (`the text of maybe?` / `maybe.text?`).
-   Out-of-bounds (`item 9 of xs`), ukendte felter på RIGTIGE things, ukendte
-   funktioner og ugyldig json FEJLER stadig — også under `?`. `?` dækker aldrig
-   logikfejl.
-4. **Lighed med `nothing` er ALDRIG gift** — det ER testen:
-   `if x is nothing then ...` / `if x is not nothing then ...` virker som altid,
-   også når `x` er `nothing` (eq/ne er fritaget for regl 3).
-5. **Uden `?` fejler det stadig højt** med den venlige sætning + fix-hint
-   ("kan ikke regne med 'nothing' — tilføj '?' ... eller tjek værdien med
-   'is nothing' først"). `NothingSignal` fanget af `try ... if it fails`? NEJ —
-   det er fravær, ikke en fejl; kun `QuestionE`-grænsen opsluger signalet.
-6. Resultatet testes med de eksisterende tjek fra regel 4; `say "{...}"` viser
-   `nothing` som tekst. Gælder begge skins og streng-interpolation `{...}`.
+   - field reads of `nothing` (`the text of maybe?` / `maybe.text?`).
+   Out-of-bounds (`item 9 of xs`), unknown fields on REAL things, unknown functions and
+   invalid json still FAIL — even under `?`. `?` never covers logic errors.
+4. **Equality with `nothing` is NEVER poisoned** — that IS the test:
+   `if x is nothing then ...` / `if x is not nothing then ...` work as always, even when
+   `x` is `nothing` (eq/ne are exempt from rule 3).
+5. **Without `?` it still fails loudly** with a friendly sentence + fix hint ("cannot do
+   arithmetic on 'nothing' — add '?' ... or check the value with 'is nothing' first").
+   Is `NothingSignal` caught by `try ... if it fails`? NO — absence is not an error;
+   only the `QuestionE` boundary swallows the signal.
+6. Results are tested with the existing checks from rule 4; `say "{...}"` shows `nothing`
+   as text. Applies to both skins and to string interpolation `{...}`.
 
 ## 3. Result<T,E>
 
 ```text
 fn read_config(path: String) -> Result<Config, ConfigError> {
-    text = File.read(path)?            # Err propagater til kalderen
-    parsed = json.parse(text)?         # IoError → ConfigError: auto-konvertering via From-trait
+    text = File.read(path)?            # Err propagates to the caller
+    parsed = json.parse(text)?         # IoError → ConfigError: auto-conversion via From trait
     Config.from_json(parsed)
 }
 ```
 
-Kombinatorer:
+Combinators:
 
 ```text
 r.map(|v| v * 2)
 r.and_then(validate)                   # flat_map
 r.or_else(fallback_fn)
 r.unwrap_or(default)  r.unwrap_or_else(gen)
-r.expect("config var påkrævet")        # paniker med besked ved Err
+r.expect("config was required")        # panics with message on Err
 r.ok()                                 # → Optional
 result_tuple.unzip()
 ```
 
-Fejl-typer: enhver type kan være E; stdlib bruger hierarkiet `Error` base + specifikke typer; auto-konvertering via `From<E2> for E1`.
+Error types: any type can be E; stdlib uses the hierarchy `Error` base + specific types;
+auto-conversion via `From<E2> for E1`.
 
-## 4. ? operatoren — præcise regler
+Bootstrap note (C04 pending): today's `try ... if it fails as err` binds err to a plain
+text message; typed results arrive with C04.
 
-- `expr?` hvor expr: `Result<T,E>` → `T` i Ok-fald; `return Err(e.into())` ellers.
-- `expr?` hvor expr: `T?` → `T`; `return none` ellers.
-- Kun gyldigt i funktioner der returnerer kompatible `Result/_?` (eller i `try { }`-blokke).
+## 4. The ? operator — precise rules (full language)
+
+- `expr?` where expr: `Result<T,E>` → `T` in the Ok case; `return Err(e.into())` otherwise.
+- `expr?` where expr: `T?` → `T`; `return none` otherwise.
+- Only valid in functions returning compatible `Result/_?` (or inside `try { }` blocks).
 - Chaining: `File.open(p)?.read()?.parse()?`.
 
 ## 5. Panic
 
 ```text
-panic("umulig tilstand: {}", state)
-assert(cond, "besked")          # debug-only
-require(cond, "besked")         # altid aktiv
-unreachable()                   # debug: panik; release: UB-markeret (lint)
-todo("ikke implementeret")
+panic("impossible state: {}", state)
+assert(cond, "message")          # debug-only
+require(cond, "message")         # always active
+unreachable()                    # debug: panic; release: UB-marked (lint)
+todo("not implemented")
 ```
 
-Panics unwinder stacken (destructors/defer køre) indtil:
-- procesgrænse (default): besked + backtrace + exit code 101
-- nærmeste `catch`
+Panics unwind the stack (destructors/defer run) until:
+- process boundary (default): message + backtrace + exit code 101
+- nearest `catch`
 
 ## 6. try / catch / finally
 
@@ -112,23 +118,25 @@ try {
     run_plugin(untrusted_input)
 } catch e: PluginError {
     log.warn(e)
-} catch e {                          # alle andre panics
+} catch e {                          # all other panics
     log.error(e.backtrace)
 } finally {
     cleanup()
 }
 ```
 
-Brugsområder: plugin-grænseflader, FFI-grænser, top-level crash-handlers, benchmarks. Catch af `dynamic`-fejl ved dynamisk kode.
+Use areas: plugin interfaces, FFI boundaries, top-level crash handlers, benchmarks.
+Catch of `dynamic` errors for dynamic code.
 
-## 7. Backtraces og diagnostics
+## 7. Backtraces and diagnostics
 
-- Panics printer fil:linje + symboliseret backtrace (DWARF/PDB) i debug; `NOVA_BACKTRACE=full`.
-- `Result.Err` kan bære `.trace` (capture valgfri, `--error-trace`).
-- Strukturerede diagnostics fra compileren: kode (E0432-stil), span, notes, fixes (machine-applicable til LSP).
+- Panics print file:line + symbolized backtrace (DWARF/PDB) in debug; `NOVA_BACKTRACE=full`.
+- `Result.Err` can carry `.trace` (capture optional, `--error-trace`).
+- Structured compiler diagnostics: code (E0432-style), span, notes, fixes
+  (machine-applicable for LSP).
 
 ## 8. Interop
 
-- C: errno/GSStatus → `Result` via bindings-generator.
-- Python: exceptions → `Err(PyError)` ved grænsefladen.
-- JVM: checked/unchecked exceptions → `Result<_, JavaThrowable>` i bridge-API.
+- C: errno/errno-style status → `Result` via bindings generator.
+- Python: exceptions → `Err(PyError)` at the boundary.
+- JVM: checked/unchecked exceptions → `Result<_, JavaThrowable>` in bridge APIs.

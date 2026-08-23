@@ -36,9 +36,9 @@ pakker/project.nova, `as`-alias, selektiv import, ting konstrueret via navnerum.
 
 ## 1. Moduler
 
-- Én fil = ét modul. Mappe = undermodul-navnerum (`net/http.nova` → `import net.http`).
+- One file = one module. A directory = a submodule namespace (`net/http.nova` → `import net.http`).
 - `mod navn { ... }` inline-moduler tilladt.
-- Symboler er private som default; `pub` eksporterer.
+- Symbols are private by default; `pub` exports.
 
 ```text
 // src/math_utils.nova
@@ -51,11 +51,11 @@ import math_utils as mu
 mu.lerp(0, 10, 0.5)
 ```
 
-Import-regler:
+Import rules:
 
-- Stier: `std.*` (stdlib), pakkenavn (dependencies), relative (`./sibling`, `../parent`).
-- Cykliske imports tilladt mellem moduler i samme package (lazy resolution); på tværs af packages = fejl.
-- `export` i en mod-rodfil definerer den offentlige API-overflade (resten er internt, selv hvis `pub`).
+- Paths: `std.*` (stdlib), package name (dependencies), relative (`./sibling`, `../parent`).
+- Cyclic imports allowed between modules in the same package (lazy resolution); across packages = error.
+- `export` in a module root file defines the public API surface (everything else internal, even if `pub`).
 
 ## 2. project.nova
 
@@ -63,7 +63,7 @@ Import-regler:
 name = "myapp"
 version = "1.0.0"
 novac = ">= 0.9"
-description = "Eksempel-app"
+description = "Example app"
 license = "MIT"
 
 [targets]
@@ -85,7 +85,7 @@ runtime = "core"           # minimal | core | full
 optimization = "release"
 lto = true
 
-[scripts]                   # vilkårlige kommandoer: nova run bench
+[scripts]                   # arbitrary commands: nova run bench
 bench = "nova build --release && ./target/bench"
 
 [profiles.release]
@@ -93,7 +93,7 @@ overflow-checks = false
 debug-info = "line-tables"
 ```
 
-`project.nova` er selv gyldig Nova-kode (TOML-agtig syntax er et subset) — build-logik kan programmeres direkte:
+`project.nova` is itself valid Nova code (the TOML-like syntax is a subset) — build logic can be programmed directly:
 
 ```text
 [prebuild]
@@ -104,20 +104,20 @@ fn prebuild(cfg) {
 
 ### Capability-tilladelser — BESLUTTET
 
-Scripts og pakker erklærer deres behov; runtime håndhæver dem (se docs/EXTENSIONS.md E2):
+Scripts and packages declare their needs; the runtime enforces them (see docs/EXTENSIONS.md E2):
 
 ```text
-[permissions]               # default: ALT false for dependencies
-read  = ["data/*"]          # glob-scoped fillæsning
+[permissions]               # default: EVERYTHING false for dependencies
+read  = ["data/*"]          # glob-scoped file reading
 write = false
 network = ["api.example.com"]
 spawn  = false
 ffi    = []                 # liste af native-biblioteker
 ```
 
-- `nova install` viser tilladelses-dialog ved pakker med nye rettigheder.
-- Overtrædelse runtime = panik `PermissionError`; overtrædelse statisk detekterbar = compile-fejl.
-- `--allow-all` deaktiverer (kun til udviklerens eget program, aldrig dependencies).
+- `nova install` shows a permission dialog for packages requesting new rights.
+- Runtime violation = panic `PermissionError`; statically detectable violation = compile error.
+- `--allow-all` disables it (only for the developer's own program, never dependencies).
 
 ## 3. Package manager (`nova pm`)
 
@@ -125,31 +125,31 @@ ffi    = []                 # liste af native-biblioteker
 nova init [template]        # bin | lib | wasm | gpu
 nova add <pkg>[@version]    # + --dev, --feature
 nova remove <pkg>
-nova update [<pkg>]         # semver-respekt; --major tillader breaking
-nova publish                # checksum-signeret tarball til registry
-nova install .              # installer binary globalt
+nova update [<pkg>]         # semver-respecting; --major allows breaking
+nova publish                # checksum-signed tarball to the registry
+nova install .              # install the binary globally
 ```
 
-- Lockfile `nova.lock` (eksakt, checksummet, committes).
-- Registry: `registry.nova.dev` — semver, yank, trusted publishers, platform-varianter.
-- Native artifacts: pakker kan shippe prebuildede `.a/.so/.dll` per target + source-fallback.
-- Workspace-support: monorepo med flere packages (`members = ["apps/*", "libs/*"]`).
+- Lockfile `nova.lock` (exact, checksummed, committed).
+- Registry: `registry.nova.dev` — semver, yank, trusted publishers, platform variants.
+- Native artifacts: packages can ship prebuilt `.a/.so/.dll` per target + source fallback.
+- Workspace support: monorepo with several packages (`members = ["apps/*", "libs/*"]`).
 
 ## 4. Build
 
 ```text
 nova build [--release|--debug] [--target triple] [--runtime minimal|core|full]
-nova run [fil|script-navn]  # dev-build + kør
+nova run [file|script-name] # dev-build + run
 nova test [--doc] [--bench]
 nova fmt / nova lint / nova doc / nova repl
-nova check                  # typetjek uden codegen (hurtig CI-feedback)
+nova check                  # typecheck without codegen (fast CI feedback)
 ```
 
-- Inkrementelt, content-hash-cachet, paralliseret over kerner.
-- Cross-compiling: targets defineret i `[targets.table]` eller CLI; sysroots hentes automatisk hvor muligt.
+- Incremental, content-hash cached, parallelized across cores.
+- Cross-compiling: targets defined in `[targets.table]` or CLI; sysroots fetched automatically where possible.
 - Output: `target/debug|release/<triple>/...`.
 
-## 5. Versionspolitik og stabilitet
+## 5. Versioning policy and stability
 
-- Semver. Edition-nøgle (`edition = "2026"`) giver sprog-evolution uden at knække gammel kode.
-- Stdlib følger sproget; deprecated API'er beholder mindst 2 minor-versioner.
+- Semver. The edition key (`edition = "2026"`) enables language evolution without breaking old code.
+- Stdlib follows the language; deprecated APIs kept for at least 2 minor versions.

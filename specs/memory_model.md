@@ -38,66 +38,66 @@ Regler:
 Ikke i bootstrap-udsnittet (kommer i native-pipelinen): refcounts der kan aflæses,
 `owned`/move/borrow-checking, `unsafe`, cycle collector, `deinit`.
 
-## 1. Tre niveauer
+## 1. Three tiers
 
 ```text
 Default:      ARC (automatic reference counting) + escape analysis
-Opt-in:       owned / move / borrow-annoteringer (zero-cost kontrol)
-Ekspert:      unsafe + raw pointers
-Valgfrit:     GC-cycle collector (--runtime full)
+Opt-in:       owned / move / borrow annotations (zero-cost control)
+Expert:       unsafe + raw pointers
+Optional:     GC cycle collector (--runtime full)
 ```
 
 ## 2. Værdityper vs referencetyper
 
 | | struct, enum, tuple, [T;N], primitives | class-instans, closures, dyn Trait, Box |
 |---|---|---|
-| Semantik | værdi (copy hvis Copy, ellers move) | reference (ARC-talt) |
-| Layout | inline, stack/embedded | heap-allokeret, talt pointer |
-| Kopiér | `.clone()` eller Copy | deling (increment refcount) |
+| Semantics | value (copy if Copy, else move) | reference (ARC-counted) |
+| Layout | inline, stack/embedded | heap-allocated, counted pointer |
+| Copy | `.clone()` or Copy | sharing (increment refcount) |
 
-Copy-typer: alle primitives, pointers, arrays/tuples/structs af Copy-felter. Copy er opt-out (`@no_copy`). Move gør kilden ugyldig (compile-fejl ved brug efter move).
+Copy types: all primitives, pointers, arrays/tuples/structs of Copy fields. Copy is opt-out (`@no_copy`). Move invalidates the source (compile error on use after move).
 
 ## 3. ARC-detaljer
 
-- Hvert heap-objekt har refcount (+ weak count).
-- Retain/release indsættes som IR-pass; escape analysis fjerner par i samme funktion.
-- Release kan inline' destruktor; deallokering deterministisk ved sidste release.
-- Tråd-sikkerhed: refcounts er atomare som default; single-threaded objekter (`@local`) bruger non-atomare counts (scheduleren garanterer isolering).
+- Every heap object has a refcount (+ weak count).
+- Retain/release are inserted as an IR pass; escape analysis removes pairs within one function.
+- Release may inline the destructor; deallocation deterministic at the last release.
+- Thread safety: refcounts are atomic by default; single-threaded objects (`@local`) use non-atomic counts (the scheduler guarantees isolation).
 
-### Cyklusser
+### Cycles
 
-- `--runtime full`: inkrementel cycle collector (Bacon-Rajan-stil) kører i baggrunden; latensbundet.
-- `--runtime minimal/core`: cykler lækker bevidst; `weak` bryder dem:
+- `--runtime full`: an incremental cycle collector (Bacon-Rajan style) runs in the background; latency-bound.
+- `--runtime minimal/core`: cycles leak deliberately; `weak` breaks them:
 
 ```text
 class Node {
-    parent: Node?              # stærk
+    parent: Node?              # strong
     children: Array<Node>
 }
-n.parent = some(n)             # cyklus → collector rydder i full; ellers leak
-weak_parent: weak Node?        # svag reference, upgrade: .upgrade() -> Node?
+n.parent = some(n)             # cycle → collector cleans up in full; otherwise leak
+weak_parent: weak Node?        # weak reference; upgrade: .upgrade() -> Node?
 ```
 
-Linter advarer om oplagte cyklusser (statisk felt-analyse).
+The linter warns about obvious cycles (static field analysis).
 
-## 4. owned / move / borrow (avanceret)
+## 4. owned / move / borrow (advanced)
 
 ```text
-owned buf = Buffer(1 << 20)    # eksplicit ejerskab, ingen refcount
-send(buf)                      # MOVE: buf er nu ugyldig
+owned buf = Buffer(1 << 20)    # explicit ownership, no refcount
+send(buf)                      # MOVE: buf is now invalid
 
-fn process(b: Buffer) {...}    # tager ejerskab (move ind)
-fn peek(&buf: Buffer) {}       # låner (borrow), read-only, & = delt lån
-fn edit(mut &buf: Buffer) {}   # mutbart lån
+fn process(b: Buffer) {...}    # takes ownership (move in)
+fn peek(&buf: Buffer) {}       # borrows, read-only, & = shared borrow
+fn edit(mut &buf: Buffer) {}   # mutable borrow
 ```
 
-Ownership-reglerne (Rust-inspireret men **opt-in og mildere**):
+The ownership rules (Rust-inspired but **opt-in and milder**):
 
-- En værdi har én ejer; assignment/kald = move (for non-Copy).
-- Mange delte lån ELLER ét mutbart lån ad gangen — håndhævet kun for typer markeret `owned`/`mut &`.
-- Almindelige ARC-klasser kan stadig deles frit (ingen borrow checker på dem).
+- A value has one owner; assignment/call = move (for non-Copy).
+- Many shared borrows OR one mutable borrow at a time — enforced only for types marked `owned`/`mut &`.
+- Ordinary ARC classes can still be shared freely (no borrow checker on them).
 
-Dette giver Rust-agtig kontrol hvor man vil have det, uden at gøre hele sproget verbost.
+This gives Rust-like control where you want it without making the whole language verbose.
 
 ## 5. unsafe
 
@@ -117,25 +117,25 @@ unsafe {
 - `unsafe` smitter ikke (ingen unsafe-supertype); funktioner der kræver unsafe markeres `@unsafe fn`.
 - Debug-builds: pointer-sanitizer-agtige checks (poisoning) når muligt.
 
-## 6. Stack og heap
+## 6. Stack and heap
 
-- `[T; N]`, structs, tuples: stack/embedded når muligt (escape analysis promoverer til heap ved flugt).
-- Store objekter (> trøskel) placeres heap direkte.
-- SOO (small object optimization): Optional<T> uden ekstra tag for reference-/niche-typer.
+- `[T; N]`, structs, tuples: stack/embedded when possible (escape analysis promotes to heap on escape).
+- Large objects (> threshold) go straight to the heap.
+- SOO (small object optimization): Optional<T> without an extra tag for reference/niche types.
 
-## 7. Levetider
+## 7. Lifetimes
 
-Levetider infereres (non-lexical). Eksplicit lifetime-syntax findes IKKE i v1 — borrow-checkeren bruger regions-inference; hvor det er umuligt kræves `.clone()` eller ARC-delning i stedet. Dette er en bevidst forenkling ift. Rust: sproget vælger ARC som udvej i stedet for lifetime-annoteringer.
+Lifetimes are inferred (non-lexical). Explicit lifetime syntax does NOT exist in v1 — the borrow checker uses regions inference; where impossible, `.clone()` or ARC sharing is required instead. This is a deliberate simplification vs Rust: the language chooses ARC as the escape hatch instead of lifetime annotations.
 
-## 8. Finalization-rækkefølge
+## 8. Finalization order
 
-1. `defer` (scope-exit, LIFO)
-2. `use`-dispose (ved blok-slut)
-3. ARC-release → `deinit`
-4. Cycle collector (kun full-runtime, ikke-deterministisk)
+1. `defer` (scope exit, LIFO)
+2. `use`-dispose (at block end)
+3. ARC release → `deinit`
+4. Cycle collector (full runtime only, non-deterministic)
 
-## 9. Embedded/minimal-profil
+## 9. Embedded/minimal profile
 
-- Ingen cycle collector, ingen reflection-metadata, statiske allokatorer tilladt (`--alloc static`).
-- `Box` erstattet af pool-allocator i `--alloc arena`.
-- Interrupt-handlers: `@interrupt fn` (no-allokations-verificeret af compileren).
+- No cycle collector, no reflection metadata, static allocators allowed (`--alloc static`).
+- `Box` replaced by a pool allocator in `--alloc arena`.
+- Interrupt handlers: `@interrupt fn` (no-allocation verified by the compiler).

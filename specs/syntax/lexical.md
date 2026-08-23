@@ -1,53 +1,57 @@
 # Nova Lexical Rules
 
-## Filformat
+## File format
 
-- Encoding: UTF-8 (BOM tolereret). LF og CRLF accepteres, normaliseres til `\n`.
-- Filendelse: `.nova`.
+- Encoding: UTF-8 (BOM tolerated). LF and CRLF accepted, normalized to `\n`.
+- File extension: `.nova`.
 
-## Kommentarer
+## Comments
 
 ```text
-// linjekommentar
-/* blokkommentar /* kan nestes */ */
-/// doc-kommentar (linje)
-/** doc-blok **/
+// line comment
+/* block comment /* may nest */ */
+/// doc comment (line)
+/** doc block **/
 ```
 
-Kommentarer sendes i trivia-streamen til formatter/LSP — parseren ignorerer dem.
+Comments travel in the trivia stream for formatter/LSP — the parser ignores them.
 
-## Newline-semantik (statement-slut)
+## Newline semantics (statement end)
 
-Lexer producerer `NEWLINE`-tokens. Parserens regel:
+The lexer produces `NEWLINE` tokens. Parser rule:
 
-Et statement afsluttes ved NEWLINE **medmindre**:
-1. Linjen slutter med binær operator, `,`, `(`, `[`, `{`, `=>`, `->`, `.`, `?.`, `=` (assignments op), `where`, `||`, `&&`
-2. Næste linje starter med lukke-token (`)`, `]`, `}`), binær operator, `.`, `?.`, eller `catch`/`finally`/`else`
+A statement ends at NEWLINE **unless**:
+1. The line ends with a binary operator, `,`, `(`, `[`, `{`, `=>`, `->`, `.`, `?.`, `=`
+   (assignments), `where`, `||`, `&&`
+2. The next line starts with a closing token (`)`, `]`, `}`), a binary operator, `.`,
+   `?.`, or `catch`/`finally`/`else`
 
-Ellers er `;` eksplicit separator. Denne regel er deterministisk og implementeret i lexeren — ingen JS-agtig tvetydig ASI.
+Otherwise `;` is an explicit separator. This rule is deterministic and implemented in
+the lexer — no JS-style ambiguous ASI.
 
 ## Identifiers
 
 ```text
-IDENT    = (XID_Start | "_") XID_Continue*    -- Unicode identifiers tilladt
-SCREAMING_CASE anbefales for consts (linter), ingen case-regel i grammatikken
+IDENT    = (XID_Start | "_") XID_Continue*    -- Unicode identifiers allowed
+SCREAMING_CASE recommended for consts (linter), no case rule in the grammar
 ```
 
-Raw identifier: `r#"match"#` hvis man skal skygge et keyword (FFI).
+Raw identifier: `r#"match"#` when you must shadow a keyword (FFI).
 
 ## Literals
 
-### Heltal
+### Integers
 
 ```text
 42        → i32
-0x_FF     hex     0o777   oktal    0b1010  binær
+0x_FF     hex     0o777   octal    0b1010  binary
 42u8  42i64  42usize            suffixed
-10_000_000                   underscores frit
-99999999999999999999999n     BigInt-literal
+10_000_000                   underscores free
+99999999999999999999999n     BigInt literal
 ```
 
-Hvis literal overstiger i32-range uden suffix: compiler-fejl (kræv suffix/L BigInt). Ingen stiltiende promotion.
+If a literal exceeds the i32 range without a suffix: compiler error (require a suffix
+or BigInt). No silent promotion.
 
 ### Floats
 
@@ -59,9 +63,9 @@ Hvis literal overstiger i32-range uden suffix: compiler-fejl (kræv suffix/L Big
 
 ```text
 'a' '\n' '\u{1F600}'             char (Unicode scalar)
-"Hej"                            String (UTF-8)
-"interpoleret {name} og {x + 1}"
-"{pris:.2} kr"                   format-spec: fill align sign width .precision type (Python-kompatibel)
+"Hi"                             String (UTF-8)
+"interpolated {name} and {x + 1}"
+"{price:.2} kr"                  format spec: fill align sign width .precision type (Python-compatible)
 r"C:\raw\path"                   raw string
 """multi
 line"""                          multiline
@@ -69,54 +73,55 @@ b"bytes"                         Bytes
 "\n\t\\\"\{\'\0\u{7F}"           escapes
 ```
 
-Interpolation `{expr}` gælder KUN i almindelige `"`-strings (ikke raw/multiline uden prefix `f`... beslutning: interpolation aktiv i `"` og `"""`; brug `r"` for at slå fra; `{{` og `}}` escapes).
+Interpolation `{expr}` applies ONLY in plain `"` strings (decision: interpolation active
+in `"` and `"""`; use `r"` to turn it off; `{{` and `}}` escape braces).
 
 ### bool / none
 
 `true false none null(unsafe)`.
 
-## Operator-tokens (komplet)
+## Operator tokens (complete)
 
 ```text
 + - * / % // ** = += -= *= /= %= //= **= &= |= ^= <<= >>=
 == != < <= > >= <=> && || ! ~ & | ^ << >> ? ?? ?. ?=
 .. ..< ..= -> => :: . , : ; ( ) [ ] { }
-@ # $ (kun i makroer)
+@ # $ (macros only)
 ```
 
-### Bootstrap-udsnit (v0.11+, item C01)
+### Bootstrap cut (v0.11+, item C01/C03)
 
-Bootstrap-lexeren genkender nu symbol-delmængden og parseren afbilder den til de
-SAMME AST-operatorstrenge som Natural (én AST, to skins):
+The bootstrap lexer recognizes this symbol subset and the parser maps it onto the SAME
+AST operator strings as Natural (one AST, two skins):
 
 ```text
-=      → tildeling (som "is" / "set ... to")
+=      → assignment (like "is" / "set ... to")
 + - * / %  → plus / minus / times / divided / mod
 == !=  → eq / ne       < <= > >=  → lt / lte / gt / gte
-&& || ! → and / or / not        .navn → Field (som "the navn of ...")
-?      → OptionalGuard-postfix (C03): fjernes ved parse; HELE udtrykket
-         pakkes i QuestionE — se specs/error_handling.md §2.1
-( ) [ ] , ; . { }  → som forventet; { } lexes rent men har ENDNU ingen
-                     statement-grammatik (lambdas/fn kommer i C10/T3)
+&& || ! → and / or / not        .name → Field (like "the name of ...")
+?      → OptionalGuard postfix (C03): removed at parse; the WHOLE expression is
+         wrapped in QuestionE — see specs/error_handling.md §2.1
+( ) [ ] , ; . { }  → as expected; { } lexes cleanly but has NO statement grammar yet
+                     (lambdas/fn arrive in C10/T3)
 ```
 
-**Bindestreg-policy (kilde til sandhed):** inde i et ord fortsætter `-` ordet når
-næste tegn er et bogstav/`_`/`-` (`save-file`); følges `-` af et ciffer, afsluttes
-ordet og `-` lexes som MINUS (`x-1` = `x minus 1`). En selvstændig `-` er altid
-MINUS. Dermed er `a-b` ét navn, `a -b`, `a- b` og `a - b` alle subtraktion.
+**Hyphen policy (source of truth):** inside a word, `-` continues the word when the next
+character is a letter/`_`/`-` (`save-file`); when `-` is followed by a digit the word
+ends and `-` lexes as MINUS (`x-1` = `x minus 1`). A standalone `-` is always MINUS.
+Thus `a-b` is one name while `a -b`, `a- b`, `a - b` are all subtraction.
 
-**Præcedens (lav→høj), fælles for begge skins:**
+**Precedence (low→high), shared by both skins:**
 
 ```text
-or / ||   <   and / &&   <   sammenligning (is..., ==, !=, <, <=, >, >=)
+or / ||   <   and / &&   <   comparison (is..., ==, !=, <, <=, >, >=)
 <   plus/minus (+ -)   <   times/divided/mod (* / %)
-<   unær (!, -)   <   postfix (? og .felt)   <   primærer
+<   unary (!, -)   <   postfix (? and .field)   <   primaries
 ```
 
-Symbol-operander blandes frit med ord-operatorer; `1 plus 2 * 3 == 6 + x && y`
-parser deterministisk efter tabellen ovenfor.
+Symbol operands mix freely with word operators; `1 plus 2 * 3 == 6 + x && y` parses
+deterministically per the table above.
 
-## Keywords (reserverede, fuld liste)
+## Keywords (reserved, full list)
 
 ```text
 fn let const var struct class enum trait impl extend mod import export from
@@ -130,47 +135,47 @@ actor signal computed effect on send request reply requires ensures
 then take bind undo redo track ever exact every states becomes waits
 ```
 
-Kontekstuelle (ikke reserverede som identifiers andre steder): `get set operator init deinit test expect compile macro base channel select spawn joined-with grouped-by turned-into`.
+Contextual (not reserved as identifiers elsewhere): `get set operator init deinit test
+expect compile macro base channel select spawn joined-with grouped-by turned-into`.
 
-Unikke features (se ../unique_features.md): Flow<T> + Table (stdlib §23), undo/redo +
-variabel-historik (`track`/`undo`/`ever`), tillids-sporing (taint), tilstandsmaskiner
-(`states`/`becomes`/`waits`), `exact`-blokke, `every`/`in`-tidsudtryk, `@incremental`,
-`nova why`, grammatik-literals.
+Unique features (see ../unique_features.md): Flow<T> + Table (stdlib §23), undo/redo +
+variable history (`track`/`undo`/`ever`), taint tracking, state machines
+(`states`/`becomes`/`waits`), `exact` blocks, `every`/`in` time expressions,
+`@incremental`, `nova why`, grammar literals.
 
 ## Shebang
 
-`#!...` på første linje behandles som kommentar.
+`#!...` on the first line is treated as a comment.
 
-## Reserverede ord i Nova Natural (bootstrap v0.11)
+## Reserved words in Nova Natural (bootstrap v0.11+)
 
-I Natural-skinnen er følgende ord reserveret — de kan ikke bruges som variabelnavne,
-parametre, funktions-/thing-navne eller feltnavne, fordi de enten starter sætninger,
-forbinder klausuler eller indleder indbyggede udtryk:
+In the Natural skin the following words are reserved — they cannot be used as variable
+names, parameters, function/thing names or field names, because they start sentences,
+connect clauses, or head built-in expressions:
 
 ```text
-Sætnings-startere:
+Sentence starters:
     say write if unless repeat stop skip go set add take remove check try to
     use wait pause track undo redo exit when requires ensures give return store
 
-Struktur & konnektorer:
+Structure & connectors:
     then otherwise done is and or not the of in from with a an
 
-Værdier:
+Values:
     true false nothing none null
 
-Indbyggede udtryks-hoveder:
+Built-in expression heads:
     ask every everything item how many
 ```
 
-**Policy:** kun ord der gør programmet *uparseligt* reserveres. Ord som `count`,
-`mark`, `number`, `length`, `first`, `last`, `answer` er bevidst IKKE reserverede.
-Bruger man et reserveret ord som navn, får man:
+**Policy:** only words that would make a program *unparseable* are reserved. Words like
+`count`, `mark`, `number`, `length`, `first`, `last`, `answer` are deliberately NOT
+reserved. Using a reserved word as a name yields:
 
 ```text
-Parser-fejl — linje L, kolonne C: 'done' er et reserveret ord og kan ikke bruges
-som navn — vælg et andet navn
+Parser error — line L, column C: 'done' is a reserved word and cannot be used as a
+name — choose a different name
 ```
 
-Kompakt-skin-nøgleordene i keyword-tabellen ovenfor (`fn let const …`) træder først i
-kraft, når skindet implementeres (ITERATION_PLAN C01); de to skins deler AST og skal
-dele den fulgte reservationspolitik ved merge.
+Note: names after `.` are attribute access, not bindings — reserved words do not apply
+there (e.g. `file.write` works).
