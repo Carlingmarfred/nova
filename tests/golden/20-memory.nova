@@ -1,0 +1,6 @@
+# C13: hukommelse — reference-semantik + eksplicit dyb kopi ('a copy of X')
+xs is [[1], [2]]
+ys is xs
+zs is a copy of xs
+w = a copy of ys?
+say "{item 1 of zs}"

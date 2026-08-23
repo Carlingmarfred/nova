@@ -443,6 +443,7 @@ def test_shorthand(tmp):
         ('u = -q + 2', 'u is 0 minus q plus 2'),
         ('u = q? + 1', 'set u to q plus 1?'),
         ('m = tools-module.twice(21)', 'set m to tools-module.twice(21)'),
+        ('c = a copy of xs', 'set c to a copy of xs'),
     ]
     for i, (short, natural) in enumerate(pairs, 1):
         ps = nova(["parse", prog(short, tmp)], cwd=tmp)
@@ -793,6 +794,61 @@ def test_repl(tmp):
           f"rc={p.returncode}/{q.returncode}/{r.returncode} out={q.stdout!r}")
 
 
+def test_memory(tmp):
+    """C13: værdi- vs reference-semantik + 'a copy of X' (specs/memory_model.md §0)."""
+    cases = [
+        # pin: liste-delelse er ALIAS — ikke kopi
+        ("alias-pin-list",
+         'xs is [1, 2]\nys is xs\nadd 3 to ys\nsay "{xs}"', "", "[1, 2, 3]"),
+        # pin: thing-felter deles ligeledes
+        ("alias-pin-thing",
+         'a Box is a thing with\n    an inside set to nothing\ndone\n'
+         'b is a new Box\nb2 is b\nset the inside of b2 to "rørt"\n'
+         'say "{the inside of b}"', "", "rørt"),
+        # pin: tal er værdier
+        ("value-pin-number",
+         'x is 5\ny is x\ny is 9\nif x is 5 then say "uafhængig"', "", "uafhængig"),
+        # a copy of X: dyb og uafhængig
+        ("copy-independent",
+         'xs is [1, 2]\nks is a copy of xs\nadd 9 to ks\n'
+         'say "{xs} {ks}"', "", "[1, 2] [1, 2, 9]"),
+        ("copy-nested",
+         'xs is [[1], [2]]\nks is a copy of xs\n'
+         'indre is item 1 of ks\nadd 99 to indre\n'
+         'say "{item 1 of xs} {item 1 of ks}"', "", "[1] [1, 99]"),
+        ("copy-thing",
+         'a Task is a thing with\n    a text set to "start"\ndone\n'
+         't is a new Task\nt2 is a copy of t\nset the text of t2 to "ændret"\n'
+         'say "{the text of t} {the text of t2}"', "", "start ændret"),
+        ("copy-primitives-nothing",
+         'n is a copy of 5\nm is a copy of nothing\n'
+         'say "{n}"\nif m is nothing then say "tom-kopi"', "", "5\ntom-kopi"),
+        ("copy-with-optional",
+         'maybe is nothing\nk is a copy of maybe?\nif k is nothing then say "gift"',
+         "", "gift"),
+    ]
+    for name, src, stdin, expect in cases:
+        p = nova(["run", prog(src, tmp)], stdin=stdin, cwd=tmp)
+        check(f"memory/{name}",
+              p.returncode == 0 and (expect is None or expect in p.stdout),
+              f"rc={p.returncode} out={p.stdout!r} err={p.stderr[:200]!r}")
+
+    # moduler kan ikke kopieres
+    p = nova(["run", prog(
+        'use the standard math library\nm is a copy of math', tmp)], cwd=tmp)
+    check("memory/copy-module-error",
+          p.returncode == 1 and "ikke en værdi" in p.stderr
+          and "Traceback" not in p.stderr,
+          f"rc={p.returncode} err={p.stderr[:200]!r}")
+
+    # kryds-skin: begge former giver identisk AST
+    ps = nova(["parse", prog('c = a copy of xs', tmp)], cwd=tmp)
+    pn = nova(["parse", prog('set c to a copy of xs', tmp)], cwd=tmp)
+    check("memory/equivalence",
+          ps.returncode == 0 and pn.returncode == 0 and ps.stdout == pn.stdout,
+          f"kort={ps.stdout[:80]!r} naturlig={pn.stdout[:80]!r}")
+
+
 # ------------------------------------------------------------ examples
 
 def test_guessing_game():
@@ -862,6 +918,7 @@ def main():
         test_modules(tmp)
         test_stdlib(tmp)
         test_repl(tmp)
+        test_memory(tmp)
         test_guessing_game()
         test_todo_app()
     finally:

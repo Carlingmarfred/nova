@@ -1,0 +1,37 @@
+Program (5 statements)
+  Assign(line=2)
+    target: Var(line=2)
+      name: 'xs'
+    expr: ListLit(line=2)
+      items: [2]
+        [0] ListLit(line=2)
+          items: [1]
+            [0] Lit(line=2)
+              value: 1
+        [1] ListLit(line=2)
+          items: [1]
+            [0] Lit(line=2)
+              value: 2
+  Assign(line=3)
+    target: Var(line=3)
+      name: 'ys'
+    expr: Var(line=3)
+      name: 'xs'
+  Assign(line=4)
+    target: Var(line=4)
+      name: 'zs'
+    expr: CopyOf(line=4)
+      e: Var(line=4)
+        name: 'xs'
+  Assign(line=5)
+    target: Var(line=5)
+      name: 'w'
+    expr: QuestionE(line=5)
+      e: CopyOf(line=5)
+        e: Var(line=5)
+          name: 'ys'
+  Say(line=6)
+    exprs: [1]
+      [0] StrLit(line=6)
+        raw: '{item 1 of zs}'
+    newline: True

@@ -45,7 +45,7 @@ Java (ecosystem/tooling) + C++ (performance). This matrix is audited each phase 
 |---|---|---|
 | Syntax & semantics | Two skins → identical AST; full spec implemented; exhaustive match | 🟡 begge skins + equivalence-harness ✓ (C01/C02); fuld spec mangler |
 | Type system | HM-local inference, unions, Option/Result, generics+traits | 🔴 dynamic-only in bootstrap (Optional/`?` ✓ C03, Result → C04) |
-| Memory model | ARC default, escape analysis, `owned`/`unsafe` opt-in, cycle collector (full) | 🔴 GC'd by host (Python) |
+| Memory model | ARC default, escape analysis, `owned`/`unsafe` opt-in, cycle collector (full) | 🟡 værdi/reference-semantik fastlåst + `a copy of X` ✓ (C13); ARC/escape-analysis er native E05 |
 | Error handling | Result/Optional + `?`; catchable runtime errors w/ codes+hints | 🟡 Optional/`?` ✓, sætnings-fejl + hints ✓, catchable ✓; typed Result mangler |
 | Concurrency | async/await, structured concurrency, channels/select, `parallel` | 🔴 |
 | Stdlib | io/fs/net/http/json/csv/time/math/random/test/cli ≥ Python-parity table (specs/standard_library.md) | 🟡 v0: json/file/random/time/math/text/list via `use` (B03+C06–C08) |
@@ -201,6 +201,7 @@ Statuses: ☐ Not started · ◐ In progress · ✅ Done (date) · ⏸ Blocked (
 | C10 | Lambdas + pipeline `then` (T2 ergonomics over lists) | P2 | M | C07 | ☐ |
 | C11 | match-exhaustiveness lite: `check` warns on missing otherwise (lint) | P2 | S | — | ☐ |
 | C12 | Bootstrap perf pass: memoize dispatch tables; target 2× on todo bench | P2 | M | — | ☐ |
+| C13 | Memory-model bootstrap-udsnit: værdi/reference-semantik fastlåst i tests + `a copy of X` (dyb kopi) | P1 | S | — | ✅ 2026-08-23 (specs/memory_model.md §0; CopyOf-node; golden 20; par8; modul-kopiering afvises) |
 
 ### Phase 2 — Credible language (→ G2)
 | ID | Item | P | Size | Depends | Status |
@@ -317,6 +318,7 @@ units/refinement types, actors/signals, GPU backend, grammar literals, `@increme
 
 | Date | Change |
 |---|---|
+| 2026-08-23 | **C13 ✅ (bruger-prioriteret udenfor §7-rækkefølgen)**: hukommelses-model bootstrap-udsnit (specs/memory_model.md §0). Semantikken fastlåst med pins: liste/thing/databog = REFERENCE (alias via assignment — testet), tal/tekst/bool = værdi. Ny primær-frase `a copy of X` = DYB kopi (`CopyOf`-node, `copy.deepcopy`; grådig arith-operand som `contents of`-familien; komponerer med `?` → QuestionE(CopyOf); moduler/funktioner afvises med sætning). Scope-fence: ingen aflæselige refcounts, ingen owned/move/unsafe/deinit i bootstrap — det er native E05. Golden 20 + kryds-skin-par 8. Test-notering: `add ... to item N of LISTE` er bevidst ikke-grammatik (targets er navne) — bind den indre liste først. Suite: 211/211. |
 | 2026-08-23 | **v0.13.0-bootstrap**: versionsbump efter docs-audit + C09 REPL-klyngen. §2-paritetstabellen opdateret til v0.13-virkelighed (stdlib 🟡, tooling 🟡, error-handling 🟡). Næste: E00+E01 toolchain+CI (P0!) → D01/D05/D06. |
 | 2026-08-23 | **C09 ✅**: `nova repl [--seed N]` — én persistent Interp; `>>> `/`..>`-prompter; multiline ved 'done'-familie-parsefejl (buffer fortsætter); udtryks-linjer echoes som `→ værdi` (fallback når sætnings-parse fejler — fix for tal-startede linjer); meta: `:ast <linje>` (udtryk først, fald tilbage til sætninger), `:undo` (dyb kopi af globals/funcs/things, stak max 100, output/fil-I/O kan ikke rulles tilbage), `:quit/:q`, `:help`, ukendt → venlig henvisning. Fejl dræber ALDRIG sessionen. Spec: docs/ARCHITECTURE.md §10. 8 repl-tests. Suite: 199/199. Næste: E00+E01 toolchain+CI (P0!) → D01/D05/D06. |
 | 2026-08-23 | **docs-audit**: forældede påstande rettet (README shorthand-kommentar "planlagt" → implementeret; project-notes kendte-huller omskrevet til v0.12-virkelighed inkl. phrase-vs-feltnavn-kollision og prik-adgang-workaround; AGENTS.md 191/191). lab/unique/tour.nova verificeret at fejle med pæne sætninger (rc=1, ingen tracebacks). |

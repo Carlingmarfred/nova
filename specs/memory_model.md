@@ -1,5 +1,43 @@
 # Nova Memory Model
 
+## 0. Bootstrap-udsnit (v0.14+, item C13)
+
+Native ARC/escape-analysis er et IR-pass (E05, gate G3). Bootstrap'en fastlægger
+NU allerede den semantik, ARC'en senere skal præservere — og giver én eksplicit
+kopierings-frase:
+
+### 0.1 Værdi- vs. reference-semantik (gælder ALTID, også i native)
+
+| Værdi | Semantik | Assignment/kald |
+|---|---|---|
+| tal, tekst, bool | **værdi** | kopieres (uafhængig) |
+| `nothing` | værdi (én instans) | — |
+| liste `[...]` | **reference** | deles (alias) |
+| thing-instans | **reference** | deles (alias) |
+| databog (json-objekt) | **reference** | deles (alias) |
+
+Garanti: `ys is xs` hvor xs er liste/thing betyder ALDRIG kopi — ændringer via
+`ys` ses gennem `xs`. Vil man have uafhængighed, skal man bede om det eksplicit.
+
+### 0.2 `a copy of X`
+
+```text
+ks is a copy of xs          # dyb kopi — hele træet (nøstedede lister/things)
+t2 is a copy of t           # ny ThingInstance, samme felt-værdier (dybt kopieret)
+```
+
+Regler:
+1. `a copy of X` er ét udtryk (primær-frase); X parses grådigt som resten af
+   aritmikken (samme konvention som `the contents of ...`).
+2. Kopien er DYB: indlejrede lister/things/databøger kopieres rekursivt.
+3. Kombineres frit med `?`: `a copy of maybe?` → nothing hvis maybe er nothing
+   (hele-udtryksgift gælder).
+4. Moduler/funktioner kan ikke kopieres — venlig fejl ("et modul er ikke en værdi").
+5. Begge skins, identisk AST (`CopyOf`-node; golden 20 + kryds-skin-par 8).
+
+Ikke i bootstrap-udsnittet (kommer i native-pipelinen): refcounts der kan aflæses,
+`owned`/move/borrow-checking, `unsafe`, cycle collector, `deinit`.
+
 ## 1. Tre niveauer
 
 ```text

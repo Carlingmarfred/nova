@@ -240,6 +240,12 @@ class ContentsOf:
 class EveryTurnedInto:
     e: object; thing: str; line: int = 0
 
+
+@dataclass
+class CopyOf:
+    """C13: 'a copy of X' — eksplicit DYB kopi (specs/memory_model.md §0.2)."""
+    e: object; line: int = 0
+
 @dataclass
 class AskE:
     prompt: object; line: int = 0
@@ -1083,6 +1089,11 @@ class Parser:
         if w in ("a", "an") and self.at_word_ahead(1, "empty") and self.at_word_ahead(2, "list"):
             self.next(); self.next(); self.next()
             return EmptyListE(t.line)
+
+        if w in ("a", "an") and self.at_word_ahead(1, "copy"):
+            self.next(); self.next()
+            self.expect_word("of")
+            return CopyOf(self.parse_arith(), t.line)
 
         if w in ("a", "an") and self.at_word_ahead(1, "new"):
             self.next(); self.next()

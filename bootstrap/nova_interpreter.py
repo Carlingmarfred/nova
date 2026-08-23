@@ -10,7 +10,7 @@ import sys
 import time
 
 from nova_parser import (FuncDef, ThingDef, WhenProgramStarts, ItemAt,
-                         UseModule, ModuleCall, parse_source,
+                         UseModule, ModuleCall, parse_source, CopyOf,
                          NovaLexError, NovaParseError)
 
 
@@ -1095,6 +1095,12 @@ class Interp:
             for item in src:
                 out.append(self._build_thing(thingdef, item if isinstance(item, dict) else {}, scope))
             return out
+        if t == "CopyOf":
+            v = self.eval(e.e, scope)
+            if isinstance(v, (ModuleInstance, BuiltinFunction, Function)):
+                raise NovaError(e.line, f"'a copy of' kan ikke kopiere {nova_str(v)} "
+                                        "— et modul/funktion er ikke en værdi")
+            return copy.deepcopy(v)
         raise NovaError(getattr(e, "line", 0), f"ukendt udtryk {t}")
 
     def _field_err(self, obj, e):

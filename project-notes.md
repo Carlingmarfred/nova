@@ -108,6 +108,14 @@ done
   attribut-adgang og reserver-checks IKKE (file.write virker; B02's 11
   bindingssteder uændrede). C06/C07/C08 udvider STDLIB_FACTORIES + test-
   fragmentet for ukendt-lib-listen.
+- **Hukommelse (v0.14/C13):** semantik: liste/thing/databog = reference (alias),
+  tal/tekst/bool/nothing = værdi — PINNET af tests (memory/alias-pin-*), native
+  ARC (E05) må ikke ændre dem. `a copy of X` → `CopyOf`-node (parser primary,
+  grådig `parse_arith()`-operand som contents-of-familien) → `copy.deepcopy` i
+  eval; guard modul/funktion-værdier med venlig fejl. Komponerer med `?` via den
+  almindelige hele-udtryks-pakning. NB: `add`/`set`-targets er NAVNE (item er
+  reserveret dér) — mutér indlejrede lister ved først at binde dem (`indre is
+  item 1 of ks; add x to indre`) eller via `the ... of item N of ...`-kæder.
 - **REPL (v0.13/C09):** `_run_repl()` i nova_cli.py — én persistent `Interp`;
   'done'-familie-parsefejl fortsætter bufferingen (`_is_open_block_error`), andre
   fejl rapporteres og rydder buffer. Linjer der IKKE kan parse som sætning men SOM
