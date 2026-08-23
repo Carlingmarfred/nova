@@ -1,8 +1,9 @@
 # Nova — Project Notes
 
-> **Status v0.13-bootstrap:** G0-gaten LUKKET; G1 i gang. B05/B01/B02 + C01/C02/B04
-> + C03/C05 + B03+C06+C07+C08 stdlib v0 + docs-audit + C09 REPL gennemført;
-> 199/199 end-to-end tests grønne (`python tests/run_tests.py`). Se changelog i §5.
+> **Status v0.14-bootstrap:** G0-gaten LUKKET; G1 i gang. B05/B01/B02 + C01/C02/B04
+> + C03/C05/C09 + B03+C06+C07+C08 stdlib v0 + docs-audit + C13 hukommelses-udsnit
+> gennemført; 211/211 end-to-end tests grønne (`python tests/run_tests.py`).
+> Se changelog i §5.
 
 ## 1. Context & Goals
 

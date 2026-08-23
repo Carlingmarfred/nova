@@ -20,7 +20,7 @@ from nova_interpreter import (Interp, NovaError, ExitSignal, NothingSignal,  # n
                               nova_str)
 from nova_dump import dump_program  # noqa: E402
 
-VERSION = "0.13.0-bootstrap"
+VERSION = "0.14.0-bootstrap"
 
 
 def _utf8():

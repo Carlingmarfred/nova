@@ -38,7 +38,7 @@ python bootstrap/nova_cli.py parse examples/todo.nova       # AST dump
 
 ## Current state (update this date when it changes)
 
-- v0.13-bootstrap (G0 lukket; G1 i gang): Python interpreter, **199/199** tests green,
+- v0.14-bootstrap (G0 lukket; G1 i gang): Python interpreter, **211/211** tests green,
   guessing_game + todo done.
 - Done 2026-08-22: B05 golden dumps · B01 error audit · B02 reserved words ·
   C01 shorthand skin · C02 equivalence pairs · B04 unary minus.
@@ -47,5 +47,6 @@ python bootstrap/nova_cli.py parse examples/todo.nova       # AST dump
   cirkulær-fejl; golden 19; par7) · B03+C06+C07+C08 stdlib v0 (use binder ægte
   BuiltinFunction-moduler: json/file/random/time/math/text/list; 191 tests).
 - Next up per plan §7: C09 REPL → E00+E01 toolchain+CI (P0) → D01/D05/D06.
+- Udenfor §7 (bruger-prioriteret): C13 memory-model bootstrap-udsnit ✅ 2026-08-23.
 - Golden dumps: after BEVIDSTE grammar/format changes run
   `python tests/run_tests.py --update-goldens` and review the diff.
