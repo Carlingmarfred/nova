@@ -595,6 +595,62 @@ def test_modules(tmp):
           and "ModuleCall" in p.stdout, f"rc={p.returncode} out={p.stdout[:120]!r}")
 
 
+def test_stdlib(tmp):
+    """B03: use binder ægte stdlib-navnerum (json/file/random/time/math).
+    C06-C07-C08 udvider tabellen i specs/standard_library.md §0a."""
+    ok_cases = [
+        ("json-roundtrip",
+         'use the standard json library\n'
+         's is json.stringify([1, "a"])\n'
+         'v is json.parse(s)\n'
+         'say "{item 2 of v} {the length of v}"', "", "a 2"),
+        ("random-between",
+         'use the standard random library\nx is random.between(5, 5)\nsay "{x}"',
+         "", "5"),
+        ("random-pick",
+         'use the standard random library\nxs is [7]\nif random.pick(xs) is 7 then say "pick ok"',
+         "", "pick ok"),
+        ("math-sqrt",
+         'use the standard math library\nsay "{math.sqrt(9)}"', "", "3"),
+        ("time-now",
+         'use the standard time library\nif time.now() is greater than 0 then say "tikker"',
+         "", "tikker"),
+        ("file-write-read-exists",
+         'use the standard file library\n'
+         'file.write("stdlib-hilsen.txt", "hej fra fil")\n'
+         'say file.read("stdlib-hilsen.txt")\n'
+         'if file.exists("stdlib-hilsen.txt") then say "findes"', "",
+         "hej fra fil\nfindes"),
+        ("double-use-idempotent",
+         'use the standard json library\nuse standard json\n'
+         'say "{json.stringify(42)}"', "", "42"),
+        ("catchable-error",
+         'use the standard json library\n'
+         'try\n    v is json.parse("{ike gyldig")\n'
+         'if it fails as err\n    say "fanget: {err}"\ndone', "", "fanget:"),
+    ]
+    for name, src, stdin, expect in ok_cases:
+        p = nova(["run", prog(src, tmp)], stdin=stdin, cwd=tmp)
+        check(f"stdlib/{name}",
+              p.returncode == 0 and expect in p.stdout,
+              f"rc={p.returncode} out={p.stdout!r} err={p.stderr[:200]!r}")
+
+    err_cases = [
+        ("unknown-lib", "use the standard turbo library",
+         ["ukendt standardbibliotek 'turbo'", "file, json, math, random, time"]),
+        ("bad-use-form", "use magic stuff",
+         ["ukendt 'use'-form", "use the standard <navn> library"]),
+        ("missing-func", "use the standard json library\nsay \"{json.mangle(1)}\"",
+         ["har ikke funktionen 'mangle'"]),
+    ]
+    for name, src, fragments in err_cases:
+        p = nova(["run", prog(src, tmp)], cwd=tmp)
+        ok = (p.returncode == 1
+              and all(fr in p.stderr for fr in fragments)
+              and "Traceback" not in p.stderr)
+        check(f"stdlib/{name}", ok, f"rc={p.returncode} err={p.stderr[:220]!r}")
+
+
 # ------------------------------------------------------------ examples
 
 def test_guessing_game():
@@ -662,6 +718,7 @@ def main():
         test_shorthand(tmp)
         test_optional(tmp)
         test_modules(tmp)
+        test_stdlib(tmp)
         test_guessing_game()
         test_todo_app()
     finally:

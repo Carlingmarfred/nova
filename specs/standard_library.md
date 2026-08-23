@@ -2,6 +2,40 @@
 
 Princip: **Python-paritet først** — hver Python-modulekategori har et Nova-modsvar, native implementeret. Derefter Java-agtig enterprise-struktur og C-agtig kontrol.
 
+## 0a. Bootstrap-udsnit (v0.12+, items B03 + C06 + C07 + C08) — B03 IMPLEMENTERET (json/file/random/time/math); text/list + C08-udvidelser følger
+
+`use` binder et ÆGTE navnerums-modul (samme maskineri som C05-moduler):
+
+```text
+use the standard json library      # eller: use standard json
+say "{json.stringify([1, 2])}"     # navnerums-kald med parenteser
+say "{math.PI}"                    # konstanter læses som felt
+```
+
+Regler:
+
+1. Formen er `use [the] standard NAVN [library]`. Anden form = venlig fejl der
+   viser den rigtige ordlyd. Ukendt NAVN = fejl der lister de tilgængelige.
+2. NAVN bliver en almindelig variabel (modul-værdi) — funktioner kaldes
+   `NAVN.funktion(arg, ...)`, konstanter læses `NAVN.KONST`. Gen-brug af samme
+   bibliotek to gange giver samme instans (ingen dobbelt-init).
+3. Fejl i biblioteks-funktioner er almindelige fangbare NovaErrors med linjetal.
+4. Bibliotekerne (bootstrap v0):
+
+| Bibliotek | Indhold v0 | Item |
+|---|---|---|
+| `json` | `parse(text)`, `stringify(v)` | B03 |
+| `file` | `read(sti)`, `exists(sti)`, `write(sti, tekst)` | B03 |
+| `random` | `between(a, b)`, `pick(liste)`, `shuffle(liste)` (kopi) | B03+C08 |
+| `time` | `now()` (sekunder), `sleep(sekunder)` | B03+C08 |
+| `math` | `sqrt`, `round`, `abs`, `floor`, `ceil`, `pow(b, e)` + konstant `PI` | B03+C08 |
+| `text` | `upper`, `lower`, `trim`, `split(s, sep)`, `join(liste, sep)`, `replace(s, fra, til)`, `length(s)`, `contains(s, sub)`, `at(s, n)` (1-baseret), `slice(s, fra, til)` (1-baseret, inklusiv) | C06 |
+| `list` | `sort(liste)`, `reverse(liste)`, `min(liste)`, `max(liste)`, `keys(objekt)`, `values(objekt)` | C07 |
+
+Ikke i bootstrap-udsnittet: `map/filter/fold` (kræver lambdas → C10/T2),
+regex/net/http/database og alt andet på M2+ — `use` af ukendt bibliotek fejler
+venligt i stedet for at lyve.
+
 ## 0. Paritetstabel (Python → Nova)
 
 | Python | Nova | Status |

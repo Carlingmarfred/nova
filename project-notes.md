@@ -100,6 +100,14 @@ done
   NumVal hele aritmikken (`nv x? plus 1` blev `NumVal(x plus 1)`), `?`-giften når
   aldrig konverteringen, og `"5" * 2` inde i frasen gav `"55"`. Samme princip som
   `between A and B` / `item N of`. For numeriske X er resultatet uændret.
+- **Stdlib (v0.12/B03):** `use [the] standard NAVN [library]` → `_stdlib_name()`
+  validerer formen; binder NAVN (lavere case) til ModuleInstance fra
+  `STDLIB_FACTORIES` (cache i `Interp._stdlib` — dobbelt-use = samme instans).
+  `BuiltinFunction(name, params, fn)` kaldes via ModuleCall-vejen med arity-tjek;
+  fejl = almindelige fangbare NovaErrors med linje. Navnet efter `.` er
+  attribut-adgang og reserver-checks IKKE (file.write virker; B02's 11
+  bindingssteder uændrede). C06/C07/C08 udvider STDLIB_FACTORIES + test-
+  fragmentet for ukendt-lib-listen.
 - **Moduler (v0.12/C05):** `p_usemodule()` kræver navn der ender på `-module`
   (entydigt vs. `[the] NAVN is ...`-deklarationer — `the save-file is "x"` rammer
   IKKE branchen, fordi ahead(2) er "is" ikke "in"). Postfix: DOT + WORD + LPAREN

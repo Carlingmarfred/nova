@@ -996,7 +996,15 @@ class Parser:
         while True:
             if self.at_kind("DOT"):
                 dot_t = self.next()
-                name = self.expect_name("feltnavn efter '.'")
+                # navn efter '.' er attribut-adgang, IKKE en binding — de
+                # reserverede ord gælder derfor ikke her (fx file.write)
+                name_t = self.peek()
+                if name_t.kind != "WORD":
+                    raise NovaParseError(name_t.line,
+                                         f"forventede et navn efter '.', fandt "
+                                         f"'{name_t.value}'", name_t.col)
+                self.next()
+                name = name_t.value
                 if self.peek().kind == "LPAREN":
                     # C05: navn.funktion(...) = modul-kald (kun på en bar variabel)
                     if not isinstance(e, Var):

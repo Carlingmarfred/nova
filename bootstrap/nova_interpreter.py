@@ -3,6 +3,7 @@
 import copy
 import difflib
 import json as _json
+import math as _math
 import os
 import random as _random
 import sys
@@ -85,6 +86,16 @@ class ModuleInstance:
         self.scope = Scope()  # parent=None: fuldstændig isolation fra hovedprogrammet
 
 
+class BuiltinFunction:
+    """B03: stdlib-funktion implementeret i Python — kaldes via ModuleCall."""
+    __slots__ = ("name", "params", "fn")
+
+    def __init__(self, name, params, fn):
+        self.name = name
+        self.params = params  # parameternavne (til arity-fejl)
+        self.fn = fn          # fn(args, line) -> værdi
+
+
 class Scope:
     __slots__ = ("vars", "parent")
 
@@ -157,6 +168,136 @@ def to_plain(v):
     return v
 
 
+# ---------------- standardbiblioteker (B03; udvides af C06/C07/C08) ----------------
+# Hvert bibliotek er en almindelig ModuleInstance — samme kaldsmaskineri som
+# C05-moduler (specs/standard_library.md §0a).
+
+def _read_text_file(path, line):
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return f.read()
+    except FileNotFoundError:
+        raise NovaError(line, f"'{path}' findes ikke")
+    except IsADirectoryError:
+        raise NovaError(line, f"'{path}' er en mappe, ikke en fil")
+    except UnicodeDecodeError:
+        raise NovaError(line, f"'{path}' er ikke en UTF-8-tekstfil")
+    except OSError as err:
+        raise NovaError(line, f"kan ikke læse '{path}': {err}")
+
+
+def _bi_json_parse(args, line):
+    v = args[0]
+    if not isinstance(v, str):
+        raise NovaError(line, "'json.parse' kræver tekst — giv den en streng med json i")
+    try:
+        return _json.loads(v)
+    except _json.JSONDecodeError as err:
+        raise NovaError(line, f"ugyldig json (linje {err.lineno}) — tjek teksten, "
+                              "eller fang fejlen med 'try ... if it fails'")
+
+
+def _bi_json_stringify(args, line):
+    return _json.dumps(to_plain(args[0]), ensure_ascii=False)
+
+
+def _bi_file_read(args, line):
+    return _read_text_file(nova_str(args[0]), line)
+
+
+def _bi_file_exists(args, line):
+    return os.path.exists(nova_str(args[0]))
+
+
+def _bi_file_write(args, line):
+    path = nova_str(args[0])
+    text = args[1]
+    if not isinstance(text, str):
+        raise NovaError(line, "'file.write' kræver tekst som indhold")
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(text)
+    except OSError as err:
+        raise NovaError(line, f"kan ikke skrive til '{path}': {err}")
+    return NOTHING
+
+
+def _bi_random_between(args, line):
+    a, b = args
+    if not (_is_num(a) and _is_num(b)):
+        raise NovaError(line, "'random.between' kræver to tal")
+    return _random.randint(int(a), int(b))
+
+
+def _bi_random_pick(args, line):
+    xs = args[0]
+    if not isinstance(xs, list) or not xs:
+        raise NovaError(line, "'random.pick' kræver en ikke-tom liste")
+    return _random.choice(xs)
+
+
+def _bi_time_now(args, line):
+    return time.time()
+
+
+def _bi_math_sqrt(args, line):
+    n = args[0]
+    if not _is_num(n) or n < 0:
+        raise NovaError(line, "'math.sqrt' kræver et tal der er 0 eller større")
+    return _math.sqrt(n)
+
+
+def _bi_math_round(args, line):
+    n = args[0]
+    if not _is_num(n):
+        raise NovaError(line, "'math.round' kræver et tal")
+    return int(round(n))
+
+
+def _make_json_lib():
+    m = ModuleInstance("json", "(standardbibliotek)")
+    m.funcs["parse"] = BuiltinFunction("parse", ["text"], _bi_json_parse)
+    m.funcs["stringify"] = BuiltinFunction("stringify", ["værdi"], _bi_json_stringify)
+    return m
+
+
+def _make_file_lib():
+    m = ModuleInstance("file", "(standardbibliotek)")
+    m.funcs["read"] = BuiltinFunction("read", ["sti"], _bi_file_read)
+    m.funcs["exists"] = BuiltinFunction("exists", ["sti"], _bi_file_exists)
+    m.funcs["write"] = BuiltinFunction("write", ["sti", "tekst"], _bi_file_write)
+    return m
+
+
+def _make_random_lib():
+    m = ModuleInstance("random", "(standardbibliotek)")
+    m.funcs["between"] = BuiltinFunction("between", ["fra", "til"], _bi_random_between)
+    m.funcs["pick"] = BuiltinFunction("pick", ["liste"], _bi_random_pick)
+    return m
+
+
+def _make_time_lib():
+    m = ModuleInstance("time", "(standardbibliotek)")
+    m.funcs["now"] = BuiltinFunction("now", [], _bi_time_now)
+    return m
+
+
+def _make_math_lib():
+    m = ModuleInstance("math", "(standardbibliotek)")
+    m.funcs["sqrt"] = BuiltinFunction("sqrt", ["tal"], _bi_math_sqrt)
+    m.funcs["round"] = BuiltinFunction("round", ["tal"], _bi_math_round)
+    return m
+
+
+STDLIB_FACTORIES = {
+    "json": _make_json_lib,
+    "file": _make_file_lib,
+    "random": _make_random_lib,
+    "time": _make_time_lib,
+    "math": _make_math_lib,
+}
+
+
 class Interp:
     def __init__(self, seed=None, stdin=None, stdout=None, root_dir=None):
         self.globals = Scope()
@@ -169,6 +310,7 @@ class Interp:
         self._ensure_frames = []  # stack af [(expr, line)] — udskydes til funktionsafslutning
         self._modules = {}        # abspath -> ModuleInstance (C05: idempotent import)
         self._import_stack = []   # [(abspath, filnavn)] — cirkulær import-detektion
+        self._stdlib = {}         # navn -> ModuleInstance (B03: use standard X)
         self._cur_dir = root_dir if root_dir else os.getcwd()  # relativ import-basis
         if seed is not None:
             _random.seed(seed)
@@ -381,6 +523,10 @@ class Interp:
             time.sleep(float(amt) * mult)
             return
         if t == "UseLib":
+            name = self._stdlib_name(st)
+            if name not in self._stdlib:
+                self._stdlib[name] = STDLIB_FACTORIES[name]()
+            scope.set(name, self._stdlib[name])
             return
         if t == "UseModule":
             inst = self._load_module(st.path, st.name, st.line)
@@ -445,6 +591,26 @@ class Interp:
         if t == "WhenProgramStarts":
             return  # køres til sidst af run()
         raise NovaError(getattr(st, "line", 0), f"ukendt statement {t}")
+
+    def _stdlib_name(self, st):
+        """B03: 'use [the] standard NAVN [library]' → NAVN, med venlige fejl."""
+        ws = st.text.lower().split()
+        if ws and ws[0] == "the":
+            ws = ws[1:]
+        if not ws or ws.pop(0) != "standard":
+            raise NovaError(st.line, f"ukendt 'use'-form: '{st.text}' — skriv: "
+                                     "use the standard <navn> library")
+        if ws and ws[-1] == "library":
+            ws = ws[:-1]
+        if len(ws) != 1:
+            raise NovaError(st.line, f"ukendt 'use'-form: '{st.text}' — skriv: "
+                                     "use the standard <navn> library")
+        name = ws[0]
+        if name not in STDLIB_FACTORIES:
+            raise NovaError(st.line, f"ukendt standardbibliotek '{name}' — "
+                                     f"tilgængelige biblioteker: "
+                                     f"{', '.join(sorted(STDLIB_FACTORIES))}")
+        return name
 
     def _load_module(self, path_src, bind_name, line):
         """C05: indlæs (eller genbrug) et modul. Cirkulær import = venlig fejl."""
@@ -605,8 +771,14 @@ class Interp:
                 raise NovaError(e.line, f"modulet '{base.path}' har ikke funktionen "
                                         f"'{e.name}'{_suggest(e.name, base.funcs.keys())}"
                                         f" — kald: {e.mod}.{e.name}(...)")
-            return self._invoke(fn, [self.eval(a, scope) for a in e.args], e.line,
-                                parent=base.scope)
+            args = [self.eval(a, scope) for a in e.args]
+            if isinstance(fn, BuiltinFunction):
+                if len(args) != len(fn.params):
+                    raise NovaError(e.line, f"'{e.mod}.{fn.name}' forventer "
+                                            f"{len(fn.params)} argument(er), fik {len(args)}"
+                                            f" — kald: {e.mod}.{fn.name}({', '.join(fn.params)})")
+                return fn.fn(args, e.line)
+            return self._invoke(fn, args, e.line, parent=base.scope)
         if t == "NewThing":
             return self.new_thing(e, scope)
         if t == "AskE":
