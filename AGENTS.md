@@ -49,13 +49,14 @@ python bootstrap/nova_cli.py repl                           # interactive REPL
 
 ## Current state (update this date when it changes)
 
-- v0.15-bootstrap (G0 closed; G1 in progress): Python interpreter, **223/223**
-  tests green, guessing_game + todo done. Diagnostics fully English.
+- v0.15.1-bootstrap (G0 closed; G1 in progress): Python interpreter, **234/234**
+  tests green, guessing_game + todo done. Public repo:
+  **https://github.com/Carlingmarfred/nova** (Apache-2.0, CI green on windows+ubuntu). Diagnostics fully English.
 - Done 2026-08-22: B05 golden dumps · B01 error audit · B02 reserved words ·
   C01 shorthand skin · C02 equivalence pairs · B04 unary minus.
 - Done 2026-08-23: C03 Optional (`?`) · C05 modules · B03+C06+C07+C08 stdlib v0 ·
   C09 REPL · C13 memory-model cut · docs-audit · i18n-to-English · semantic-equality
   pinning · mod-zero guard · factor-level phrase binding.
-- Next up per plan §7: E00+E01 toolchain+CI (E00 done → E01 next) → D01/D05/D06.
+- E00 ✅ + E01 ✅ (CI green). Next up per plan §7: D01/D05/D06 credibility pack, then C04/C10.
 - Golden dumps: after BEVIDSTE grammar/format changes run
   `python tests/run_tests.py --update-goldens` and review the diff.
