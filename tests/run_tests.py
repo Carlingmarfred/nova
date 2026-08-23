@@ -57,7 +57,7 @@ def test_cli(tmp):
     with open(bad, "w", encoding="utf-8") as f:
         f.write("say )(\n")
     p = nova(["run", bad])
-    check("cli/syntax-error", p.returncode == 1 and "linje" in p.stderr,
+    check("cli/syntax-error", p.returncode == 1 and "line" in p.stderr,
           f"rc={p.returncode} err={p.stderr!r}")
 
     p = nova(["fisk"])
@@ -306,43 +306,43 @@ def test_error_catalog(tmp):
     """B01: alle fejl = sætning + fix-hint; aldrig rå Python-exceptions."""
     # (navn, kilde, stdin, påkrævede fragmenter i stderr)
     cases = [
-        ("unknown-var", 'say "{navn}"', "", ["findes ikke", "erklær"]),
-        ("unknown-var-suggest", "tries is 0\nsay \"{trie}\"", "", ["mente du 'tries'"]),
-        ("unknown-func", 'bake with 1', "", ["findes ikke", "'to"]),
+        ("unknown-var", 'say "{navn}"', "", ["does not exist", "declare"]),
+        ("unknown-var-suggest", "tries is 0\nsay \"{trie}\"", "", ["did you mean 'tries'"]),
+        ("unknown-func", 'bake with 1', "", ["does not exist", "'to"]),
         ("unknown-func-suggest",
          'to greet with name\n    say "{name}"\ndone\ngreat with "x"', "",
-         ["mente du 'greet'"]),
-        ("arg-count", 'to f with x\n    say "{x}"\ndone\nf()', "", ["forventer 1", "fik 0"]),
-        ("div-zero", 'say "{1 divided by 0}"', "", ["division med nul", "nævneren"]),
-        ("type-mismatch", 'say "{1 + \\"a\\"}"', "", ["lægge", "to tal eller to tekster"]),
-        ("item-bounds", 'xs is [1]\nsay "{item 5 of xs}"', "", ["findes ikke", "gyldige numre"]),
+         ["did you mean 'greet'"]),
+        ("arg-count", 'to f with x\n    say "{x}"\ndone\nf()', "", ["expects 1", "got 0"]),
+        ("div-zero", 'say "{1 divided by 0}"', "", ["division by zero", "denominator"]),
+        ("type-mismatch", 'say "{1 + \\"a\\"}"', "", ["add", "two numbers or two texts"]),
+        ("item-bounds", 'xs is [1]\nsay "{item 5 of xs}"', "", ["does not exist", "valid numbers"]),
         ("field-missing",
          'a T is a thing with\n    a text\ndone\nx is a new T\nsay "{the txt of x}"', "",
-         ["har ikke feltet", "gyldige felter", "text"]),
-        ("not-bool-condition", 'if 5 then say "ja"', "", ["true eller false", "sammenligning"]),
+         ["has no field", "valid fields", "text"]),
+        ("not-bool-condition", 'if 5 then say "ja"', "", ["true or false", "comparisons"]),
         ("contract-requires",
          'to f with n\n    requires n is at least 5\ndone\nf with 2', "",
-         ["requires-kontrakt fejlede", "var ikke sand"]),
+         ["requires contract failed", "was not true"]),
         ("contract-ensures",
          'to f with n\n    ensures n is at least 10\ndone\nf with 2', "",
-         ["ensures-kontrakt fejlede", "garantien"]),
-        ("lexer-unterminated", 'say "ups', "", ["uafsluttet streng", "anførselstegn"]),
-        ("lexer-newline-in-string", 'say "ups\n"', "", ["nylinje inde i streng"]),
-        ("lexer-bad-char", "x @ y", "", ["tegnet '@' er ikke gyldigt", "tastefejl"]),
-        ("parse-missing-done", "repeat 2 times\n    say \"hei\"", "", ["mangler 'done'"]),
-        ("parse-eol", 'x is 5 plus plus 3', "", ["forventede linjeslut", "én sætning pr. linje"]),
-        ("parse-expect-word", "if x is 1 than say \"ja\"", "", ["forventede 'then'", "ordlyden"]),
-        ("io-missing-file", 'raw is the contents of "findes_ikke.txt"', "", ["findes ikke"]),
+         ["ensures contract failed", "guarantee"]),
+        ("lexer-unterminated", 'say "ups', "", ["unterminated string", "quote"]),
+        ("lexer-newline-in-string", 'say "ups\n"', "", ["newline inside a string"]),
+        ("lexer-bad-char", "x @ y", "", ["the character '@' is not valid", 'typos']),
+        ("parse-missing-done", "repeat 2 times\n    say \"hei\"", "", ["missing 'done'"]),
+        ("parse-eol", 'x is 5 plus plus 3', "", ["expected end of line", "one sentence per line"]),
+        ("parse-expect-word", "if x is 1 than say \"ja\"", "", ["expected 'then'", "wording"]),
+        ("io-missing-file", 'raw is the contents of "findes_ikke.txt"', "", ["does not exist"]),
         ("undo-empty", "track x\nx is 1\nundo the last change to x\nundo the last change to x", "",
-         ["ingen ændringer at undo"]),
+         ["no changes to undo"]),
     ]
     for name, src, stdin, fragments in cases:
         p = nova(["run", prog(src, tmp)], stdin=stdin, cwd=tmp)
         ok = (p.returncode == 1
               and all(fr in p.stderr for fr in fragments)
               and "Traceback" not in p.stderr
-              and "linje" in p.stderr
-              and p.stderr.lstrip().startswith(("Lexer-fejl", "Parser-fejl", "Nova-fejl")))
+              and "line" in p.stderr
+              and p.stderr.lstrip().startswith(("Lexer error", "Parser error", "Nova error")))
         check(f"error/{name}", ok, f"rc={p.returncode} err={p.stderr[:220]!r}")
 
     # exit-koder: parse-fejl ≠ runtime-fejl ≠ CLI-brugsfejl
@@ -372,8 +372,8 @@ def test_reserved_words(tmp):
     for name, src in bad:
         p = nova(["run", prog(src, tmp)], cwd=tmp)
         ok = (p.returncode == 1
-              and "reserveret ord" in p.stderr
-              and "vælg et andet navn" in p.stderr
+              and "reserved word" in p.stderr
+              and "choose a different name" in p.stderr
               and "Traceback" not in p.stderr)
         check(f"reserved/{name}", ok, f"rc={p.returncode} err={p.stderr[:160]!r}")
 
@@ -490,16 +490,16 @@ def test_optional(tmp):
     # uden ? : samme udtryk giver venlig sætning + fix-hint (aldrig crash)
     fail_cases = [
         ("unguarded-arith", 'answer is "abc"\nn is the number value of answer plus 1',
-         ["kan ikke regne med 'nothing'", "'?'"]),
+         ["cannot do arithmetic on 'nothing'", "'?'"]),
         ("unguarded-field", 'maybe is nothing\nsay "{the text of maybe}"',
-         ["fra nothing", "'?'"]),
+         ["of nothing", "'?'"]),
     ]
     for name, src, fragments in fail_cases:
         p = nova(["run", prog(src, tmp)], cwd=tmp)
         ok = (p.returncode == 1
               and all(fr in p.stderr for fr in fragments)
               and "Traceback" not in p.stderr
-              and "linje" in p.stderr)
+              and "line" in p.stderr)
         check(f"optional/{name}", ok, f"rc={p.returncode} err={p.stderr[:220]!r}")
 
 
@@ -562,19 +562,19 @@ def test_modules(tmp):
     err_cases = [
         ("circular", None,
          'the a-module in "a-module.nova"',
-         ["cirkulær import", "a-module.nova"]),
+         ["circular import", "a-module.nova"]),
         ("missing-file", None,
          'the ghost-module in "ghost-module.nova"',
-         ["ghost-module.nova", "findes ikke"]),
+         ["ghost-module.nova", "not found"]),
         ("mains-forbidden", [("bad-module.nova", "when the program starts\n    say \"x\"\ndone\n")],
          'the bad-module in "bad-module.nova"',
-         ["modul", "when the program starts"]),
+         ["a module must not contain", "when the program starts"]),
         ("unknown-member", None,
          'the tools-module in "tools-module.nova"\nsay "{tools-module.twice(1, 2)}"',
-         ["forventer 1", "fik 2"]),
+         ["expects 1", "got 2"]),
         ("non-module-call", None,
          'n is 5\nsay "{n.foo()}"',
-         ["ikke et modul", "the n-module"]),
+         ["is not a module", "the n-module"]),
         ("bad-module-name", None,
          'the tools in "tools-module.nova"',
          ["'-module'", "tools.nova"]),
@@ -587,7 +587,7 @@ def test_modules(tmp):
         ok = (p.returncode == 1
               and all(fr in p.stderr for fr in fragments)
               and "Traceback" not in p.stderr
-              and "linje" in p.stderr)
+              and "line" in p.stderr)
         check(f"module/{name}", ok, f"rc={p.returncode} err={p.stderr[:220]!r}")
 
     # parse-dump: import-sætning og modulkald i golden-korpusset (19-modules)
@@ -694,30 +694,30 @@ def test_stdlib(tmp):
 
     err_cases = [
         ("unknown-lib", "use the standard turbo library",
-         ["ukendt standardbibliotek 'turbo'", "file, json, list, math, random, text, time"]),
+         ["unknown standard library 'turbo'", "file, json, list, math, random, text, time"]),
         ("bad-use-form", "use magic stuff",
-         ["ukendt 'use'-form", "use the standard <navn> library"]),
+         ["unknown 'use' form", "use the standard <name> library"]),
         ("missing-func", "use the standard json library\nsay \"{json.mangle(1)}\"",
-         ["har ikke funktionen 'mangle'"]),
+         ["has no function 'mangle'"]),
         # --- C06: tekst-fejl ---
         ("text-at-bounds", "use the standard text library\nsay \"{text.at('abc', 9)}\"",
-         ["plads 9 findes ikke", "gyldige pladser er 1 til 3"]),
+         ["position 9 does not exist", "valid positions are 1 to 3"]),
         ("text-slice-bounds", "use the standard text library\nsay \"{text.slice('abc', 2, 9)}\"",
-         ["gyldige slutværdier er 1 til 3"]),
+         ["valid end values are 1 to 3"]),
         ("text-type-error", "use the standard text library\nsay \"{text.upper(5)}\"",
-         ["kræver tekst"]),
+         ["requires text"]),
         # --- C07: liste-fejl ---
         ("list-sort-mixed", 'use the standard list library\nsay "{list.sort([1, \\"a\\"])}"',
-         ["blande typer", "tal eller tekst"]),
+         ["cannot mix types", "numbers OR text"]),
         ("list-min-empty", "use the standard list library\nsay \"{list.min([])}\"",
-         ["ikke-tom liste"]),
+         ["non-empty list"]),
         ("list-keys-nondict", "use the standard list library\nsay \"{list.keys([1])}\"",
-         ["kræver en databog", "json.parse"]),
+         ["requires a dictionary", "json.parse"]),
         # --- C08: fejl ---
         ("math-abs-nonnum", "use the standard math library\nsay \"{math.abs('x')}\"",
-         ["'math.abs' kræver et tal"]),
+         ["'math.abs' requires a number"]),
         ("time-sleep-negative", "use the standard time library\ntime.sleep(0 - 1)",
-         ["kan ikke sove et negativt antal"]),
+         ["negative number of seconds"]),
     ]
     for name, src, fragments in err_cases:
         p = nova(["run", prog(src, tmp)], cwd=tmp)
@@ -775,14 +775,14 @@ def test_repl(tmp):
     # :undo på tom stak = venlig besked; :help og ukendt kommando
     p = repl(":undo\n:fisk\n:help\n:quit\n")
     check("repl/meta-errors",
-          p.returncode == 0 and "ingenting at undo" in p.stdout
-          and ":help" in p.stdout and "ukendt kommando" in p.stdout.lower(),
+          p.returncode == 0 and "nothing to undo" in p.stdout
+          and ":help" in p.stdout and "unknown command" in p.stdout.lower(),
           f"rc={p.returncode} out={p.stdout!r}")
 
     # fejl dræber ikke sessionen
     p = repl('say "{navn}"\n7 minus 3\n:quit\n')
     check("repl/error-continues",
-          p.returncode == 0 and "findes ikke" in p.stdout and "→ 4" in p.stdout,
+          p.returncode == 0 and "does not exist" in p.stdout and "→ 4" in p.stdout,
           f"rc={p.returncode} out={p.stdout!r} err={p.stderr[:200]!r}")
 
     # EOF uden :quit afslutter pænt; seed giver determinisme
@@ -837,7 +837,7 @@ def test_memory(tmp):
     p = nova(["run", prog(
         'use the standard math library\nm is a copy of math', tmp)], cwd=tmp)
     check("memory/copy-module-error",
-          p.returncode == 1 and "ikke en værdi" in p.stderr
+          p.returncode == 1 and "not a value" in p.stderr
           and "Traceback" not in p.stderr,
           f"rc={p.returncode} err={p.stderr[:200]!r}")
 

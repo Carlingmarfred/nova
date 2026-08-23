@@ -3,12 +3,13 @@
 Regler (v0.1 bootstrap):
 - Statements afsluttes af newline (eller ';').
 - Multi-line if/repeat/check/to-blokke termineres med 'done'.
-- Inline-form: `if C then <stmt>` på én linje kræver ingen 'done'.
-- Feltadgang ALTID: `the <felt> of <objekt>` (kan kædes).
+- Inline form: `if C then <stmt>` on one line needs no 'done'.
+- Field access ALWAYS: `the <field> of <object>` (chainable).
 """
 
 from dataclasses import dataclass, is_dataclass, fields as dc_fields, replace as dc_replace
 from nova_lexer import lex, NovaLexError, Token
+from nova_messages import M
 
 
 # ---------------- AST: statements ----------------
@@ -108,7 +109,7 @@ class UseLib:
 
 @dataclass
 class UseModule:
-    """C05: `the X-module in "fil.nova"` — binder X-module til en modul-værdi."""
+    """C05: `the X-module in "file.nova"` — binds X-module to a module value."""
     name: str; path: str; line: int = 0
 
 @dataclass
@@ -181,7 +182,7 @@ class Call:
 
 @dataclass
 class ModuleCall:
-    """C05: modul.funktion(args) — navnerums-kald på en importeret modul-værdi."""
+    """C05: module.function(args) — namespace call on an imported module value."""
     mod: str; name: str; args: list; line: int = 0
 
 @dataclass
@@ -253,24 +254,24 @@ class AskE:
 
 @dataclass
 class QuestionE:
-    """OptionalGuard (C03): opstår KUN ved roden af et udtryk der bar en `?`.
-    Markere fjernes under parse; hele træet pakkes ét sted
+    """OptionalGuard (C03): appears ONLY at the root of an expression that carried a `?`.
+    Markers are removed at parse time; the whole tree is wrapped in exactly one place
     (specs/error_handling.md §2.1)."""
     e: object; line: int = 0
 
 
 class NovaParseError(Exception):
     def __init__(self, line, msg, col=None):
-        super().__init__(f"linje {line}: {msg}")
+        super().__init__(f"line {line}: {msg}")
         self.line = line
         self.col = col
         self.msg = msg
 
 
 # Reserverede ord i Natural-skinnen (specs/syntax/lexical.md §Reserverede ord).
-# Kun ord der gør programmet uparselbart — alt andet er frit.
+# Only words that would make a program unparseable — everything else is free.
 RESERVED_WORDS = frozenset({
-    # sætnings-startere
+    # sentence starters
     "say", "write", "if", "unless", "repeat", "stop", "skip", "go", "set",
     "add", "take", "remove", "check", "try", "to", "use", "wait", "pause",
     "track", "undo", "redo", "exit", "when", "requires", "ensures",
@@ -278,7 +279,7 @@ RESERVED_WORDS = frozenset({
     # struktur & konnektorer
     "then", "otherwise", "done", "is", "and", "or", "not",
     "the", "of", "in", "from", "with", "a", "an",
-    # værdier
+    # values
     "true", "false", "nothing", "none", "null",
     # indbyggede udtryks-hoveder
     "ask", "every", "everything", "item", "how", "many",
@@ -290,7 +291,7 @@ class Parser:
         self.toks = toks
         self.pos = 0
 
-    # ---- token-hjælpere ----
+    # ---- token helpers ----
     def peek(self, k=0):
         j = min(self.pos + k, len(self.toks) - 1)
         return self.toks[j]
@@ -320,8 +321,8 @@ class Parser:
     def expect_word(self, *words):
         if not self.at_word(*words):
             t = self.peek()
-            raise NovaParseError(t.line, f"forventede '{'/'.join(words)}' men fandt '{t.value}'"
-                                         " — tjek ordlyden i sætningen", t.col)
+            raise NovaParseError(t.line, M["parse.expected_word"].format(
+                wanted="/".join(words), found=t.value), t.col)
         return self.next().value.lower()
 
     def skip_newlines(self):
@@ -332,27 +333,24 @@ class Parser:
         return self.peek().kind in ("NEWLINE", "EOF")
 
     def expect_eol(self):
-        """Statement-slut: NEWLINE/EOF efterlades til blok-løkken."""
+        """Statement end: NEWLINE/EOF is left to the block loop."""
         if not self.at_eol():
             t = self.peek()
-            raise NovaParseError(t.line, f"uventet '{t.value}' — forventede linjeslut"
-                                         " (én sætning pr. linje)", t.col)
+            raise NovaParseError(t.line, M["parse.expected_eol"].format(found=t.value), t.col)
 
     def err(self, msg):
         t = self.peek()
         raise NovaParseError(t.line, msg, t.col)
 
-    def check_reserved(self, tok, what="navn"):
+    def check_reserved(self, tok, what="name"):
         if tok.kind == "WORD" and tok.value.lower() in RESERVED_WORDS:
-            raise NovaParseError(tok.line,
-                                 f"'{tok.value}' er et reserveret ord og kan ikke "
-                                 f"bruges som {what} — vælg et andet navn", tok.col)
+            raise NovaParseError(tok.line, M["reserved"].format(word=tok.value, what=what), tok.col)
 
-    def expect_name(self, what="navn"):
-        """Forvent et WORD-token og reserver-check det."""
+    def expect_name(self, what="name"):
+        """Expect a WORD token and reserved-check it."""
         t = self.peek()
         if t.kind != "WORD":
-            raise NovaParseError(t.line, f"forventede et {what}, fandt '{t.value}'", t.col)
+            raise NovaParseError(t.line, M["expected_name"].format(what=what, found=t.value), t.col)
         self.next()
         self.check_reserved(t, what)
         return t.value
@@ -370,9 +368,7 @@ class Parser:
     def parse_statement(self):
         t = self.peek()
         if t.kind != "WORD":
-            raise NovaParseError(t.line, f"uventet '{t.value}' — forventede en sætning "
-                                         "(fx: say ... / set ... to ... / repeat ...) "
-                                         "eller en erklæring som 'x is 5'", t.col)
+            raise NovaParseError(t.line, M["parse.unexpected_start"].format(found=t.value), t.col)
         w = t.value.lower()
 
         if w == "use":                                   return self.p_use()
@@ -470,7 +466,7 @@ class Parser:
             return Assign(Var(name_t.value, name_t.line), e, line=name_t.line)
         self.pos = save
 
-        # udtryks-sætning (funktionskald)
+        # expression statement (function call)
         e = self.parse_expr()
         self.expect_eol()
         return ExprStmt(e, line=t.line)
@@ -489,15 +485,13 @@ class Parser:
         if name_t.kind != "WORD" or not str(name_t.value).endswith("-module"):
             raise NovaParseError(
                 name_t.line,
-                f"et modul-navn skal ende på '-module' — fx: the tools-module in \"tools.nova\" "
-                f"(fandt '{name_t.value}')", name_t.col)
+                M["parse.module_name_rule"].format(found=name_t.value), name_t.col)
         self.next()
         self.expect_word("in")
         pt = self.peek()
         if pt.kind != "STRING":
             raise NovaParseError(
-                pt.line, f"forventede en fil-sti i anførselstegn efter 'in' — "
-                         f"fx: the {name_t.value} in \"{'tools.nova'}\"", pt.col)
+                pt.line, M["parse.module_path_expected"].format(name=name_t.value), pt.col)
         self.next()
         self.expect_eol()
         return UseModule(name_t.value, pt.value, line=t.line)
@@ -542,19 +536,19 @@ class Parser:
         if used_done:
             self.expect_word("done"); self.next()
         elif self.at_word("done"):
-            # tolerance: inline-kæde med ekstra done
+            # tolerance: inline chain with an extra done
             self.next()
         return If(branches, els, line=t.line)
 
     def p_body(self, stop_words):
-        """Efter then/otherwise: newline-blok (stop-ord påkrævet) eller inline."""
+        """After then/otherwise: newline block (stop word required) or inline."""
         if self.peek().kind == "NEWLINE":
             self.skip_newlines()
             stmts = []
             while True:
                 if self.peek().kind == "EOF":
-                    self.err(f"blokken mangler afslutning — forventede "
-                             f"'{'/'.join(sorted(stop_words))}'; hver blok afsluttes med 'done'")
+                    self.err(M["parse.block_unclosed"].format(
+                        stops="'/'.join(sorted(stop_words))"))
                 if self.peek().kind == "NEWLINE":
                     self.next(); continue
                 if self.at_word(*stop_words):
@@ -571,7 +565,7 @@ class Parser:
         stmts = []
         while True:
             if self.peek().kind == "EOF":
-                self.err("blokken mangler 'done' — hver blok afsluttes med sin egen done")
+                self.err(M["parse.block_missing_done"])
             if self.peek().kind == "NEWLINE":
                 self.next(); continue
             if self.at_word(*stop_words):
@@ -594,14 +588,14 @@ class Parser:
             return RepeatWhile(cond, body, t.line)
         if self.at_word("each", "for") and (self.at_word("each") or self.at_word_ahead(1, "each")):
             self.eat_word("for"); self.expect_word("each")
-            var = self.expect_name("løkkevariabel")
+            var = self.expect_name("loop variable")
             self.expect_word("in")
             it = self.parse_expr(); self.expect_eol()
             body = self.p_block({"done"}); self.expect_word("done"); self.next()
             return RepeatEach(var, it, body, t.line)
         if self.at_word("with"):
             self.next()
-            var = self.expect_name("løkkevariabel")
+            var = self.expect_name("loop variable")
             self.expect_word("from")
             a = self.parse_term_first_only()
             self.expect_word("to")
@@ -635,11 +629,10 @@ class Parser:
             node = self.parse_the_chain()
             if isinstance(node, (Field,)):
                 return node
-            self.err("'set' med 'the' kræver formen: the <felt> of <objekt> "
-                     "(fx: set the text of task to \"hej\")")
+            self.err(M["parse.set_the_form"])
         self.eat_word("my")
         if self.peek().kind != "WORD":
-            self.err(f"forventede et navn, fandt '{t.value}'")
+            self.err(M["parse.lvalue_name"].format(found=t.value))
         nt = self.next()
         self.check_reserved(nt, "variabelnavn")
         if self.at_word("of"):
@@ -649,12 +642,11 @@ class Parser:
         return Var(nt.value, nt.line)
 
     def parse_the_chain(self):
-        """the F of OBJ  (OBJ må selv være kæde)"""
+        """the F of OBJ  (OBJ may itself be a chain)"""
         t = self.peek()
         self.next()  # the
         if self.peek().kind != "WORD":
-            self.err(f"forventede et navn efter 'the', fandt '{t.value}' — "
-                     "fx: the text of task")
+            self.err(M["parse.expected_name_after_the"].format(found=t.value))
         head_t = self.next()
         w = head_t.value.lower()
         # indbyggede fraser
@@ -674,8 +666,8 @@ class Parser:
             return LastItem(self.parse_arith(), t.line)
         if w == "number" and self.at_word("value"):
             self.next(); self.expect_word("of")
-            # operand på factor-niveau: 'the number value of x? plus 1' skal
-            # parse som (nv x?) + 1 — ellers ligger '?'-giften udenom konverteringen
+            # operand at factor level: 'the number value of x? plus 1' must
+            # parse as (nv x?) + 1 — otherwise the '?' poison misses the conversion
             return NumVal(self.parse_factor(), t.line)
         if w == "length":
             self.eat_word("of")
@@ -704,7 +696,7 @@ class Parser:
         while True:
             if self.peek().kind in ("NEWLINE", "EOF"):
                 if self.peek().kind == "EOF":
-                    self.err("check mangler 'done' — afslut arm-listen med done")
+                    self.err(M["parse.check_missing_done"])
                 self.next(); continue
             if self.at_word("when"):
                 wt = self.next()
@@ -808,7 +800,7 @@ class Parser:
                 "ms": "milliseconds", "millisecond": "milliseconds",
                 "milliseconds": "milliseconds"}.get(unit_w)
         if unit is None:
-            self.err(f"ukendt tidsenhed '{unit_w}' (brug seconds/minutes/hours/milliseconds)")
+            self.err(M["parse.unknown_time_unit"].format(unit=unit_w))
         self.expect_eol()
         return WaitStmt(amount, unit, t.line)
 
@@ -1003,22 +995,21 @@ class Parser:
             if self.at_kind("DOT"):
                 dot_t = self.next()
                 # navn efter '.' er attribut-adgang, IKKE en binding — de
-                # reserverede ord gælder derfor ikke her (fx file.write)
+                # reserved words therefore do not apply here (e.g. file.write)
                 name_t = self.peek()
                 if name_t.kind != "WORD":
                     raise NovaParseError(name_t.line,
-                                         f"forventede et navn efter '.', fandt "
-                                         f"'{name_t.value}'", name_t.col)
+                                         M["expected_name"].format(
+                                             what="field name after '.'",
+                                             found=name_t.value), name_t.col)
                 self.next()
                 name = name_t.value
                 if self.peek().kind == "LPAREN":
-                    # C05: navn.funktion(...) = modul-kald (kun på en bar variabel)
+                    # C05: name.function(...) = module call (only on a bare variable)
                     if not isinstance(e, Var):
                         raise NovaParseError(
                             dot_t.line,
-                            "metodekald som .navn(...) kommer i en senere version — "
-                            "i denne version er punktum-kald kun til modulfunktioner: "
-                            "modul-navn.funktion(...)", dot_t.col)
+                            M["parse.method_call_later"], dot_t.col)
                     self.next()
                     args = []
                     if self.peek().kind != "RPAREN":
@@ -1027,7 +1018,7 @@ class Parser:
                             self.next()
                             args.append(self.parse_arith())
                     if self.peek().kind != "RPAREN":
-                        self.err("mangler ')'")
+                        self.err(M["parse.missing_rparen"])
                     self.next()
                     e = ModuleCall(e.name, name, args, dot_t.line)
                 else:
@@ -1050,7 +1041,7 @@ class Parser:
             self.next()
             e = self.parse_expr()
             if self.peek().kind != "RPAREN":
-                self.err("mangler ')'")
+                self.err(M["parse.missing_rparen"])
             self.next()
             return e
         if t.kind == "LBRACKET":
@@ -1061,11 +1052,11 @@ class Parser:
                 if self.peek().kind == "COMMA":
                     self.next()
                 elif self.peek().kind != "RBRACKET":
-                    self.err("forventede ',' eller ']' i liste")
+                    self.err(M["parse.list_sep"])
             self.next()
             return ListLit(items, t.line)
         if t.kind != "WORD":
-            self.err(f"uventet '{t.value}' i udtryk")
+            self.err(M["parse.unexpected_in_expr"].format(found=t.value))
 
         w = t.value.lower()
         if w == "true":  self.next(); return Lit(True, t.line)
@@ -1149,7 +1140,7 @@ class Parser:
     def parse_bare(self):
         t = self.peek()
         if t.kind != "WORD":
-            self.err(f"forventede et navn, fandt '{t.value}'")
+            self.err(M["expected_name"].format(what="name", found=t.value))
         nt = self.next()
         if self.peek().kind == "LPAREN":
             self.next()
@@ -1160,7 +1151,7 @@ class Parser:
                     self.next()
                     args.append(self.parse_arith())
             if self.peek().kind != "RPAREN":
-                self.err("mangler ')'")
+                self.err(M["parse.missing_rparen"])
             self.next()
             return Call(nt.value, args, nt.line)
         if self.at_word("with"):
@@ -1174,7 +1165,7 @@ class Parser:
 
 
 def _has_question(v):
-    """Indeholder træet/delen nogen QuestionE-marker?"""
+    """Does the tree/subtree contain any QuestionE markers?"""
     if isinstance(v, QuestionE):
         return True
     if is_dataclass(v):
@@ -1187,7 +1178,7 @@ def _has_question(v):
 
 
 def _strip_question(e):
-    """Fjern ALLE QuestionE-markere (bygger træet om uden dem)."""
+    """Strip ALL QuestionE markers (rebuilds the tree without them)."""
     if isinstance(e, QuestionE):
         return _strip_question(e.e)
     if not is_dataclass(e):
@@ -1216,8 +1207,8 @@ def _strip_question_value(v):
 
 
 def wrap_optional(e):
-    """C03 hele-udtryksgift: bar træet en `?`, fjernes markere og HELE træet
-    pakkes præcis ét sted (QuestionE ved roden). Uden `?` returneres uændret."""
+    """C03 whole-expression poisoning: if the tree carried a `?`, markers are stripped and the WHOLE tree
+    is wrapped in exactly one place (QuestionE at the root). Without `?` returned unchanged."""
     if not _has_question(e):
         return e
     stripped = _strip_question(e)

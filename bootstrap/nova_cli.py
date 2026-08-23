@@ -1,9 +1,9 @@
 """Nova bootstrap CLI.
 
 Brug:
-  python nova_cli.py run <fil.nova> [--seed N]
-  python nova_cli.py repl [--seed N]      (interaktiv session; :quit afslutter)
-  python nova_cli.py parse <fil.nova>     (AST-dump)
+  python nova_cli.py run <file.nova> [--seed N]
+  python nova_cli.py repl [--seed N]      (interactive session; :quit exits)
+  python nova_cli.py parse <file.nova>    (AST dump)
   python nova_cli.py version
 """
 
@@ -32,17 +32,17 @@ def _utf8():
 
 
 def _print_err(prefix, e):
-    loc = f"linje {e.line}"
+    loc = f"line {e.line}"
     col = getattr(e, "col", None)
     if col:
-        loc += f", kolonne {col}"
+        loc += f", column {col}"
     print(f"{prefix} — {loc}: {e.msg}", file=sys.stderr)
 
 
 # ----------------------------- REPL (C09) -----------------------------
 
 def _is_open_block_error(e):
-    """'done'-familien: blokken er stadig åben — REPL'en skal blive ved med at læse."""
+    "\"\"\"The 'done' family: the block is still open — the REPL keeps reading.\"\"\""
     return isinstance(e, NovaParseError) and "done" in e.msg
 
 
@@ -68,30 +68,30 @@ def _repl_eval_echo(interp, expr, undo_stack):
         val = interp.eval(expr, interp.globals)
         print("→ " + nova_str(val))
     except NovaError as e:
-        print(f"Nova-fejl — linje {e.line}: {e.msg}")
+        print(f"Nova error — line {e.line}: {e.msg}")
     except NothingSignal as ns:
-        print(f"Nova-fejl — linje {ns.line}: {ns.msg}")
+        print(f"Nova error — line {ns.line}: {ns.msg}")
     except ExitSignal:
-        print("(programmet blev stoppet)")
+        print("(the program was stopped)")
     except RecursionError:
-        print("Nova-fejl: uendelig rekursion?")
+        print("Nova error: infinite recursion?")
 
 
 def _repl_meta(text, interp, undo_stack):
-    """Håndtér en ':kommando'. Returnér 'quit' hvis sessionen skal ende."""
+    """Handle one ':command'. Return 'quit' if the session should end."""
     c = text[1:].strip().lower()
     name, _, rest = c.partition(" ")
     if name in ("quit", "q"):
         return "quit"
     if name == "help":
-        print(":ast <linje>  — vis AST-dump uden at køre koden")
-        print(":undo        — fortryd sidste kørt blok "
-              "(allerede udskrevet tekst og fil-I/O kan ikke rulles tilbage)")
-        print(":quit (:q)   — afslut REPL'en")
-        print(":help        — denne liste")
+        print(":ast <line>  — show the AST dump without running the code")
+        print(":undo        — revert the last executed block "
+              "(already printed output and file I/O cannot be rolled back)")
+        print(":quit (:q)   — exit the REPL")
+        print(":help        — this list")
     elif name == "ast":
         if not rest.strip():
-            print("brug: :ast <udtryk eller sætning>")
+            print("usage: :ast <expression or sentence>")
         else:
             try:
                 toks = lex(rest)
@@ -101,10 +101,10 @@ def _repl_meta(text, interp, undo_stack):
                     nodes = parse_source(rest)
                 print(dump_program(nodes))
             except (NovaLexError, NovaParseError) as e:
-                _print_err("Fejl", e)
+                _print_err("Error", e)
     elif name == "undo":
         if not undo_stack:
-            print("der er ingenting at undo — stakken er tom")
+            print("nothing to undo — the stack is empty")
         else:
             gvars, funcs, things = undo_stack.pop()
             interp.globals.vars = gvars
@@ -112,19 +112,19 @@ def _repl_meta(text, interp, undo_stack):
             interp.funcs.update(funcs)
             interp.things.clear()
             interp.things.update(things)
-            print("(fortrudt)")
+            print("(reverted)")
     else:
-        print(f"ukendt kommando '{text.strip()}' — prøv :help")
+        print(f"unknown command '{text.strip()}' — try :help")
     return None
 
 
 def _run_repl(seed):
-    """C09: persistent session på én Interp (specs i docs/ARCHITECTURE.md §10)."""
+    """C09: persistent session on one Interp (spec in docs/ARCHITECTURE.md section 10)."""
     interp = Interp(seed=seed)
     undo_stack = []
     buffer = []
-    print(f"Nova {VERSION} REPL — skriv Nova Natural; blokke afsluttes med 'done'.")
-    print("Meta-kommandoer: :ast <linje> · :undo · :quit · :help")
+    print(f"Nova {VERSION} REPL — write Nova Natural; blocks end with 'done'.")
+    print("Meta-commands: :ast <line> · :undo · :quit · :help")
     while True:
         try:
             line = input("..> " if buffer else ">>> ")
@@ -133,7 +133,7 @@ def _run_repl(seed):
             return 0
         except KeyboardInterrupt:
             print()
-            buffer = []  # annullér en påbegyndt blok i stedet for at dø
+            buffer = []  # cancel an open block instead of dying
             continue
         if line.strip().startswith(":") and not buffer:
             if _repl_meta(line, interp, undo_stack) == "quit":
@@ -145,17 +145,17 @@ def _run_repl(seed):
             stmts = parse_source(src)
         except NovaLexError as e:
             buffer = []
-            _print_err("Fejl", e)
+            _print_err("Error", e)
             continue
         except NovaParseError as e:
             if _is_open_block_error(e):
-                continue  # blok stadig åben — læs videre
+                continue  # block still open — keep reading
             expr = _try_parse_expr_only(src)  # fx '1 plus 2' → echo i stedet for fejl
             buffer = []
             if expr is not None:
                 _repl_eval_echo(interp, expr, undo_stack)
                 continue
-            _print_err("Fejl", e)
+            _print_err("Error", e)
             continue
         buffer = []
         if not stmts:
@@ -171,13 +171,13 @@ def _run_repl(seed):
                     undo_stack.pop(0)
                 interp.run(stmts)
         except NovaError as e:
-            print(f"Nova-fejl — linje {e.line}: {e.msg}")
+            print(f"Nova error — line {e.line}: {e.msg}")
         except NothingSignal as ns:
-            print(f"Nova-fejl — linje {ns.line}: {ns.msg}")
+            print(f"Nova error — line {ns.line}: {ns.msg}")
         except ExitSignal:
-            print("(programmet blev stoppet)")
+            print("(the program was stopped)")
         except RecursionError:
-            print("Nova-fejl: uendelig rekursion?")
+            print("Nova error: infinite recursion?")
 
 
 # ------------------------------ main ------------------------------
@@ -189,12 +189,12 @@ def main(argv):
     while "--seed" in args:
         i = args.index("--seed")
         if i + 1 >= len(args):
-            print("--seed kræver et heltal", file=sys.stderr)
+            print("--seed needs an integer", file=sys.stderr)
             return 2
         try:
             seed = int(args[i + 1])
         except ValueError:
-            print(f"ugyldigt --seed '{args[i + 1]}' — brug et heltal", file=sys.stderr)
+            print(f"invalid --seed '{args[i + 1]}' — use an integer", file=sys.stderr)
             return 2
         del args[i:i + 2]
 
@@ -219,16 +219,16 @@ def main(argv):
         with open(path, "r", encoding="utf-8") as f:
             src = f.read()
     except OSError as e:
-        print(f"Kan ikke læse {path}: {e}", file=sys.stderr)
+        print(f"Cannot read {path}: {e}", file=sys.stderr)
         return 2
 
     try:
         stmts = parse_source(src)
     except NovaLexError as e:
-        _print_err("Lexer-fejl", e)
+        _print_err("Lexer error", e)
         return 1
     except NovaParseError as e:
-        _print_err("Parser-fejl", e)
+        _print_err("Parser error", e)
         return 1
 
     if cmd == "parse":
@@ -241,13 +241,13 @@ def main(argv):
             interp.run(stmts)
             return 0
         except NovaError as e:
-            print(f"\nNova-fejl — linje {e.line}: {e.msg}", file=sys.stderr)
+            print(f"\nNova error — line {e.line}: {e.msg}", file=sys.stderr)
             return 1
         except NothingSignal as ns:
-            print(f"\nNova-fejl — linje {ns.line}: {ns.msg}", file=sys.stderr)
+            print(f"\nNova error — line {ns.line}: {ns.msg}", file=sys.stderr)
             return 1
-        except (NovaLexError, NovaParseError) as e:  # fx fejl i et modul under kørsel
-            _print_err("Fejl", e)
+        except (NovaLexError, NovaParseError) as e:  # e.g. errors inside a module at run time
+            _print_err("Error", e)
             return 1
         except ExitSignal:
             return 0
