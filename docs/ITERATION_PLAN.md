@@ -297,6 +297,7 @@ CSV reading (blocks A4), date/formatting in time-lib, string-interpolation-as-AS
 
 | Date | Change |
 |---|---|
+| 2026-08-23 | **v0.15.0-bootstrap**: full English documentation sweep completed (12 specs + ARCHITECTURE/ROADMAP/EXTENSIONS/README/AGENTS/notes — zero Danish lines remain anywhere); version bump; E00 Rust recorded.
 | 2026-08-23 | **fix commit dd853ca**: modulo-by-zero guard (was raw traceback); equality semantics pinned via `nova_eq` (bools≠numbers, structural lists/dicts, identity things) applied to eq/ne/check/take/contains; first/last/length/count operands bind at factor level. +12 tests. Suite: 223/223. |
 | 2026-08-23 | **i18n commit 70b0464**: ALL runtime diagnostics translated to English (lexer/parser/interpreter/cli/repl), reserved-word `what=` args included; every Danish test assertion updated; `nova_messages.py` kept as reference catalog. Suite: 211/211. |
 | 2026-08-23 | **E00 ✅ — Rust chosen** (owner decision): rustup 1.29 / rustc+cargo 1.98.0 installed and verified (build+link+run). ROADMAP/ARCHITECTURE updated to Rust pipeline. README decision log records the choice. |

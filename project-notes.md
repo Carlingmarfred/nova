@@ -1,6 +1,6 @@
 # Nova — Project Notes
 
-> **Status v0.14-bootstrap:** Gate G0 CLOSED; G1 in progress. B05/B01/B02 +
+> **Status v0.15-bootstrap:** Gate G0 CLOSED; G1 in progress. B05/B01/B02 +
 > C01/C02/B04 + C03/C05/C09 + B03+C06+C07+C08 stdlib v0 + docs-audit + i18n-to-English
 > + C13 memory cut + semantic-equality pinning done; **223/223** end-to-end tests green
 > (`python tests/run_tests.py`). Changelog in §5.
