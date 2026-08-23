@@ -142,6 +142,23 @@ def _is_num(v):
     return isinstance(v, (int, float)) and not isinstance(v, bool)
 
 
+def nova_eq(a, b):
+    """Semantic pin (README decision log): bools are their own type; numbers
+    compare across int/float; text/lists/dicts compare structurally; things,
+    functions and modules compare by identity."""
+    if isinstance(a, bool) or isinstance(b, bool):
+        return isinstance(a, bool) and isinstance(b, bool) and a is b
+    if _is_num(a) and _is_num(b):
+        return a == b
+    if isinstance(a, str) and isinstance(b, str):
+        return a == b
+    if isinstance(a, list) and isinstance(b, list):
+        return len(a) == len(b) and all(nova_eq(x, y) for x, y in zip(a, b))
+    if isinstance(a, dict) and isinstance(b, dict):
+        return a.keys() == b.keys() and all(nova_eq(a[k], b[k]) for k in a)
+    return a is b
+
+
 def nova_str(v):
     if v is NOTHING:
         return "nothing"
@@ -616,8 +633,10 @@ class Interp:
             if st.name in self.tracked:
                 self._snapshot(st.name, scope)
             if isinstance(cur, list):
-                if val in cur:
-                    cur.remove(val)
+                for i, item in enumerate(cur):
+                    if nova_eq(val, item):
+                        del cur[i]
+                        break
             elif _is_num(cur) and _is_num(val):
                 scope.set(st.name, cur - val)
             else:
@@ -889,7 +908,7 @@ class Interp:
             return (not r) if neg else r
         v = self.eval(val, scope)
         if kind == "eq":
-            r = subj == v
+            r = nova_eq(subj, v)
         elif kind == "startswith":
             r = isinstance(subj, str) and subj.startswith(nova_str(v))
         elif kind == "endswith":
@@ -1187,11 +1206,13 @@ class Interp:
         l = self.eval(e.l, scope)
         r = self.eval(e.r, scope)
         if op == "eq":
-            return l == r
+            return nova_eq(l, r)
         if op == "ne":
-            return l != r
+            return not nova_eq(l, r)
         if op == "contains":
             if isinstance(l, (str, list)):
+                if isinstance(l, list):
+                    return any(nova_eq(r, x) for x in l)
                 return r in l
             raise NovaError(e.line, "'contains' requires text or a list")
         if op == "startswith":
@@ -1227,7 +1248,11 @@ class Interp:
                 raise NovaError(e.line, "division by zero — check the denominator, "
                                         "or use \'if x is 0\' first")
             return l / r
-        if op == "mod":   return l % r
+        if op == "mod":
+            if r == 0:
+                raise NovaError(e.line, "modulo by zero — check the divisor, "
+                                        "or use 'if x is 0' first")
+            return l % r
         raise NovaError(e.line, f"unknown operator {op}")
 
     # ---------------- streng-interpolation ----------------

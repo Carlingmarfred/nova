@@ -314,6 +314,8 @@ def test_error_catalog(tmp):
          ["did you mean 'greet'"]),
         ("arg-count", 'to f with x\n    say "{x}"\ndone\nf()', "", ["expects 1", "got 0"]),
         ("div-zero", 'say "{1 divided by 0}"', "", ["division by zero", "denominator"]),
+        ("mod-zero", 'say "{5 % 0}"', "", ["modulo by zero", "divisor"]),
+        ("mod-zero-word", "say \"{5 mod 0}\"", "", ["modulo by zero", "divisor"]),
         ("type-mismatch", 'say "{1 + \\"a\\"}"', "", ["add", "two numbers or two texts"]),
         ("item-bounds", 'xs is [1]\nsay "{item 5 of xs}"', "", ["does not exist", "valid numbers"]),
         ("field-missing",
@@ -849,6 +851,35 @@ def test_memory(tmp):
           f"kort={ps.stdout[:80]!r} naturlig={pn.stdout[:80]!r}")
 
 
+def test_semantics(tmp):
+    """Q2/Q3/Q7 semantic pins: strict bool/number equality, structural
+    lists/dicts, identity things; phrase operands bind at factor level."""
+    cases = [
+        ("bool-not-number",
+         'if true is 1 then say "lig"\nunless true is 1 then say "forskellig"',
+         "", "forskellig"),
+        ("bool-eq-bool", 'if true is true then say "ja"', "", "ja"),
+        ("number-cross-type", 'if 1.0 is 1 then say "ja"\nif 2.50 is 2.5 then say "jo"', "", "ja\njo"),
+        ("list-structural", 'xs = [1, [2]]\nys = [1, [2]]\nif xs is ys then say "struktur"', "", "struktur"),
+        ("thing-identity",
+         'a T is a thing with\n    a text\ndone\n'
+         't1 = a new T\nt2 = a new T\nt3 = t1\n'
+         'if t1 is t3 then say "samme"\n'
+         'if t1 is t2 then say "ups"', "", "samme"),
+        ("take-no-bool-leak", 'xs = [true]\ntake 1 from xs\nsay "{the length of xs}"', "", "1"),
+        ("contains-list-strict",
+         'xs = [true]\nif xs contains 1 then\n    say "ja"\notherwise\n    say "nej"\ndone', "", "nej"),
+        ("length-plus", 'say "{the length of [1, 2, 3] plus 10}"', "", "13"),
+        ("first-item-plus", 'say "{the first item of [9, 8] plus 1}"', "", "10"),
+        ("count-items-plus", 'xs = [1, 2]\nsay "{how many items are in xs plus 10}"', "", "12"),
+    ]
+    for name, src, stdin, expect in cases:
+        p = nova(["run", prog(src, tmp)], stdin=stdin, cwd=tmp)
+        check(f"semantics/{name}",
+              p.returncode == 0 and expect in p.stdout,
+              f"rc={p.returncode} out={p.stdout!r} err={p.stderr[:200]!r}")
+
+
 # ------------------------------------------------------------ examples
 
 def test_guessing_game():
@@ -919,6 +950,7 @@ def main():
         test_stdlib(tmp)
         test_repl(tmp)
         test_memory(tmp)
+        test_semantics(tmp)
         test_guessing_game()
         test_todo_app()
     finally:

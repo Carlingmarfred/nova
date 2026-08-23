@@ -399,14 +399,14 @@ class Parser:
             return PauseProgram(line=t.line)
         if w == "track":
             self.next(); self.eat_word("the")
-            name = self.expect_name("variabelnavn")
+            name = self.expect_name("variable name")
             self.expect_eol()
             return TrackStmt(name, line=t.line)
         if w in ("undo", "redo"):
             redo = (w == "redo")
             self.next(); self.expect_word("the"); self.expect_word("last")
             self.expect_word("change"); self.expect_word("to"); self.eat_word("the")
-            name = self.expect_name("variabelnavn")
+            name = self.expect_name("variable name")
             self.expect_eol()
             return UndoStmt(name, redo, line=t.line)
         if w == "exit":
@@ -443,11 +443,11 @@ class Parser:
                     j += 2
                 if j <= len(self.toks) - 1 and self.toks[j].kind == "EQUALS":
                     first_t = self.next()
-                    self.check_reserved(first_t, "variabelnavn")
+                    self.check_reserved(first_t, "variable name")
                     target = Var(first_t.value, first_t.line)
                     while self.at_kind("DOT"):
                         self.next()
-                        target = Field(target, self.expect_name("feltnavn"), first_t.line)
+                        target = Field(target, self.expect_name("field name"), first_t.line)
                     self.next()  # =
                     e = self.parse_expr()
                     self.expect_eol()
@@ -459,7 +459,7 @@ class Parser:
         self.eat_word("my")
         if self.peek().kind == "WORD" and self.at_word_ahead(1, "is"):
             name_t = self.next()
-            self.check_reserved(name_t, "variabelnavn")
+            self.check_reserved(name_t, "variable name")
             self.next()  # is
             e = self.parse_expr()
             self.expect_eol()
@@ -634,7 +634,7 @@ class Parser:
         if self.peek().kind != "WORD":
             self.err(M["parse.lvalue_name"].format(found=t.value))
         nt = self.next()
-        self.check_reserved(nt, "variabelnavn")
+        self.check_reserved(nt, "variable name")
         if self.at_word("of"):
             self.next()
             obj = self.parse_arith()
@@ -660,10 +660,10 @@ class Parser:
             return ContentsOf(src, as_json, t.line)
         if w == "first" and self.at_word("item"):
             self.next(); self.expect_word("of")
-            return FirstItem(self.parse_arith(), t.line)
+            return FirstItem(self.parse_factor(), t.line)
         if w == "last" and self.at_word("item"):
             self.next(); self.expect_word("of")
-            return LastItem(self.parse_arith(), t.line)
+            return LastItem(self.parse_factor(), t.line)
         if w == "number" and self.at_word("value"):
             self.next(); self.expect_word("of")
             # operand at factor level: 'the number value of x? plus 1' must
@@ -671,7 +671,7 @@ class Parser:
             return NumVal(self.parse_factor(), t.line)
         if w == "length":
             self.eat_word("of")
-            return CountOf(self.parse_arith(), t.line)
+            return CountOf(self.parse_factor(), t.line)
         if self.at_word("of"):
             self.next()
             obj = self.parse_arith()
@@ -683,7 +683,7 @@ class Parser:
         e = self.parse_arith()
         self.expect_word(prep)
         self.eat_word("the")
-        name = self.expect_name("variabelnavn")
+        name = self.expect_name("variable name")
         self.expect_eol()
         return cls(name, e, line=t.line)
 
@@ -749,7 +749,7 @@ class Parser:
             self.next()
             self.expect_word("it"); self.expect_word("fails")
             if self.eat_word("as"):
-                errname = self.expect_name("variabelnavn")
+                errname = self.expect_name("variable name")
             handler = self.p_block({"done"})
         self.expect_word("done"); self.next()
         return TryStmt(body, errname, handler, t.line)
@@ -757,11 +757,11 @@ class Parser:
     # --- funktioner og things ---
     def p_funcdef(self):
         t = self.next()
-        name = self.expect_name("funktionsnavn")
+        name = self.expect_name("function name")
         params = []
         if self.eat_word("with"):
             while True:
-                params.append(self.expect_name("parameternavn"))
+                params.append(self.expect_name("parameter name"))
                 if not self.eat_word("and"):
                     break
         self.expect_eol()
@@ -771,7 +771,7 @@ class Parser:
 
     def p_thingdef(self):
         t = self.next()  # a/an
-        name = self.expect_name("thing-navn")
+        name = self.expect_name("thing name")
         self.expect_word("is"); self.expect_word("a"); self.expect_word("thing"); self.expect_word("with")
         fields = {}
         while True:
@@ -779,7 +779,7 @@ class Parser:
             if self.at_word("done"):
                 break
             self.eat_word("a"); self.eat_word("an")
-            fname = self.expect_name("feltnavn")
+            fname = self.expect_name("field name")
             default = None
             if self.at_word("set"):
                 self.next(); self.expect_word("to")
@@ -1089,7 +1089,7 @@ class Parser:
         if w in ("a", "an") and self.at_word_ahead(1, "new"):
             self.next(); self.next()
             cls_t = self.next()
-            self.check_reserved(cls_t, "thing-navn")
+            self.check_reserved(cls_t, "thing name")
             setters = []
             if self.eat_word("with"):
                 while True:
@@ -1104,7 +1104,7 @@ class Parser:
         if w == "how" and self.at_word_ahead(1, "many"):
             self.next(); self.next()
             self.expect_word("items"); self.expect_word("are"); self.expect_word("in")
-            return CountOf(self.parse_arith(), t.line)
+            return CountOf(self.parse_factor(), t.line)
 
         if w == "everything":
             self.next()
