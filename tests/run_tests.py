@@ -628,6 +628,25 @@ def test_stdlib(tmp):
          'use the standard json library\n'
          'try\n    v is json.parse("{ike gyldig")\n'
          'if it fails as err\n    say "fanget: {err}"\ndone', "", "fanget:"),
+        # --- C06: text ---
+        ("text-case-trim",
+         'use the standard text library\n'
+         'say text.upper("hej")\nsay text.lower("HEJ")\n'
+         'say "[" + text.trim("  x  ") + "]"', "", "HEJ\nhej\n[x]"),
+        ("text-split-join",
+         'use the standard text library\n'
+         'parts is text.split("a,b,c", ",")\n'
+         'say "{item 2 of parts}"\nsay text.join(parts, "-")', "", "b\na-b-c"),
+        ("text-replace-contains-length",
+         'use the standard text library\n'
+         'say text.replace("banana", "a", "o")\n'
+         'if text.contains("banana", "ana") then say "ja"\n'
+         'if text.contains("banana", "xyz") is false then say "nej"\n'
+         'b is "banana"\nsay "{text.length(b)}"', "", "bonono\nja\nnej\n6"),
+        ("text-at-slice",
+         'use the standard text library\n'
+         'say text.at("abcdef", 2)\n'
+         'say text.slice("abcdef", 2, 4)', "", "b\nbcd"),
     ]
     for name, src, stdin, expect in ok_cases:
         p = nova(["run", prog(src, tmp)], stdin=stdin, cwd=tmp)
@@ -637,11 +656,18 @@ def test_stdlib(tmp):
 
     err_cases = [
         ("unknown-lib", "use the standard turbo library",
-         ["ukendt standardbibliotek 'turbo'", "file, json, math, random, time"]),
+         ["ukendt standardbibliotek 'turbo'", "file, json, math, random, text, time"]),
         ("bad-use-form", "use magic stuff",
          ["ukendt 'use'-form", "use the standard <navn> library"]),
         ("missing-func", "use the standard json library\nsay \"{json.mangle(1)}\"",
          ["har ikke funktionen 'mangle'"]),
+        # --- C06: tekst-fejl ---
+        ("text-at-bounds", "use the standard text library\nsay \"{text.at('abc', 9)}\"",
+         ["plads 9 findes ikke", "gyldige pladser er 1 til 3"]),
+        ("text-slice-bounds", "use the standard text library\nsay \"{text.slice('abc', 2, 9)}\"",
+         ["gyldige slutværdier er 1 til 3"]),
+        ("text-type-error", "use the standard text library\nsay \"{text.upper(5)}\"",
+         ["kræver tekst"]),
     ]
     for name, src, fragments in err_cases:
         p = nova(["run", prog(src, tmp)], cwd=tmp)

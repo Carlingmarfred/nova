@@ -254,6 +254,85 @@ def _bi_math_round(args, line):
     return int(round(n))
 
 
+# --- C06: text ---
+
+def _bi_text_str(name, v, line):
+    if not isinstance(v, str):
+        raise NovaError(line, f"'text.{name}' kræver tekst — fandt {nova_str(v)}")
+    return v
+
+
+def _bi_text_upper(args, line):
+    return _bi_text_str("upper", args[0], line).upper()
+
+
+def _bi_text_lower(args, line):
+    return _bi_text_str("lower", args[0], line).lower()
+
+
+def _bi_text_trim(args, line):
+    return _bi_text_str("trim", args[0], line).strip()
+
+
+def _bi_text_split(args, line):
+    s = _bi_text_str("split", args[0], line)
+    sep = _bi_text_str("split", args[1], line)
+    if sep == "":
+        raise NovaError(line, "'text.split' kræver en ikke-tom adskiller")
+    return s.split(sep)
+
+
+def _bi_text_join(args, line):
+    xs = args[0]
+    sep = _bi_text_str("join", args[1], line)
+    if not isinstance(xs, list):
+        raise NovaError(line, "'text.join' kræver en liste — giv den fx text.split(...) først")
+    return sep.join(nova_str(x) for x in xs)
+
+
+def _bi_text_replace(args, line):
+    s = _bi_text_str("replace", args[0], line)
+    fra = _bi_text_str("replace", args[1], line)
+    til = _bi_text_str("replace", args[2], line)
+    if fra == "":
+        raise NovaError(line, "'text.replace' kræver en ikke-tom søgetekst")
+    return s.replace(fra, til)  # erstatter ALLE forekomster
+
+
+def _bi_text_length(args, line):
+    return len(_bi_text_str("length", args[0], line))
+
+
+def _bi_text_contains(args, line):
+    s = _bi_text_str("contains", args[0], line)
+    sub = _bi_text_str("contains", args[1], line)
+    return sub in s
+
+
+def _bi_text_at(args, line):
+    s = _bi_text_str("at", args[0], line)
+    n = args[1]
+    if not _is_num(n):
+        raise NovaError(line, "'text.at' kræver et tal som plads")
+    i = int(n)
+    if i < 1 or i > len(s):
+        raise NovaError(line, f"plads {i} findes ikke (teksten har kun {len(s)} tegn)"
+                              f" — gyldige pladser er 1 til {max(len(s), 1)}")
+    return s[i - 1]
+
+
+def _bi_text_slice(args, line):
+    s = _bi_text_str("slice", args[0], line)
+    a, b = args[1], args[2]
+    if not (_is_num(a) and _is_num(b)):
+        raise NovaError(line, "'text.slice' kræver tal som fra/til (1-baseret, inklusiv)")
+    a, b = int(a), int(b)
+    if a < 1 or b > len(s) or a > b:
+        raise NovaError(line, f"slice {a} til {b} rækker uden for teksten"
+                              f" — gyldige slutværdier er 1 til {max(len(s), 1)}")
+    return s[a - 1:b]
+
+
 def _make_json_lib():
     m = ModuleInstance("json", "(standardbibliotek)")
     m.funcs["parse"] = BuiltinFunction("parse", ["text"], _bi_json_parse)
@@ -289,12 +368,28 @@ def _make_math_lib():
     return m
 
 
+def _make_text_lib():
+    m = ModuleInstance("text", "(standardbibliotek)")
+    m.funcs["upper"] = BuiltinFunction("upper", ["tekst"], _bi_text_upper)
+    m.funcs["lower"] = BuiltinFunction("lower", ["tekst"], _bi_text_lower)
+    m.funcs["trim"] = BuiltinFunction("trim", ["tekst"], _bi_text_trim)
+    m.funcs["split"] = BuiltinFunction("split", ["tekst", "adskiller"], _bi_text_split)
+    m.funcs["join"] = BuiltinFunction("join", ["liste", "adskiller"], _bi_text_join)
+    m.funcs["replace"] = BuiltinFunction("replace", ["tekst", "fra", "til"], _bi_text_replace)
+    m.funcs["length"] = BuiltinFunction("length", ["tekst"], _bi_text_length)
+    m.funcs["contains"] = BuiltinFunction("contains", ["tekst", "søgning"], _bi_text_contains)
+    m.funcs["at"] = BuiltinFunction("at", ["tekst", "plads"], _bi_text_at)
+    m.funcs["slice"] = BuiltinFunction("slice", ["tekst", "fra", "til"], _bi_text_slice)
+    return m
+
+
 STDLIB_FACTORIES = {
     "json": _make_json_lib,
     "file": _make_file_lib,
     "random": _make_random_lib,
     "time": _make_time_lib,
     "math": _make_math_lib,
+    "text": _make_text_lib,
 }
 
 
