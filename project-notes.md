@@ -26,7 +26,7 @@ Repo layout (working dir `oxtest/`):
 - `examples/` — tour.nova, guessing_game.nova, todo.nova, lab.nova, unique.nova
 - `bootstrap/` — Python interpreter: nova_lexer.py, nova_parser.py,
   nova_interpreter.py, nova_messages.py (reference catalog), nova_cli.py,
-  nova_dump.py (v0.14: 223/223 green via tests/run_tests.py)
+  nova_dump.py (v0.15: 223/223 green via tests/run_tests.py)
 - `tests/` — run_tests.py end-to-end suite (subprocess-based)
 
 ## 2. Key Decisions
@@ -149,7 +149,7 @@ NothingSignal two throw-sites; NumVal factor-binding; plus type-mismatch sentenc
 **2026-08-22 — v0.11 (49→132):** goldens + error audit + reserved words + shorthand
 skin + equivalence pairs + unary minus.
 
-**Known gaps in v0.14 (updated 2026-08-23):** closed so far — shorthand ✓, unary minus ✓,
+**Known gaps in v0.15 (updated 2026-08-23):** closed so far — shorthand ✓, unary minus ✓,
 Optional ✓, modules ✓, stdlib v0 ✓, REPL ✓, memory semantics ✓. STILL OPEN: typed Result
 (C04), lambdas/pipelines (C10), check-exhaustiveness lint (C11), formatter/linter
 (D02/D03), LICENSE file (owner decision Q8), tour/lab/unique.nova outside bootstrap scope

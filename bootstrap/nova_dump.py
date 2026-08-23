@@ -1,20 +1,20 @@
-"""Kanonisk AST-dump (golden-format) for Nova bootstrap.
+"""Canonical AST dump (golden format) for the Nova bootstrap.
 
-KONTRAKT: Output er deterministisk og linjestabilt for en given kildefil.
-Den native M0-parser skal producere byte-kompatibelt output for samme kilde.
-Ændr KUN formatet samtidig med alle expected-filer i tests/golden/ og en
-notat i project-notes.md.
+CONTRACT: output is deterministic and line-stable for a given source file.
+The native M0 parser must produce byte-compatible output for the same source.
+Change the format ONLY together with every expected file under tests/golden/
+and a note in project-notes.md.
 
 Format:
   Program (N statements)
-    NodeName(line=L)              # hver node på egen linje, 2 mellemrum/niveau
-      felt: NodeName(line=L)      # node-felt der peger på node
-      felt: skalar-repr           # tal/streng/bool/None via repr()
-      felt: [N]                   # liste/tuple af N elementer
-        [i] Element(line=L)       # listeelementer indekseres
-      felt: {}                    # tom liste
-      felt: {N}                   # dict (ThingDef.fields), nøgler i kildesortering
-        navn: værdi
+    NodeName(line=L)              # each node on its own line, 2 spaces/level
+      field: NodeName(line=L)     # node field pointing at another node
+      field: scalar-repr          # number/string/bool/None via repr()
+      field: [N]                  # list/tuple of N elements
+        [i] Element(line=L)       # list elements are indexed
+      field: {}                   # empty list
+      field: {N}                  # dict (ThingDef.fields), keys in source order
+        name: value
 """
 
 from dataclasses import is_dataclass, fields as dc_fields
@@ -34,7 +34,7 @@ def _emit_node(node, prefix, lines, depth):
     lines.append(f"{pad}{prefix}{name}(line={line})")
     for f in dc_fields(node):
         if f.name == "line":
-            continue  # allerede i node-overskriften
+            continue  # already shown in the node header
         _emit_value(f.name, getattr(node, f.name), lines, depth + 1)
 
 

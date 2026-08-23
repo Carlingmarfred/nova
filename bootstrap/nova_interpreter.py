@@ -87,7 +87,7 @@ class ModuleInstance:
 
 
 class BuiltinFunction:
-    """B03: stdlib-funktion implementeret i Python — kaldes via ModuleCall."""
+    """B03: stdlib function implemented in Python — called through ModuleCall."""
     __slots__ = ("name", "params", "fn")
 
     def __init__(self, name, params, fn):

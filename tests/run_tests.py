@@ -1,7 +1,7 @@
 """End-to-end tests for the Nova bootstrap interpreter.
 
-Kør:  python tests/run_tests.py
-Alle tests kører CLI'en som subprocess (samme vej som brugeren).
+Run:  python tests/run_tests.py
+All tests run the CLI as a subprocess (the same path a user takes).
 """
 
 import json
@@ -70,7 +70,7 @@ def test_cli(tmp):
     check("cli/missing-file", missing.returncode == 2)
 
 
-# --------------------------------------------------- sprogsætninger
+# --------------------------------------------------- language sentences
 
 def test_phrases(tmp):
     cases = [
@@ -138,7 +138,7 @@ def test_phrases(tmp):
     check("phrase/random-deterministic",
           q.stdout == q2.stdout and q.stdout.strip() != "",
           f"{q.stdout!r} vs {q2.stdout!r}")
-    del seeded  # (frø-fri kørsel behøver ikke matche noget bestemt)
+    del seeded  # (the unseeded run does not need to match anything specific)
 
 
 def test_undo_redo(tmp):
@@ -260,7 +260,7 @@ def test_golden(update=False):
         if p1.returncode != 0:
             check(f"golden/{name}", False, f"parse rc={p1.returncode} err={p1.stderr!r}")
             continue
-        p2 = nova(["parse", path])  # determinisme: to kørsler → samme output
+        p2 = nova(["parse", path])  # determinism: two runs → same output
         if p1.stdout != p2.stdout:
             check(f"golden/{name}", False, "dump er ikke-deterministisk")
             continue
@@ -303,8 +303,8 @@ def test_b05_regressions(tmp):
 # ---------------------------------------------------------- fejlmeddelelser
 
 def test_error_catalog(tmp):
-    """B01: alle fejl = sætning + fix-hint; aldrig rå Python-exceptions."""
-    # (navn, kilde, stdin, påkrævede fragmenter i stderr)
+    """B01: every error = sentence + fix hint; never raw Python exceptions."""
+    # (name, source, stdin, required stderr fragments)
     cases = [
         ("unknown-var", 'say "{navn}"', "", ["does not exist", "declare"]),
         ("unknown-var-suggest", "tries is 0\nsay \"{trie}\"", "", ["did you mean 'tries'"]),
@@ -435,7 +435,7 @@ def test_shorthand(tmp):
               p.returncode == 0 and (expect is None or expect in p.stdout),
               f"rc={p.returncode} out={p.stdout!r} err={p.stderr[:200]!r}")
 
-    # C02-forløber: kryds-skin-par skal give BYTEIDENTISKE AST-dumps
+    # C02 policy: cross-skin pairs must produce BYTE-IDENTICAL AST dumps
     pairs = [
         ('n1 = 10', 'n1 is 10'),
         ('s = 1 + 2 * 3', 's is 1 plus 2 times 3'),
@@ -456,10 +456,10 @@ def test_shorthand(tmp):
 
 
 def test_optional(tmp):
-    """C03: Optional/? — hele-udtryksgift; kun fravær-af-værdi propagater
-    (specs/error_handling.md §2.1). Uden ? fejler det stadig med fix-hint."""
+    """C03: Optional/? — whole-expression poisoning; only absence-of-value propagates
+    (specs/error_handling.md §2.1). Without ? it still fails with a fix hint."""
     cases = [
-        # gift-sagen der ville crashet uden grænse: NumVal("abc") → nothing, plus 1
+        # the poisoning case that would crash without the boundary: NumVal("abc") → nothing, plus 1
         ("poison-guarded",
          'answer is "abc"\nn = the number value of answer? + 1\n'
          'if n is nothing then say "tom"', "", "tom"),
@@ -489,7 +489,7 @@ def test_optional(tmp):
         check(f"optional/{name}", ok,
               f"rc={p.returncode} out={p.stdout!r} err={p.stderr[:200]!r}")
 
-    # uden ? : samme udtryk giver venlig sætning + fix-hint (aldrig crash)
+    # without ?: the same expression gives a friendly sentence + fix hint (never a crash)
     fail_cases = [
         ("unguarded-arith", 'answer is "abc"\nn is the number value of answer plus 1',
          ["cannot do arithmetic on 'nothing'", "'?'"]),
@@ -506,7 +506,7 @@ def test_optional(tmp):
 
 
 def test_modules(tmp):
-    """C05: moduler — the X-module in "fil", navnerum, cirkulær import-fejl."""
+    """C05: modules — the X-module in "file", namespaces, circular-import error."""
     def write_mod(fname, src):
         with open(os.path.join(tmp, fname), "w", encoding="utf-8") as f:
             f.write(src)
@@ -519,7 +519,7 @@ def test_modules(tmp):
     write_mod("a-module.nova", 'the b-module in "b-module.nova"\n')
     write_mod("b-module.nova", 'the a-module in "a-module.nova"\n')
 
-    # 1) import + navnerums-kald + felt-læsning af modul-variabel
+    # 1) import + namespace call + field read of a module variable
     src = ('the tools-module in "tools-module.nova"\n'
            'say "{tools-module.twice(21)}"\n'
            'say "{the answer of the tools-module}"\n')
@@ -538,7 +538,7 @@ def test_modules(tmp):
           p.returncode == 0 and p.stdout == "99\n1\n",
           f"rc={p.returncode} out={p.stdout!r} err={p.stderr[:200]!r}")
 
-    # 3) idempotent: dobbelt import køres én gang
+    # 3) idempotent: a double import runs once
     src = ('the ping-module in "ping-module.nova"\n'
            'the ping-module in "ping-module.nova"\n'
            'say "klar"\n')
@@ -547,7 +547,7 @@ def test_modules(tmp):
           p.returncode == 0 and p.stdout.count("ping") == 1 and "klar" in p.stdout,
           f"rc={p.returncode} out={p.stdout!r} err={p.stderr[:200]!r}")
 
-    # 4) kædet import: modul importerer undermodul relativt til sig selv
+    # 4) chained import: a module imports a submodule relative to itself
     os.makedirs(os.path.join(tmp, "sub"), exist_ok=True)
     write_mod("sub/inner-module.nova", 'mark is "indre"\n')
     write_mod("outer-module.nova",
@@ -560,7 +560,7 @@ def test_modules(tmp):
           p.returncode == 0 and "indre" in p.stdout,
           f"rc={p.returncode} out={p.stdout!r} err={p.stderr[:200]!r}")
 
-    # fejltilfælde: (navn, filer, hovedprogram, påkrævede fragmenter)
+    # error cases: (name, files, main program, required fragments)
     err_cases = [
         ("circular", None,
          'the a-module in "a-module.nova"',
@@ -592,15 +592,15 @@ def test_modules(tmp):
               and "line" in p.stderr)
         check(f"module/{name}", ok, f"rc={p.returncode} err={p.stderr[:220]!r}")
 
-    # parse-dump: import-sætning og modulkald i golden-korpusset (19-modules)
+    # parse dump: import statement and module calls in the golden corpus (19-modules)
     p = nova(["parse", os.path.join(GOLDEN_DIR, "19-modules.nova")], cwd=tmp)
     check("module/golden-parses", p.returncode == 0 and "UseModule" in p.stdout
           and "ModuleCall" in p.stdout, f"rc={p.returncode} out={p.stdout[:120]!r}")
 
 
 def test_stdlib(tmp):
-    """B03: use binder ægte stdlib-navnerum (json/file/random/time/math).
-    C06-C07-C08 udvider tabellen i specs/standard_library.md §0a."""
+    """B03: use binds real stdlib namespaces (json/file/random/time/math).
+    C06-C07-C08 extend the table in specs/standard_library.md §0a."""
     ok_cases = [
         ("json-roundtrip",
          'use the standard json library\n'
@@ -749,7 +749,7 @@ def test_repl(tmp):
           p.returncode == 0 and "→ 3" in p.stdout and "→ 6" in p.stdout,
           f"rc={p.returncode} out={p.stdout!r} err={p.stderr[:200]!r}")
 
-    # sætninger kører normalt (say), assignments udskriver intet
+    # statements run normally (say), assignments print nothing
     p = repl('say "hej"\nx is 2\n:quit\n')
     check("repl/statements",
           p.returncode == 0 and "hej" in p.stdout and "→" not in p.stdout.split("hej")[1],
@@ -761,7 +761,7 @@ def test_repl(tmp):
           p.returncode == 0 and p.stdout.count("hei") == 2,
           f"rc={p.returncode} out={p.stdout!r} err={p.stderr[:200]!r}")
 
-    # :ast parser uden at køre
+    # :ast parses without running
     p = repl(":ast 1 plus 2\n:quit\n")
     check("repl/ast-cmd",
           p.returncode == 0 and "Bin" in p.stdout and "'plus'" in p.stdout
@@ -774,20 +774,20 @@ def test_repl(tmp):
           p.returncode == 0 and "→ 1" in p.stdout,
           f"rc={p.returncode} out={p.stdout!r} err={p.stderr[:200]!r}")
 
-    # :undo på tom stak = venlig besked; :help og ukendt kommando
+    # :undo on an empty stack = friendly message; :help and unknown command
     p = repl(":undo\n:fisk\n:help\n:quit\n")
     check("repl/meta-errors",
           p.returncode == 0 and "nothing to undo" in p.stdout
           and ":help" in p.stdout and "unknown command" in p.stdout.lower(),
           f"rc={p.returncode} out={p.stdout!r}")
 
-    # fejl dræber ikke sessionen
+    # errors never kill the session
     p = repl('say "{navn}"\n7 minus 3\n:quit\n')
     check("repl/error-continues",
           p.returncode == 0 and "does not exist" in p.stdout and "→ 4" in p.stdout,
           f"rc={p.returncode} out={p.stdout!r} err={p.stderr[:200]!r}")
 
-    # EOF uden :quit afslutter pænt; seed giver determinisme
+    # EOF without :quit exits cleanly; seeds give determinism
     p = repl("a random number between 1 and 10\n")
     q = repl("a random number between 1 and 10\n", seed=42)
     r = repl("a random number between 1 and 10\n", seed=42)
@@ -797,7 +797,7 @@ def test_repl(tmp):
 
 
 def test_memory(tmp):
-    """C13: værdi- vs reference-semantik + 'a copy of X' (specs/memory_model.md §0)."""
+    """C13: value vs reference semantics + 'a copy of X' (specs/memory_model.md §0)."""
     cases = [
         # pin: liste-delelse er ALIAS — ikke kopi
         ("alias-pin-list",
@@ -807,10 +807,10 @@ def test_memory(tmp):
          'a Box is a thing with\n    an inside set to nothing\ndone\n'
          'b is a new Box\nb2 is b\nset the inside of b2 to "rørt"\n'
          'say "{the inside of b}"', "", "rørt"),
-        # pin: tal er værdier
+        # pin: numbers are values
         ("value-pin-number",
          'x is 5\ny is x\ny is 9\nif x is 5 then say "uafhængig"', "", "uafhængig"),
-        # a copy of X: dyb og uafhængig
+        # a copy of X: deep and independent
         ("copy-independent",
          'xs is [1, 2]\nks is a copy of xs\nadd 9 to ks\n'
          'say "{xs} {ks}"', "", "[1, 2] [1, 2, 9]"),
@@ -956,7 +956,7 @@ def main():
     finally:
         print()
     total = _passed + _failed
-    print(f"{_passed}/{total} bestået" + ("" if _failed == 0 else f" — {_failed} FEJLEDE"))
+    print(f"{_passed}/{total} passed" + ("" if _failed == 0 else f" — {_failed} FAILED"))
     return 1 if _failed else 0
 
 

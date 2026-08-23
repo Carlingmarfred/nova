@@ -2,7 +2,7 @@
 
 Principle: **Python parity first** — every Python module category has a native Nova counterpart. Then Java-style enterprise structure and C-style control.
 
-## 0a. Bootstrap-udsnit (v0.12+, items B03 + C06 + C07 + C08) — IMPLEMENTERET FULDT (v0.12)
+## 0a. Bootstrap cut (v0.12+, items B03 + C06 + C07 + C08) — FULLY IMPLEMENTED (v0.12)
 
 `use` binds a REAL namespace module (same machinery as C05 modules):
 

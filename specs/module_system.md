@@ -1,6 +1,6 @@
 # Nova Modulsystem & Packages
 
-## 0. Bootstrap-udsnit (v0.12+, item C05) — IMPLEMENTERET i bootstrap v0.12
+## 0. Bootstrap cut (v0.12+, item C05) — IMPLEMENTED in bootstrap v0.12
 
 Én fil = ét modul. Import i Natural-skin:
 

@@ -188,7 +188,7 @@ file watch (config.nova, 14:02:11)
 
 Reads the U4 history + the effect trace. No debugger expertise required — you ask questions in English. **M6.**
 
-## U13. Pure-Nova stacken — alt implementeret selv
+## U13. The pure-Nova stack — everything implemented in-house
 
 Nova's stdlib depends on **nothing but OS syscalls**:
 

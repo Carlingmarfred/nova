@@ -4,7 +4,7 @@ A general-purpose programming language: **C++ performance + Python simplicity +
 Java ecosystem** — built around one strong kernel (compiler + typesystem + IR +
 runtime) with every other feature layered on top.
 
-> **Status: v0.14-bootstrap** — the Python interpreter in `bootstrap/` is green on
+> **Status: v0.15-bootstrap** — the Python interpreter in `bootstrap/` is green on
 > the full end-to-end suite (`python tests/run_tests.py`, 223 tests incl. both
 > examples). **Gate G0 is closed; G1 (T1 complete) is in progress.** Implemented:
 > compact shorthand skin, Optional/`?`, real modules with namespaces, stdlib v0

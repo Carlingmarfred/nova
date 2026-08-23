@@ -1,4 +1,4 @@
-# Nova — Iteration Plan (v0.14 → 1.0)
+# Nova — Iteration Plan (v0.15 → 1.0)
 
 > ## ⚠ MAINTENANCE RULE — READ FIRST
 > **This file is the single source of truth for what to do next and what is done.**
@@ -41,7 +41,7 @@ Rules that make "describe it and it's built" true:
 Nova 1.0 is "on par" when every row reaches the level of Python (usability) +
 Java (ecosystem/tooling) + C++ (performance). This matrix is audited each phase gate.
 
-| Area | Parity bar (measurable) | Status v0.14 |
+| Area | Parity bar (measurable) | Status v0.15 |
 |---|---|---|
 | Syntax & semantics | Two skins → identical AST; full spec implemented; exhaustive match | 🟡 both skins + equivalence harness done (C01/C02); full spec missing |
 | Type system | HM-local inference, unions, Option/Result, generics+traits | 🔴 dynamic-only in bootstrap (Optional/`?` done C03, Result → C04) |
@@ -56,7 +56,7 @@ Java (ecosystem/tooling) + C++ (performance). This matrix is audited each phase 
 | Docs & learnability | Language reference complete, tutorial, playground, error index | 🟡 specs done + bootstrap cuts; tutorial missing |
 | Unique differentiators | Flow, Table, track/undo, taint, state machines, time statements… | 🟡 track/undo + REPL-`:undo`; rest 🔴 |
 
-## 3. Current status dashboard (v0.14-bootstrap — G0 closed; G1 in progress)
+## 3. Current status dashboard (v0.15-bootstrap — G0 closed; G1 in progress)
 
 - ✅ G0 closed: suite green (223 tests), both examples perfect, error audit done (B01)
 - ✅ Python bootstrap lexer/parser/tree-interpreter, Natural + shorthand skins

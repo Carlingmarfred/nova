@@ -199,7 +199,7 @@ def main(argv):
         del args[i:i + 2]
 
     if args and args[0] == "version":
-        print(f"Nova {VERSION} (bootstrap-fortolker i Python)")
+        print(f"Nova {VERSION} (bootstrap interpreter in Python)")
         return 0
 
     if args and args[0] == "repl":
@@ -212,7 +212,7 @@ def main(argv):
     cmd, path = args[0], args[1]
 
     if cmd == "version":
-        print(f"Nova {VERSION} (bootstrap-fortolker i Python)")
+        print(f"Nova {VERSION} (bootstrap interpreter in Python)")
         return 0
 
     try:

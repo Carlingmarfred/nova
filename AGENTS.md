@@ -49,7 +49,7 @@ python bootstrap/nova_cli.py repl                           # interactive REPL
 
 ## Current state (update this date when it changes)
 
-- v0.14-bootstrap (G0 closed; G1 in progress): Python interpreter, **223/223**
+- v0.15-bootstrap (G0 closed; G1 in progress): Python interpreter, **223/223**
   tests green, guessing_game + todo done. Diagnostics fully English.
 - Done 2026-08-22: B05 golden dumps · B01 error audit · B02 reserved words ·
   C01 shorthand skin · C02 equivalence pairs · B04 unary minus.
