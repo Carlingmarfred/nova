@@ -158,3 +158,46 @@ Static-linking giver single-file executables; `nova run fil.nova` bruger VM/JIT 
 
 - Registry (`nova.dev`): semver, lockfile (`nova.lock`, checksum-signerede tarballs), platform-varianter, prebuilt-native-artifacts.
 - `project.nova` er selv et Nova-program (build-scripts er bare kode, se module_system).
+
+## 10. Bootstrap-udsnit: REPL (v0.13+, item C09)
+
+`python nova_cli.py repl [--seed N]` starter en interaktiv session på ÉN persistent
+`Interp`-instans (vars/funcs/things overlever mellem linjer).
+
+```text
+>>> 1 plus 2
+→ 3
+>>> x is 5
+>>> repeat 2 times
+..>      say "hei"
+..> done
+hei
+hei
+>>> :ast 1 plus 2
+Program (1 statements)
+  ExprStmt(line=1)
+    ...
+>>> :undo
+>>> :quit
+```
+
+Regler:
+
+1. **Prompter:** `>>> ` for ny sætning, `..> ` når en blok stadig er åben.
+2. **Multiline via `done`:** hvis parsen fejler med en "mangler 'done'"-familie-fejl,
+   fortsættes indsamlingen; alle andre fejl rapportereres med det samme og bufferen
+   ryddes. EOF (Ctrl-D / lukket stdin) afslutter pænt med exit-kode 0.
+3. **Echo:** en indtastet linje der ER ét udtryk (ExprStmt) får sin værdi vist som
+   `→ værdi`. Say/assignments/tildelinger udskriver kun deres egen effekt.
+4. **Meta-kommandoer** (linjer der starter med `:`, case-uafhængige):
+   - `:ast <linje>` — parse uden at køre; printer AST-dump (udtryk først, fald tilbage
+     til sætninger);
+   - `:undo` — gendan tilstanden før den sidste kørt blok (globals/funcs/things via
+     dyb kopi; max 100 trin). Allerede udskrevet output og fil-I/O kan ikke rulles
+     tilbage — det siges også i hjælpeteksten;
+   - `:quit` (alias `:q`) — afslut;
+   - `:help` — listen ovenfor. Ukendt `:kommando` = venlig fejl der nævner `:help`.
+5. **Fejl dræber aldrig sessionen** — samme sætnings-formatering som `run`; REPL'en
+   fortsætter efter fejl.
+6. Ikke-interaktivt brug (pipes/tests): samme adfærd; stdin-linjer behandles én ad
+   gangen til EOF.

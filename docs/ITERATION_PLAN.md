@@ -197,7 +197,7 @@ Statuses: ☐ Not started · ◐ In progress · ✅ Done (date) · ⏸ Blocked (
 | C06 | String library v0: upper/lower/trim/split/join/replace/length-of/contains/at/slice | P0 | M | — | ✅ 2026-08-23 (text.* builtins; 1-baseret at/slice; alle-fejl = sætning+hint) |
 | C07 | List/dict library v0: sort/reverse/map(→T2)/filter/fold/min/max/keys/values | P1 | M | C06 | ✅ 2026-08-23 (sort/reverse/min/max/keys/values; map/filter/fold udskudt til C10/T2 som aftalt) |
 | C08 | Math/time/random library v0 per standard_library.md subset | P1 | S | B03 | ✅ 2026-08-23 (math: abs/floor/ceil/pow/PI · time: sleep · random: shuffle kopi+seedbar) |
-| C09 | REPL: `nova repl` — persistent Interp session, `:ast/:undo/:quit`, multiline via `done` | P1 | M | — | ☐ |
+| C09 | REPL: `nova repl` — persistent Interp session, `:ast/:undo/:quit`, multiline via `done` | P1 | M | — | ✅ 2026-08-23 (+ `:help`, udtryks-echo `→ værdi`, fejl dræber ikke sessionen, seedbar determinisme) |
 | C10 | Lambdas + pipeline `then` (T2 ergonomics over lists) | P2 | M | C07 | ☐ |
 | C11 | match-exhaustiveness lite: `check` warns on missing otherwise (lint) | P2 | S | — | ☐ |
 | C12 | Bootstrap perf pass: memoize dispatch tables; target 2× on todo bench | P2 | M | — | ☐ |
@@ -317,6 +317,8 @@ units/refinement types, actors/signals, GPU backend, grammar literals, `@increme
 
 | Date | Change |
 |---|---|
+| 2026-08-23 | **C09 ✅**: `nova repl [--seed N]` — én persistent Interp; `>>> `/`..>`-prompter; multiline ved 'done'-familie-parsefejl (buffer fortsætter); udtryks-linjer echoes som `→ værdi` (fallback når sætnings-parse fejler — fix for tal-startede linjer); meta: `:ast <linje>` (udtryk først, fald tilbage til sætninger), `:undo` (dyb kopi af globals/funcs/things, stak max 100, output/fil-I/O kan ikke rulles tilbage), `:quit/:q`, `:help`, ukendt → venlig henvisning. Fejl dræber ALDRIG sessionen. Spec: docs/ARCHITECTURE.md §10. 8 repl-tests. Suite: 199/199. Næste: E00+E01 toolchain+CI (P0!) → D01/D05/D06. |
+| 2026-08-23 | **docs-audit**: forældede påstande rettet (README shorthand-kommentar "planlagt" → implementeret; project-notes kendte-huller omskrevet til v0.12-virkelighed inkl. phrase-vs-feltnavn-kollision og prik-adgang-workaround; AGENTS.md 191/191). lab/unique/tour.nova verificeret at fejle med pæne sætninger (rc=1, ingen tracebacks). |
 | 2026-08-23 | **v0.12.0-bootstrap + G0 LUKKET**: versionsbump (CLI + cli/version-test), §3-dashboard opdateret, README-statuslinje fikset (var forældet: 49 tests / "shorthand ikke implementeret"). G0-kriterier: suite grøn (191), begge eksempler perfekte, fejl-audit B01 ✅. Næste gate: G1 (T1 komplet) — C04/C09/C10/C11/C12 + D01/D05/D06. |
 | 2026-08-23 | **C08 ✅**: math udvidet med abs/floor/ceil/pow + PI-konst (læses som modul-felt), time.sleep (afviser negative), random.shuffle (kopi, seedbar via --seed — determinisme-test tilføjet). 7 nye stdlib-tests. Stdlib v0-trioen (B03+C06+C07+C08) er dermed HEL. Suite: 191/191. Næste: C09 REPL → E00+E01 toolchain+CI (P0!). |
 | 2026-08-23 | **C07 ✅**: list-biblioteket (sort/reverse/min/max/keys/values) som BuiltinFunctions; sort returnerer NY liste og afviser blandede typer med sætning; reverse er kopi; keys/values kræver databog (json.parse) og returnerer nøgle-sorteret. map/filter/fold bevidst udskudt til C10/T2 (kræver lambdas). 7 nye stdlib-tests (4 ok + 3 fejl). Suite: 184/184. Næste: C08 math/time/random fyldes op → C09 REPL. |

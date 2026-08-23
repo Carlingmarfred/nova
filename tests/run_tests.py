@@ -734,6 +734,65 @@ def test_stdlib(tmp):
           f"{s1.stdout!r} vs {s2.stdout!r}")
 
 
+def test_repl(tmp):
+    """C09: nova repl — persistent session, :ast/:undo/:quit, multiline via done."""
+    def repl(stdin, seed=None):
+        args = ["repl"] + (["--seed", str(seed)] if seed is not None else [])
+        return nova(args, stdin=stdin, cwd=tmp)
+
+    # echo af udtryk + persistence
+    p = repl("1 plus 2\nx is 5\nx plus 1\n:quit\n")
+    check("repl/echo-persist",
+          p.returncode == 0 and "→ 3" in p.stdout and "→ 6" in p.stdout,
+          f"rc={p.returncode} out={p.stdout!r} err={p.stderr[:200]!r}")
+
+    # sætninger kører normalt (say), assignments udskriver intet
+    p = repl('say "hej"\nx is 2\n:quit\n')
+    check("repl/statements",
+          p.returncode == 0 and "hej" in p.stdout and "→" not in p.stdout.split("hej")[1],
+          f"rc={p.returncode} out={p.stdout!r}")
+
+    # multiline via done
+    p = repl('repeat 2 times\n    say "hei"\ndone\n:quit\n')
+    check("repl/multiline-done",
+          p.returncode == 0 and p.stdout.count("hei") == 2,
+          f"rc={p.returncode} out={p.stdout!r} err={p.stderr[:200]!r}")
+
+    # :ast parser uden at køre
+    p = repl(":ast 1 plus 2\n:quit\n")
+    check("repl/ast-cmd",
+          p.returncode == 0 and "Bin" in p.stdout and "'plus'" in p.stdout
+          and "→ 3" not in p.stdout,
+          f"rc={p.returncode} out={p.stdout[:200]!r}")
+
+    # :undo gendanner forrige tilstand
+    p = repl("track x\nx is 1\nx is 2\n:undo\nx\n:quit\n")
+    check("repl/undo",
+          p.returncode == 0 and "→ 1" in p.stdout,
+          f"rc={p.returncode} out={p.stdout!r} err={p.stderr[:200]!r}")
+
+    # :undo på tom stak = venlig besked; :help og ukendt kommando
+    p = repl(":undo\n:fisk\n:help\n:quit\n")
+    check("repl/meta-errors",
+          p.returncode == 0 and "ingenting at undo" in p.stdout
+          and ":help" in p.stdout and "ukendt kommando" in p.stdout.lower(),
+          f"rc={p.returncode} out={p.stdout!r}")
+
+    # fejl dræber ikke sessionen
+    p = repl('say "{navn}"\n7 minus 3\n:quit\n')
+    check("repl/error-continues",
+          p.returncode == 0 and "findes ikke" in p.stdout and "→ 4" in p.stdout,
+          f"rc={p.returncode} out={p.stdout!r} err={p.stderr[:200]!r}")
+
+    # EOF uden :quit afslutter pænt; seed giver determinisme
+    p = repl("a random number between 1 and 10\n")
+    q = repl("a random number between 1 and 10\n", seed=42)
+    r = repl("a random number between 1 and 10\n", seed=42)
+    check("repl/eof-and-seed",
+          p.returncode == 0 and q.returncode == 0 and q.stdout == r.stdout,
+          f"rc={p.returncode}/{q.returncode}/{r.returncode} out={q.stdout!r}")
+
+
 # ------------------------------------------------------------ examples
 
 def test_guessing_game():
@@ -802,6 +861,7 @@ def main():
         test_optional(tmp)
         test_modules(tmp)
         test_stdlib(tmp)
+        test_repl(tmp)
         test_guessing_game()
         test_todo_app()
     finally:

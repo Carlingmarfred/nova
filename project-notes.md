@@ -108,6 +108,14 @@ done
   attribut-adgang og reserver-checks IKKE (file.write virker; B02's 11
   bindingssteder uændrede). C06/C07/C08 udvider STDLIB_FACTORIES + test-
   fragmentet for ukendt-lib-listen.
+- **REPL (v0.13/C09):** `_run_repl()` i nova_cli.py — én persistent `Interp`;
+  'done'-familie-parsefejl fortsætter bufferingen (`_is_open_block_error`), andre
+  fejl rapporteres og rydder buffer. Linjer der IKKE kan parse som sætning men SOM
+  ét udtryk (`_try_parse_expr_only`) echoes som `→ værdi` via `_repl_eval_echo`
+  (snapshot til undo-stakken sker FØR eval). `:undo` gendanner dyb kopi af
+  globals.vars + funcs + things (max 100; allerede printet tekst/fil-I/O rulles
+  ikke tilbage — siges i :help). Echo kører udtrykket ÉN gang (ingen dobbelt-
+  evaluering: ExprStmt-echo bruger eval direkte, ikke run()).
 - **Moduler (v0.12/C05):** `p_usemodule()` kræver navn der ender på `-module`
   (entydigt vs. `[the] NAVN is ...`-deklarationer — `the save-file is "x"` rammer
   IKKE branchen, fordi ahead(2) er "is" ikke "in"). Postfix: DOT + WORD + LPAREN
