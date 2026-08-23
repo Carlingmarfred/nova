@@ -1,0 +1,117 @@
+Program (11 statements)
+  Assign(line=1)
+    target: Var(line=1)
+      name: 'x'
+    expr: Lit(line=1)
+      value: 10
+  Assign(line=2)
+    target: Var(line=2)
+      name: 'n'
+    expr: Bin(line=2)
+      op: 'minus'
+      l: Bin(line=2)
+        op: 'plus'
+        l: Lit(line=2)
+          value: 7
+        r: Bin(line=2)
+          op: 'times'
+          l: Lit(line=2)
+            value: 3
+          r: Lit(line=2)
+            value: 2
+      r: Bin(line=2)
+        op: 'divided'
+        l: Lit(line=2)
+          value: 4
+        r: Lit(line=2)
+          value: 2
+  Assign(line=3)
+    target: Var(line=3)
+      name: 'r'
+    expr: Bin(line=3)
+      op: 'mod'
+      l: Lit(line=3)
+        value: 10
+      r: Lit(line=3)
+        value: 3
+  Assign(line=4)
+    target: Var(line=4)
+      name: 'big'
+    expr: Bin(line=4)
+      op: 'and'
+      l: Bin(line=4)
+        op: 'gt'
+        l: Var(line=4)
+          name: 'x'
+        r: Lit(line=4)
+          value: 9
+      r: Bin(line=4)
+        op: 'ne'
+        l: Var(line=4)
+          name: 'n'
+        r: Lit(line=4)
+          value: 0
+  Assign(line=5)
+    target: Var(line=5)
+      name: 'small'
+    expr: Bin(line=5)
+      op: 'or'
+      l: NotE(line=5)
+        e: Var(line=5)
+          name: 'big'
+      r: Bin(line=5)
+        op: 'lte'
+        l: Var(line=5)
+          name: 'x'
+        r: Lit(line=5)
+          value: 10
+  Assign(line=6)
+    target: Var(line=6)
+      name: 'neg'
+    expr: Bin(line=6)
+      op: 'plus'
+      l: Bin(line=6)
+        op: 'minus'
+        l: Lit(line=6)
+          value: 0
+        r: Var(line=6)
+          name: 'x'
+      r: Lit(line=6)
+        value: 5
+  Assign(line=7)
+    target: Var(line=7)
+      name: 't'
+    expr: Bin(line=7)
+      op: 'plus'
+      l: StrLit(line=7)
+        raw: 'hej'
+      r: StrLit(line=7)
+        raw: ' du'
+  ThingDef(line=8)
+    name: 'Task'
+    fields: {1 keys}
+      text None
+  Assign(line=11)
+    target: Var(line=11)
+      name: 'task'
+    expr: NewThing(line=11)
+      cls: 'Task'
+      setters: [1]
+        [0] tuple(2)
+          [0] 'text'
+          [1] StrLit(line=11)
+            raw: 'go'
+  Assign(line=12)
+    target: Field(line=12)
+      obj: Var(line=12)
+        name: 'task'
+      name: 'text'
+    expr: StrLit(line=12)
+      raw: 'klar'
+  Assign(line=13)
+    target: Var(line=13)
+      name: 'label'
+    expr: Field(line=13)
+      obj: Var(line=13)
+        name: 'task'
+      name: 'text'

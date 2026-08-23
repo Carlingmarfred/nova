@@ -1,0 +1,9 @@
+if x is 1 then say "en"
+if x is 2 then
+    say "to"
+otherwise if x is 3 then
+    say "tre"
+otherwise
+    say "andet"
+done
+unless x is 9 then say "ikke ni"

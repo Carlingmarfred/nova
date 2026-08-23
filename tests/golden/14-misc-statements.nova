@@ -1,0 +1,5 @@
+use the standard time library
+wait 0 seconds
+wait 1 minute
+pause the program
+exit

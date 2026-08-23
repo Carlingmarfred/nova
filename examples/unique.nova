@@ -1,0 +1,67 @@
+#!/usr/bin/env nova
+
+# ============================================================
+# KUN NOVA — demo af features ingen andre mainstream sprog har
+# Kør: nova run examples/unique.nova
+# ============================================================
+
+use the standard table library
+
+# ---------- U7: Tilstandsmaskine deklareres, compileren verificerer ----------
+a TrafficLight is the states
+    red    waits 30 seconds then becomes green
+    green  waits 25 seconds then becomes yellow
+    yellow waits 5 seconds  then becomes red
+done
+
+when the program starts
+    # ---------- U3+U4: Historik, undo og temporale spørgsmål ----------
+    track the shopping-list                       # alle versioner gemmes nu
+    shopping-list is ["mælk"]
+    add "brød" to shopping-list
+    add "ost"  to shopping-list
+    say "Listen: {shopping-list}"                 # [mælk, brød, ost]
+
+    undo the last change to shopping-list         # ← UNDO som sprog-feature
+    say "Efter undo: {shopping-list}"             # [mælk, brød]
+
+    if the count ever went above 2 then
+        say "Listen HAR været større engang."     # temporal spørgsmål på variabler
+
+    # ---------- U8: Eksakt matematik ----------
+    exact
+        if 0.1 plus 0.2 is equal to 0.3 then
+            say "0.1 + 0.2 er præcis 0.3 her!"    # true — kun inde i exact-blokken
+    done
+
+    # ---------- U1: Flow — samme API over alt der flyder ----------
+    errors are every line of "server.log" that contains "ERROR"   # strømmende, lazy
+    say "Der var {how many items are in errors} fejl."            # tæller uden at loade filen
+
+    # ---------- U2: Tabel som primitiv ----------
+    sales is a table from "sales.csv"
+    top is sales grouped by produkt summing beløb then biggest-first take 3
+    say "Topprodukter:"
+    repeat for each row in top
+        say "  {produkt of row}: {beløb of row} kr"
+    done
+
+    # ---------- U5: Tillids-sporing (taint) ----------
+    name is ask "Hvad hedder du? "                # stemplet ← tastatur
+    # database.query("SELECT * WHERE navn = '{name}'")
+    #   → COMPILE-FEJL: netto-stempel kan ikke nå database-sink.
+    clean-name is sanitize(name)                  # dokumenteret rensning
+    say "Hej {clean-name}!"
+
+    # ---------- U11: Tid som sætning ----------
+    in 10 seconds { say "(10 sekunder er gået)" }
+
+    # ---------- U7 brugt ----------
+    light is a new TrafficLight
+    repeat 3 times
+        say "Lampen viser: {light}"               # red → green → yellow
+        advance light
+    done
+
+    pause the program                             # her virker: nova why
+done

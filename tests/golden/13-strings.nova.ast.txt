@@ -1,0 +1,58 @@
+Program (6 statements)
+  Assign(line=1)
+    target: Var(line=1)
+      name: 'rest'
+    expr: EverythingAfter(line=1)
+      sep: StrLit(line=1)
+        raw: 'fx: '
+      e: Var(line=1)
+        name: 'input'
+  Assign(line=2)
+    target: Var(line=2)
+      name: 's'
+    expr: StrLit(line=2)
+      raw: 'hej'
+  If(line=3)
+    branches: [1]
+      [0] tuple(2)
+        [0] Bin(line=3)
+          op: 'startswith'
+          l: Var(line=3)
+            name: 's'
+          r: StrLit(line=3)
+            raw: 'he'
+        [1] Block(line=3)
+          stmts: [1]
+            [0] Say(line=3)
+              exprs: [1]
+                [0] StrLit(line=3)
+                  raw: 'ja'
+              newline: True
+    otherwise: None
+  If(line=4)
+    branches: [1]
+      [0] tuple(2)
+        [0] Bin(line=4)
+          op: 'endswith'
+          l: Var(line=4)
+            name: 's'
+          r: StrLit(line=4)
+            raw: 'ej'
+        [1] Block(line=4)
+          stmts: [1]
+            [0] Say(line=4)
+              exprs: [1]
+                [0] StrLit(line=4)
+                  raw: 'jo'
+              newline: True
+    otherwise: None
+  Assign(line=5)
+    target: Var(line=5)
+      name: 'q'
+    expr: StrLit(line=5)
+      raw: 'linje1\nlinje2\ttab'
+  Assign(line=6)
+    target: Var(line=6)
+      name: 'r'
+    expr: StrLit(line=6)
+      raw: 'enkelt i dobbelt: "x"'

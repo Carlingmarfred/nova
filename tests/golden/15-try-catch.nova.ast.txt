@@ -1,0 +1,37 @@
+Program (2 statements)
+  TryStmt(line=1)
+    body: Block(line=3)
+      stmts: [1]
+        [0] Assign(line=2)
+          target: Var(line=2)
+            name: 'x'
+          expr: Bin(line=2)
+            op: 'divided'
+            l: Lit(line=2)
+              value: 1
+            r: Lit(line=2)
+              value: 0
+    errname: 'err'
+    handler: Block(line=5)
+      stmts: [1]
+        [0] Say(line=4)
+          exprs: [1]
+            [0] StrLit(line=4)
+              raw: '{err}'
+          newline: True
+  TryStmt(line=7)
+    body: Block(line=9)
+      stmts: [1]
+        [0] Assign(line=8)
+          target: Var(line=8)
+            name: 'y'
+          expr: Lit(line=8)
+            value: 2
+    errname: None
+    handler: Block(line=11)
+      stmts: [1]
+        [0] Say(line=10)
+          exprs: [1]
+            [0] StrLit(line=10)
+              raw: 'fejl'
+          newline: True

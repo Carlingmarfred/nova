@@ -1,0 +1,9 @@
+use the standard json library
+use the standard random library
+
+xs is [1, 2]
+store xs in "ud.json" as json
+raw is the contents of "ud.json" parsed as json
+txt is the contents of "notes.txt"
+if "ud.json" exists then say "ja"
+if "nej.json" does not exist then say "ok"

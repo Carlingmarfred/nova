@@ -1,0 +1,10 @@
+xs is [3, 1, 2]
+ys is an empty list
+add 5 to ys
+add the first item of xs to ys
+take 5 from ys
+remove item 1 of xs
+say "{how many items are in ys}"
+say "{the length of xs}"
+say "{item 2 of xs}"
+say "{the last item of xs}"

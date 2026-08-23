@@ -1,0 +1,18 @@
+repeat forever
+    stop the loop
+done
+repeat until x is 10
+    skip this one
+done
+repeat while x is less than 3
+    add 1 to x
+done
+repeat 2 times
+    say "hei"
+done
+repeat for each tal in [1, 2]
+    say "{tal}"
+done
+repeat with i from 1 to 3
+    go to next turn
+done

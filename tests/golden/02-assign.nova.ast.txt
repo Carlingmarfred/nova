@@ -1,0 +1,21 @@
+Program (4 statements)
+  Assign(line=1)
+    target: Var(line=1)
+      name: 'x'
+    expr: Lit(line=1)
+      value: 5
+  Assign(line=2)
+    target: Var(line=2)
+      name: 'x'
+    expr: Lit(line=2)
+      value: 6
+  Assign(line=3)
+    target: Var(line=3)
+      name: 'y'
+    expr: Lit(line=3)
+      value: None
+  Assign(line=4)
+    target: Var(line=4)
+      name: 'z'
+    expr: Lit(line=4)
+      value: True

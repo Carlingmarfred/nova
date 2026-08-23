@@ -1,0 +1,10 @@
+n1 is 1 plus 2 times 3 minus 4 divided by 2 over 1 mod 2
+n2 is 2 multiplied by 3
+n3 is (1 plus 2) times 3
+n4 is not true
+big is 5
+small is 4
+eq is "a" is the same as "a"
+sum is 1 plus 2 plus 3
+if big is at least small then say "stor"
+if big is at most small then say "lille"

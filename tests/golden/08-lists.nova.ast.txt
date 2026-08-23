@@ -1,0 +1,55 @@
+Program (10 statements)
+  Assign(line=1)
+    target: Var(line=1)
+      name: 'xs'
+    expr: ListLit(line=1)
+      items: [3]
+        [0] Lit(line=1)
+          value: 3
+        [1] Lit(line=1)
+          value: 1
+        [2] Lit(line=1)
+          value: 2
+  Assign(line=2)
+    target: Var(line=2)
+      name: 'ys'
+    expr: EmptyListE(line=2)
+  AddTo(line=3)
+    name: 'ys'
+    expr: Lit(line=3)
+      value: 5
+  AddTo(line=4)
+    name: 'ys'
+    expr: FirstItem(line=4)
+      e: Var(line=4)
+        name: 'xs'
+  TakeFrom(line=5)
+    name: 'ys'
+    expr: Lit(line=5)
+      value: 5
+  RemoveStmt(line=6)
+    expr: ItemAt(line=6)
+      idx: Lit(line=6)
+        value: 1
+      e: Var(line=6)
+        name: 'xs'
+  Say(line=7)
+    exprs: [1]
+      [0] StrLit(line=7)
+        raw: '{how many items are in ys}'
+    newline: True
+  Say(line=8)
+    exprs: [1]
+      [0] StrLit(line=8)
+        raw: '{the length of xs}'
+    newline: True
+  Say(line=9)
+    exprs: [1]
+      [0] StrLit(line=9)
+        raw: '{item 2 of xs}'
+    newline: True
+  Say(line=10)
+    exprs: [1]
+      [0] StrLit(line=10)
+        raw: '{the last item of xs}'
+    newline: True

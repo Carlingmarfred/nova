@@ -1,0 +1,63 @@
+Program (8 statements)
+  UseLib(line=1)
+    text: 'the standard json library'
+  UseLib(line=2)
+    text: 'the standard random library'
+  Assign(line=4)
+    target: Var(line=4)
+      name: 'xs'
+    expr: ListLit(line=4)
+      items: [2]
+        [0] Lit(line=4)
+          value: 1
+        [1] Lit(line=4)
+          value: 2
+  StoreJson(line=5)
+    value: Var(line=5)
+      name: 'xs'
+    path: StrLit(line=5)
+      raw: 'ud.json'
+  Assign(line=6)
+    target: Var(line=6)
+      name: 'raw'
+    expr: ContentsOf(line=6)
+      e: StrLit(line=6)
+        raw: 'ud.json'
+      as_json: True
+  Assign(line=7)
+    target: Var(line=7)
+      name: 'txt'
+    expr: ContentsOf(line=7)
+      e: StrLit(line=7)
+        raw: 'notes.txt'
+      as_json: False
+  If(line=8)
+    branches: [1]
+      [0] tuple(2)
+        [0] ExistsE(line=8)
+          e: StrLit(line=8)
+            raw: 'ud.json'
+          flag: True
+        [1] Block(line=8)
+          stmts: [1]
+            [0] Say(line=8)
+              exprs: [1]
+                [0] StrLit(line=8)
+                  raw: 'ja'
+              newline: True
+    otherwise: None
+  If(line=9)
+    branches: [1]
+      [0] tuple(2)
+        [0] ExistsE(line=9)
+          e: StrLit(line=9)
+            raw: 'nej.json'
+          flag: False
+        [1] Block(line=9)
+          stmts: [1]
+            [0] Say(line=9)
+              exprs: [1]
+                [0] StrLit(line=9)
+                  raw: 'ok'
+              newline: True
+    otherwise: None

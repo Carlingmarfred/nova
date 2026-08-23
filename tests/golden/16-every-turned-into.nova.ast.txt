@@ -1,0 +1,19 @@
+Program (3 statements)
+  ThingDef(line=1)
+    name: 'Task'
+    fields: {1 keys}
+      text None
+  Assign(line=5)
+    target: Var(line=5)
+      name: 'ts'
+    expr: EveryTurnedInto(line=5)
+      e: Var(line=5)
+        name: 'raw'
+      thing: 'Task'
+  Assign(line=6)
+    target: Var(line=6)
+      name: 'ts'
+    expr: EveryTurnedInto(line=6)
+      e: Var(line=6)
+        name: 'raw'
+      thing: 'Tasks'

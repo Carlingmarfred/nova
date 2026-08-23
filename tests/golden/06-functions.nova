@@ -1,0 +1,16 @@
+to greet with name and greeting
+    say "{greeting} {name}"
+done
+
+to answer
+    give back 42
+done
+
+to early with xs
+    if xs is empty then return
+    give back the first item of xs
+done
+
+greet with "Bob" and "Hej"
+answer()
+early with [1]

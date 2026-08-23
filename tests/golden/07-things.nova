@@ -1,0 +1,10 @@
+a Task is a thing with
+    a text
+    finished set to false
+done
+
+t is a new Task
+u is a new Task with text set to "læs" and finished set to true
+say "{the text of u}"
+say "{the finished of item 1 of [u]}"
+set the finished of t to true

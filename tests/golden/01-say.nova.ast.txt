@@ -1,0 +1,35 @@
+Program (6 statements)
+  Say(line=1)
+    exprs: [1]
+      [0] StrLit(line=1)
+        raw: 'Hej verden'
+    newline: True
+  Say(line=2)
+    exprs: [1]
+      [0] Bin(line=2)
+        op: 'and'
+        l: StrLit(line=2)
+          raw: 'a'
+        r: StrLit(line=2)
+          raw: 'b'
+    newline: True
+  Say(line=3)
+    exprs: [1]
+      [0] StrLit(line=3)
+        raw: 'uden linjeskift'
+    newline: False
+  Say(line=4)
+    exprs: [1]
+      [0] StrLit(line=4)
+        raw: ''
+    newline: False
+  Assign(line=5)
+    target: Var(line=5)
+      name: 'x'
+    expr: Lit(line=5)
+      value: 5
+  Say(line=6)
+    exprs: [1]
+      [0] StrLit(line=6)
+        raw: 'x er {x} og {x plus 1}'
+    newline: True

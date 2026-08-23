@@ -1,0 +1,9 @@
+to fill with n and items
+    requires n is at least 1
+    requires n is at most how many items are in items
+    ensures how many items are in items is at least 1
+
+    say "fyldt med {n}"
+done
+
+fill with 7 and [7, 8]

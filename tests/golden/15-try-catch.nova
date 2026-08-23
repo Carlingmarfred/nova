@@ -1,0 +1,11 @@
+try
+    x is 1 divided by 0
+if it fails as err
+    say "{err}"
+done
+
+try
+    y is 2
+if it fails
+    say "fejl"
+done

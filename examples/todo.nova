@@ -1,0 +1,131 @@
+#!/usr/bin/env nova
+
+# ============================================================
+# GØRELISTE — en komplet lille app skrevet i Nova Natural
+#
+# Kør:  python bootstrap/nova_cli.py run examples/todo.nova
+# Data: gemmes automatisk i todo.json (ved hver ændring)
+#
+# Kommandoer: vis / tilføj <tekst> / færdig <nr> / slet <nr> / farvel
+# ============================================================
+
+use the standard json library
+
+# ---------- datamodellen ----------
+a Task is a thing with
+    a text
+    finished set to false
+done
+
+the save-file is "todo.json"
+
+# ---------- hjælpefunktioner ----------
+
+to load-tasks
+    if the save-file does not exist then give back an empty list
+    raw is the contents of the save-file parsed as json
+    give back every item of raw turned into a Task
+done
+
+to save-tasks with tasks
+    store tasks in the save-file as json
+done
+
+to show-tasks with tasks
+    if tasks has no items then
+        say "Der er ingenting at gøre — nyd dagen!"
+    otherwise
+        count is 0
+        repeat for each task in tasks
+            add 1 to count
+            mark is "[ ]"
+            if the finished of task is true then set mark to "[X]"
+            say "{mark} {count}) {the text of task}"
+        done
+    done
+done
+
+to finish-task with number and tasks
+    requires number is at least 1                        # contract
+    requires number is at most how many items are in tasks
+    ensures the finished of item number of tasks is true # checkes når funktionen slutter
+
+    set the finished of item number of tasks to true
+done
+
+to delete-task with number and tasks
+    requires number is at least 1
+    requires number is at most how many items are in tasks
+
+    remove item number of tasks
+done
+
+# ---------- selve appen ----------
+
+when the program starts
+    tasks is load-tasks()
+    say "Velkommen til din gøreliste!"
+
+    repeat forever
+        say ""
+        say "=== DU HAR {how many items are in tasks} TING PÅ LISTEN ==="
+        choice is ask "vis / tilføj / færdig / slet / farvel > "
+
+        check the choice
+            when it is "vis"
+                show-tasks with tasks
+
+            when it starts with "tilføj"
+                wanted is everything after "tilføj " in the choice
+                if wanted is empty then
+                    say "Hvad vil du tilføje? fx: tilføj køb brød"
+                otherwise
+                    new-task is a new Task with text set to wanted
+                    add new-task to tasks
+                    save-tasks with tasks
+                    say 'Tilføjet: "{wanted}"'
+                done
+
+            when it starts with "færdig"
+                answer is everything after "færdig " in the choice
+                if answer is not a number then
+                    say "Skriv et nummer, fx: færdig 2"
+                otherwise
+                    n is the number value of answer
+                    if n is greater than how many items are in tasks then
+                        say "Der er kun {how many items are in tasks} ting på listen."
+                    otherwise
+                        finish-task with n and tasks
+                        save-tasks with tasks
+                        say "Godt klaret!"
+                    done
+                done
+
+            when it starts with "slet"
+                answer is everything after "slet " in the choice
+                if answer is not a number then
+                    say "Skriv et nummer, fx: slet 3"
+                otherwise
+                    n is the number value of answer
+                    if n is greater than how many items are in tasks then
+                        say "Der er kun {how many items are in tasks} ting på listen."
+                    otherwise
+                        delete-task with n and tasks
+                        save-tasks with tasks
+                        say "Slettet."
+                    done
+                done
+
+            when it is "farvel"
+                stop the loop
+
+            when it is empty
+                stop the loop
+
+            otherwise
+                say "Det forstod jeg ikke — prøv: vis, tilføj, færdig, slet eller farvel."
+        done
+    done
+
+    say "Farvel — din liste er gemt."
+done

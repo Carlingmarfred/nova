@@ -1,0 +1,6 @@
+say "Hej verden"
+say "a" and "b"
+write "uden linjeskift"
+write ""
+x is 5
+say "x er {x} og {x plus 1}"

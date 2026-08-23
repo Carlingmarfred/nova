@@ -1,0 +1,13 @@
+Program (5 statements)
+  UseLib(line=1)
+    text: 'the standard time library'
+  WaitStmt(line=2)
+    amount: Lit(line=2)
+      value: 0
+    unit: 'seconds'
+  WaitStmt(line=3)
+    amount: Lit(line=3)
+      value: 1
+    unit: 'minutes'
+  PauseProgram(line=4)
+  StopProgram(line=5)

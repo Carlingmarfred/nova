@@ -1,0 +1,64 @@
+#!/usr/bin/env nova
+
+# ============================================================
+# Nova lab-demo: units + contracts + pipelines + signals + actors
+# Alle features er godkendte og integreret i kernespecs.
+# Kør: nova run examples/lab.nova
+# ============================================================
+
+use the standard units library
+use the standard random library
+
+# ---------- Contracts + units ----------
+to speed-of with distance and time
+    requires time is greater than 0 seconds          # contract: ved indgang
+    ensures the result is at least 0 km/h            # contract: ved udgang
+    give back the distance divided by the time       # Unit<Length/Time> infereres
+done
+
+# ---------- Actor: privat tilstand, én besked ad gangen, ingen locks ----------
+a Timer is an actor keeping
+    an elapsed of 0 seconds
+
+    on tick with step
+        add step to my elapsed
+    on reset
+        set my elapsed to 0 seconds
+    on read
+        reply with my elapsed
+done
+
+when the program starts
+    # ---------- Units: dimensional analysis compile-time ----------
+    race is 100 meters
+    result is 9.79 seconds
+    bolt-speed is speed-of with race and result
+    say "Usain: {bolt-speed in kilometers per hour}"      # 36.77 km/t
+
+    race plus result                                      # COMPILE-FEJL hvis slået til:
+                                                          # meter + sekund matcher ikke
+
+    # ---------- Pipeline som én sætning ----------
+    numbers-text is "3, 1, 4, 1, 5, 9, 2, 6"
+    even-total is take numbers-text
+        then split it by ","
+        then turn every piece into a number
+        then keep only the even ones
+        then sum them all
+    say "Lige tal lagt sammen: {even-total}"              # 2+4+6 = 12
+
+    # ---------- Signals: afledte værdier opdaterer sig selv ----------
+    score is a signal starting at 0
+    rank is when the score changes: "Niveau {floor(score / 100)}"
+    when score changes
+        say "{score} → {rank}"
+    done
+    add 10 to score                                       # → "10 → Niveau 0"
+    add 95 to score                                       # → "105 → Niveau 1"
+
+    # ---------- Actor i brug ----------
+    clock is a new Timer
+    send clock "tick" with 500 milliseconds               # enheder overalt
+    send clock "tick" with 250 milliseconds
+    say "Timer viser: {ask clock to read}"                # 750 ms
+done

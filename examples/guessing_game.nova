@@ -1,0 +1,35 @@
+#!/usr/bin/env nova
+
+# ============================================================
+# Gæt-tallet — skrevet som man ville forklare det til et menneske
+# Kør med: python bootstrap/nova_cli.py run examples/guessing_game.nova
+# ============================================================
+
+use the standard random library
+
+when the program starts
+    secret is a random number between 1 and 100
+    tries is 0
+
+    say "Jeg tænker på et tal mellem 1 og 100..."
+    say ""
+
+    the guess is nothing
+
+    repeat until the guess is the secret
+        answer is ask "Dit gæt: "
+        add 1 to tries
+
+        if answer is not a number then
+            say "Det er ikke et tal — prøv igen."
+        otherwise
+            set guess to the number value of answer
+            if guess is less than secret then say "Højere!"
+            if guess is greater than secret then say "Lavere!"
+        done
+    done
+
+    say ""
+    say "Rigtigt! Tallet var {secret}."
+    say "Du brugte {tries} forsøg."
+done

@@ -1,0 +1,14 @@
+Program (5 statements)
+  TrackStmt(line=1)
+    name: 'x'
+  UndoStmt(line=2)
+    name: 'x'
+    redo: False
+  UndoStmt(line=3)
+    name: 'x'
+    redo: True
+  TrackStmt(line=4)
+    name: 'score'
+  UndoStmt(line=5)
+    name: 'score'
+    redo: False

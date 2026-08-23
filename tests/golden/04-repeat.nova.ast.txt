@@ -1,0 +1,62 @@
+Program (6 statements)
+  RepeatForever(line=1)
+    body: Block(line=3)
+      stmts: [1]
+        [0] BreakStmt(line=2)
+  RepeatUntil(line=4)
+    cond: Bin(line=4)
+      op: 'eq'
+      l: Var(line=4)
+        name: 'x'
+      r: Lit(line=4)
+        value: 10
+    body: Block(line=6)
+      stmts: [1]
+        [0] ContinueStmt(line=5)
+  RepeatWhile(line=7)
+    cond: Bin(line=7)
+      op: 'lt'
+      l: Var(line=7)
+        name: 'x'
+      r: Lit(line=7)
+        value: 3
+    body: Block(line=9)
+      stmts: [1]
+        [0] AddTo(line=8)
+          name: 'x'
+          expr: Lit(line=8)
+            value: 1
+  RepeatTimes(line=10)
+    count: Lit(line=10)
+      value: 2
+    body: Block(line=12)
+      stmts: [1]
+        [0] Say(line=11)
+          exprs: [1]
+            [0] StrLit(line=11)
+              raw: 'hei'
+          newline: True
+  RepeatEach(line=13)
+    var: 'tal'
+    iterable: ListLit(line=13)
+      items: [2]
+        [0] Lit(line=13)
+          value: 1
+        [1] Lit(line=13)
+          value: 2
+    body: Block(line=15)
+      stmts: [1]
+        [0] Say(line=14)
+          exprs: [1]
+            [0] StrLit(line=14)
+              raw: '{tal}'
+          newline: True
+  RepeatCounting(line=16)
+    var: 'i'
+    start: Lit(line=16)
+      value: 1
+    end: Lit(line=16)
+      value: 3
+    body: Block(line=18)
+      stmts: [1]
+        [0] ContinueStmt(line=17)

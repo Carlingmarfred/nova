@@ -1,0 +1,44 @@
+Program (6 statements)
+  ThingDef(line=1)
+    name: 'Task'
+    fields: {2 keys}
+      text None
+      finished Lit(line=3)
+        value: False
+  Assign(line=6)
+    target: Var(line=6)
+      name: 't'
+    expr: NewThing(line=6)
+      cls: 'Task'
+      setters: []
+  Assign(line=7)
+    target: Var(line=7)
+      name: 'u'
+    expr: NewThing(line=7)
+      cls: 'Task'
+      setters: [2]
+        [0] tuple(2)
+          [0] 'text'
+          [1] StrLit(line=7)
+            raw: 'læs'
+        [1] tuple(2)
+          [0] 'finished'
+          [1] Lit(line=7)
+            value: True
+  Say(line=8)
+    exprs: [1]
+      [0] StrLit(line=8)
+        raw: '{the text of u}'
+    newline: True
+  Say(line=9)
+    exprs: [1]
+      [0] StrLit(line=9)
+        raw: '{the finished of item 1 of [u]}'
+    newline: True
+  Assign(line=10)
+    target: Field(line=10)
+      obj: Var(line=10)
+        name: 't'
+      name: 'finished'
+    expr: Lit(line=10)
+      value: True

@@ -1,0 +1,6 @@
+rest is everything after "fx: " in the input
+s is "hej"
+if s starts with "he" then say "ja"
+if s ends with "ej" then say "jo"
+q is "linje1\nlinje2\ttab"
+r is 'enkelt i dobbelt: "x"'

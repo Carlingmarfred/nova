@@ -1,0 +1,246 @@
+// ============================================================
+// NOVA LANGUAGE TOUR — hele sproget i ét program
+// Kør: nova run examples/tour.nova
+// ============================================================
+
+#!/usr/bin/env nova
+
+import std.fs.Path
+import std.json as json
+from std.math import PI, sqrt
+import std.async as asyncio
+
+// ---------- 1. Variabler, inference, konstanter ----------
+x = 10                          // mutable, i32
+let name = "Nova"               // immutable String
+ratio: f64 = 0.75               // eksplicit type
+big = 9999999999999999999999n   // BigInt
+tiny = 42u8                     // suffixed literal
+const MAX_USERS = 1000          // compile-time konstant
+
+// ---------- 2. Funktioner: defaults, named args, variadics ----------
+fn greet(who = "verden", times: i32 = 1) -> String {
+    ("Hej {who}! " * times).trim()
+}
+
+fn sum(...nums: i32) -> i32 {           // positional variadic
+    nums.iter().sum()
+}
+
+fn config(**opts: dynamic) -> String {  // keyword-collect
+    "timeout={opts.timeout ?? 30}, retries={opts.retries ?? 3}"
+}
+
+// ---------- 3. Kontrolflow og match ----------
+fn classify(n: i32) -> String {
+    match n {
+        0                 => "nul"
+        1 | 2 | 3         => "lille"
+        r in 4..=10       => "mellem ({r})"
+        m where m % 2 == 0 => "stor og lige"
+        _                 => "stor"
+    }
+}
+
+// match på tuple + destructure + guard
+fn quadrant(p: (f64, f64)) -> i32 {
+    match p {
+        (0.0, 0.0) => 0
+        (px, py) where px > 0 && py > 0 => 1
+        (px, _) where px < 0 && _y_ok(py) => 2
+        _ => 3
+    }
+}
+fn _y_ok(y: f64) -> bool { y > 0 }
+
+// ---------- 4. Collections & comprehensions ----------
+squares = [i * i for i in 1..=10 if i % 2 == 0]     // [4,16,36,64,100]
+lookup  = {c: ord(c) for c in "abc"}                // Map<char,i32>
+uniq    = {w.lower() for w in ["Hej","hej","NOVA"]} // Set<String>
+evens   = squares.filter(s => s % 4 == 0).map(s => s / 2)
+total   = squares.fold(0, (a, b) => a + b)
+
+matrix = [[r * 10 + c for c in 0..3] for r in 0..3]
+flat   = matrix.flatten()
+last   = flat[^1]                                   // negativt indeks
+slice_ = flat[1..4]                                 // [11? nej — 1..4 eksklusiv]
+
+// ---------- 5. Strings ----------
+msg = "{name} v{1}.{0}"                             // interpolation
+padded = "hi".pad_left(5, '.')                      // "...hi"
+csv_line = ["a", "b,c", "d"].map(s => '"{s}"').join(",")
+reversed_text = "nova"[::-1]
+
+// ---------- 6. Structs, enums, klasser, traits ----------
+struct Vec3 {
+    x: f64 = 0
+    y: f64 = 0
+    z: f64 = 0
+
+    fn length(self) -> f64 { sqrt(self.x**2 + self.y**2 + self.z**2) }
+}
+
+impl Add for Vec3 {
+    fn add(self, other: Vec3) -> Vec3 { Vec3(self.x+other.x, self.y+other.y, self.z+other.z) }
+}
+
+enum Shape {
+    Circle(r: f64)
+    Rect(w: f64, h: f64)
+
+    fn area(self) -> f64 {
+        match self {
+            Circle(r) => PI * r ** 2
+            Rect(w, h) => w * h
+        }
+    }
+}
+
+trait Describable {
+    fn describe(self) -> String
+    fn describe_loud(self) -> String { self.describe().upper() }   // default-metode
+}
+
+@dataclass
+class User {
+    name: String
+    age: i32 = 0
+    tags: Array<String> = []
+}
+
+class Account : Describable {
+    priv balance_: f64 = 0
+
+    balance: f64 {                                   // property
+        get { self.balance_ }
+        set(v) { require(v >= 0, "negativ saldo") ; self.balance_ = v }
+    }
+
+    fn describe(self) -> String { "konto med {self.balance_:.2} kr" }
+}
+
+v = Vec3(x = 3, y = 4) + Vec3(z = 1)
+shapes = [Shape.Circle(1), Shape.Rect(2, 3)]
+areas = shapes.map(s => s.area())
+
+// ---------- 7. Generics + bounds ----------
+fn largest<T: Comparable>(items: [T]) -> T? {
+    items.reduce((a, b) => if a >= b { a } else { b })
+}
+
+struct Pair<K, V> {
+    key: K
+    value: V
+}
+
+// ---------- 8. Error handling ----------
+fn read_config(path: Path) -> Result<json.Json, String> {
+    text = path.read_text()?.to_string()?             // ? propagater begge fejl
+    parsed = json.parse(text)?                        // auto-konverteret til String-fejl
+    Ok(parsed)
+}
+
+port = read_config("app.conf".into::<Path>())
+        .and_then(j => j.get("port").ok_or("mangler port"))
+        .and_then(p => p.to_int())
+        .unwrap_or(8080)
+
+maybe_user: User? = none
+fallback_name = maybe_user?.name ?? "anonym"
+
+// ---------- 9. Iterators / generators ----------
+fn fibonacci() -> Iterator<BigInt> {
+    var (a, b) = (0n, 1n)
+    loop {
+        yield a
+        (a, b) = (b, a + b)
+    }
+}
+
+fib_sum = fibonacci().take(50).filter(f => f % 2 == 0n).sum()
+
+// ---------- 10. async/parallel/channels ----------
+async fn fetch_len(url: String) -> Result<i64, String> {
+    resp = await http.get(url)?
+    Ok(resp.body.len() as i64)
+}
+
+async fn demo_async() {
+    lengths = await gather(["https://a.dk", "https://b.dk"].map(fetch_len))
+    print(lengths)
+}
+
+parallel {
+    a = classify(sum(40, 2))
+    b = greet("Nova", times = 2)
+}                                                      // a,b beregnet samtidig
+
+(ch_tx, ch_rx) = Channel<String>.bounded(8)
+worker = spawn {
+    while m := ch_rx.recv() { print("arbejder fik: {m}") }
+}
+ch_tx.send("hej")
+ch_tx.close()
+worker.join()
+
+// ---------- 11. use / defer ----------
+fn process_file(p: Path) -> Result<i64, String> {
+    use f = File.open(p)? {                            // deterministisk lukning
+        f.lines().count()
+    }
+}
+
+defer_scope_example() {
+    defer print("rydder op")                           // LIFO ved scope-exit
+    print("arbejder...")
+}
+
+// ---------- 12. Reflection & metaprogramming ----------
+@generate_serialization                                  // makro → to_json/from_json
+struct Point3D {
+    x: f64
+    y: f64
+    z: f64
+}
+
+const LOOKUP_TABLE = [i ** 2 for i in 0..256]            // compile-time beregnet
+
+fn reflect_demo(u: User) {
+    t = typeof(User)
+    for field in t.fields {
+        print("{field.name}: {field.type}")
+    }
+    clone_like = t.construct({name: u.name})             // dynamisk konstruktion
+}
+
+// ---------- 13. Tests indbygget ----------
+@test
+fn addition_works() {
+    expect_eq(sum(2, 3), 5)
+    expect_close(Vec3(x = 3, y = 4).length(), 5.0, eps = 1e-9)
+}
+
+@test
+fn config_defaults() {
+    expect(config() == "timeout=30, retries=3")
+}
+
+// ---------- 14. GPU (M5-preview) ----------
+@gpu
+fn grayscale(img: DeviceArray<f32>, out: DeviceArray<f32>) {
+    i = thread_index()
+    r, g, b = img[i*3], img[i*3+1], img[i*3+2]
+    out[i] = 0.299*r + 0.587*g + 0.114*b
+}
+
+// ---------- main ----------
+fn main() {
+    print(greet(times = 3))
+    print("sum: {sum(1, 2, 3, 4)}")
+    print(classify(7))
+    print("fib-sum: {fib_sum}")
+    print("største: {largest([3, 9, 2])}")               // some(9) → printer 9
+    reflect_demo(User("Carl", 30))
+
+    asyncio.run(demo_async())                            // kun hvis netværk tilladt
+}

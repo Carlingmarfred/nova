@@ -1,0 +1,22 @@
+check the choice
+    when it is "vis"
+        say "v"
+    when it starts with "slet"
+        say "s"
+    when it ends with "ende"
+        say "e"
+    when it contains "abc"
+        say "c"
+    when it is empty
+        say "tom"
+    when it is a number
+        say "n"
+    when it is not a number
+        say "ikke n"
+    when it is equal to 42
+        say "42"
+    when it is the same as "x"
+        say "x"
+    otherwise
+        say "?"
+done

@@ -1,0 +1,5 @@
+track x
+undo the last change to x
+redo the last change to x
+track the score
+undo the last change to the score

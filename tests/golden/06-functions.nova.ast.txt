@@ -1,0 +1,62 @@
+Program (6 statements)
+  FuncDef(line=1)
+    name: 'greet'
+    params: [2]
+      [0] 'name'
+      [1] 'greeting'
+    body: Block(line=3)
+      stmts: [1]
+        [0] Say(line=2)
+          exprs: [1]
+            [0] StrLit(line=2)
+              raw: '{greeting} {name}'
+          newline: True
+  FuncDef(line=5)
+    name: 'answer'
+    params: []
+    body: Block(line=7)
+      stmts: [1]
+        [0] ReturnStmt(line=6)
+          expr: Lit(line=6)
+            value: 42
+  FuncDef(line=9)
+    name: 'early'
+    params: [1]
+      [0] 'xs'
+    body: Block(line=12)
+      stmts: [2]
+        [0] If(line=10)
+          branches: [1]
+            [0] tuple(2)
+              [0] IsEmptyE(line=10)
+                e: Var(line=10)
+                  name: 'xs'
+              [1] Block(line=10)
+                stmts: [1]
+                  [0] ReturnStmt(line=10)
+                    expr: None
+          otherwise: None
+        [1] ReturnStmt(line=11)
+          expr: FirstItem(line=11)
+            e: Var(line=11)
+              name: 'xs'
+  ExprStmt(line=14)
+    expr: Call(line=14)
+      name: 'greet'
+      args: [2]
+        [0] StrLit(line=14)
+          raw: 'Bob'
+        [1] StrLit(line=14)
+          raw: 'Hej'
+  ExprStmt(line=15)
+    expr: Call(line=15)
+      name: 'answer'
+      args: []
+  ExprStmt(line=16)
+    expr: Call(line=16)
+      name: 'early'
+      args: [1]
+        [0] ListLit(line=16)
+          items: [1]
+            [0] Lit(line=16)
+              value: 1
