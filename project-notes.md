@@ -1,7 +1,8 @@
 # Nova — Project Notes
 
-> **Status v0.12-bootstrap (i gang):** B05/B01/B02 + C01/C02/B04 + C03 gennemført;
-> 146/146 end-to-end tests grønne (`python tests/run_tests.py`). Se changelog i §5.
+> **Status v0.12-bootstrap (i gang):** B05/B01/B02 + C01/C02/B04 + C03 + C05
+> gennemført; 159/159 end-to-end tests grønne (`python tests/run_tests.py`).
+> Se changelog i §5.
 
 ## 1. Context & Goals
 
@@ -99,6 +100,18 @@ done
   NumVal hele aritmikken (`nv x? plus 1` blev `NumVal(x plus 1)`), `?`-giften når
   aldrig konverteringen, og `"5" * 2` inde i frasen gav `"55"`. Samme princip som
   `between A and B` / `item N of`. For numeriske X er resultatet uændret.
+- **Moduler (v0.12/C05):** `p_usemodule()` kræver navn der ender på `-module`
+  (entydigt vs. `[the] NAVN is ...`-deklarationer — `the save-file is "x"` rammer
+  IKKE branchen, fordi ahead(2) er "is" ikke "in"). Postfix: DOT + WORD + LPAREN
+  → `ModuleCall` KUN når basen er bar Var (ellers gammel "kommer senere"-fejl);
+  ellers Field. Fortolker: `ModuleInstance(name,path,funcs,things,scope parent=None)`
+  — fuld isolation; `_load_module` tjekker import-stakken FØR cache'en (ellers
+  opdages cirkulær import aldrig — modulet er allerede cachet under sin egen
+  kørsel); `_cur_dir` save/restore omkring modul-krop (relative imports kæder
+  op imod den importerende fil). `_invoke(fn,args,line,parent)` = fælles vej for
+  call() og ModuleCall — arity-tjek ligger HER (ModuleCall må ikke kunne springe
+  det over). CLI: `root_dir=dirname(programfil)`; NovaLex/ParseError fra modul-
+  indlæsning under run() fanges nu af CLI (ingen traceback-lækage).
 - **RESERVED_WORDS (v0.11/B02):** frozenset i `nova_parser.py`; alle navne-bindingssteder
   går gennem `expect_name(what)` (WORD-tjek + reservations-fejl "— vælg et andet navn").
   Politik + ordliste: specs/syntax/lexical.md §Reserverede ord. `number/length/first/
@@ -161,6 +174,19 @@ done
    funktions-lokalt scope (post-betingelser ser sluttilstanden). Dokumenteret i README.
 
 ## 5. v0.11 changelog
+
+**2026-08-23 — C05 moduler (v0.12, 159/159):**
+- Parser: `UseModule` + `ModuleCall` noder; `p_usemodule()`; postfix DOT+LPAREN
+  på bar Var → ModuleCall (andre baser beholder "kommer senere"-fejlen).
+- Fortolker: `ModuleInstance`, `_load_module` (stak-først-cache, kæde-fejl,
+  venlige fejl for manglende fil/parse-fejl med filnavn, `when the program
+  starts` forbudt i moduler), Field-læsning af modul-vars/funktioner,
+  `_invoke`-refaktor (arity delt). CLI: root_dir + run()-fejlcatch.
+- Testafslørrete huller: cirkulær import usynlig pga. cache-før-stak rækkefølge;
+  ModuleCall sprang arity-tjek over; manglende `done` i testens modul afslørede
+  traceback-lækage for parse-fejl under kørsel → CLI-catch tilføjet.
+- Beviser: 12 module-tests (import/kald/læsning, isolation, idempotens, kædet
+  relativ import, 6 fejltilfælde), kryds-skin-par 7, golden 19.
 
 **2026-08-23 — C03 Optional/`?` (v0.12, 146/146):**
 - Lexer: `?` → QUESTION (skin-symboltabel). Parser: `QuestionE`-node + postfix i

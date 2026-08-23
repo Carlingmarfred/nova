@@ -42,7 +42,8 @@ python bootstrap/nova_cli.py parse examples/todo.nova       # AST dump
 - Done 2026-08-22: B05 golden dumps · B01 error audit · B02 reserved words ·
   C01 shorthand skin · C02 equivalence pairs · B04 unary minus.
 - Done 2026-08-23: C03 Optional (`?` hele-udtryksgift; golden 18; par6; NumVal
-  factor-binding; plus type-mismatch-sætning).
-- Next up per plan §7: C05 modules → C06–C08 stdlib v0.
+  factor-binding; plus type-mismatch-sætning) · C05 modules (navnerum, parentes-kald,
+  cirkulær-fejl; golden 19; par7).
+- Next up per plan §7: C06–C08 stdlib v0 (B03 stubs først) → C09 REPL.
 - Golden dumps: after BEVIDSTE grammar/format changes run
   `python tests/run_tests.py --update-goldens` and review the diff.

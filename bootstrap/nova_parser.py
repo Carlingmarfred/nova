@@ -105,6 +105,12 @@ class WaitStmt:
 class UseLib:
     text: str; line: int = 0
 
+
+@dataclass
+class UseModule:
+    """C05: `the X-module in "fil.nova"` — binder X-module til en modul-værdi."""
+    name: str; path: str; line: int = 0
+
 @dataclass
 class TrackStmt:
     name: str; line: int = 0
@@ -171,6 +177,12 @@ class NotE:
 @dataclass
 class Call:
     name: str; args: list; line: int = 0
+
+
+@dataclass
+class ModuleCall:
+    """C05: modul.funktion(args) — navnerums-kald på en importeret modul-værdi."""
+    mod: str; name: str; args: list; line: int = 0
 
 @dataclass
 class NewThing:
@@ -415,6 +427,8 @@ class Parser:
             self.expect_eol()
             return ReturnStmt(e, line=t.line)
         if w == "store":                                 return self.p_store()
+        if w == "the" and self.peek(1).kind == "WORD" and self.at_word_ahead(2, "in"):
+            return self.p_usemodule()
 
         # NAVN (.felt)* = EXPR  →  kompakt tildeling (samme Assign-node)
         if self.peek().kind == "WORD":
@@ -462,6 +476,25 @@ class Parser:
             tok = self.next()
             parts.append(str(tok.value))
         return UseLib(" ".join(parts), line=t.line)
+
+    def p_usemodule(self):
+        t = self.next()  # the
+        name_t = self.peek()
+        if name_t.kind != "WORD" or not str(name_t.value).endswith("-module"):
+            raise NovaParseError(
+                name_t.line,
+                f"et modul-navn skal ende på '-module' — fx: the tools-module in \"tools.nova\" "
+                f"(fandt '{name_t.value}')", name_t.col)
+        self.next()
+        self.expect_word("in")
+        pt = self.peek()
+        if pt.kind != "STRING":
+            raise NovaParseError(
+                pt.line, f"forventede en fil-sti i anførselstegn efter 'in' — "
+                         f"fx: the {name_t.value} in \"{'tools.nova'}\"", pt.col)
+        self.next()
+        self.expect_eol()
+        return UseModule(name_t.value, pt.value, line=t.line)
 
     def p_say(self):
         t = self.next()
@@ -963,13 +996,28 @@ class Parser:
         while True:
             if self.at_kind("DOT"):
                 dot_t = self.next()
-                nxt = self.peek()
-                if nxt.kind == "LPAREN":
-                    raise NovaParseError(nxt.line,
-                                         "metodekald som .navn(...) kommer i en senere version — "
-                                         "brug indbyggede funktioner eller 'the ... of ...'", nxt.col)
                 name = self.expect_name("feltnavn efter '.'")
-                e = Field(e, name, dot_t.line)
+                if self.peek().kind == "LPAREN":
+                    # C05: navn.funktion(...) = modul-kald (kun på en bar variabel)
+                    if not isinstance(e, Var):
+                        raise NovaParseError(
+                            dot_t.line,
+                            "metodekald som .navn(...) kommer i en senere version — "
+                            "i denne version er punktum-kald kun til modulfunktioner: "
+                            "modul-navn.funktion(...)", dot_t.col)
+                    self.next()
+                    args = []
+                    if self.peek().kind != "RPAREN":
+                        args.append(self.parse_arith())
+                        while self.peek().kind == "COMMA":
+                            self.next()
+                            args.append(self.parse_arith())
+                    if self.peek().kind != "RPAREN":
+                        self.err("mangler ')'")
+                    self.next()
+                    e = ModuleCall(e.name, name, args, dot_t.line)
+                else:
+                    e = Field(e, name, dot_t.line)
             elif self.at_kind("QUESTION"):
                 t = self.next()
                 e = QuestionE(e, t.line)

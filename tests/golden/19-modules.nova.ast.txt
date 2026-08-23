@@ -1,0 +1,25 @@
+Program (4 statements)
+  UseModule(line=2)
+    name: 'tools-module'
+    path: 'tools-module.nova'
+  Assign(line=3)
+    target: Var(line=3)
+      name: 's'
+    expr: ModuleCall(line=3)
+      mod: 'tools-module'
+      name: 'twice'
+      args: [1]
+        [0] Lit(line=3)
+          value: 21
+  Assign(line=4)
+    target: Var(line=4)
+      name: 'w'
+    expr: Field(line=4)
+      obj: Var(line=4)
+        name: 'tools-module'
+      name: 'answer'
+  Say(line=5)
+    exprs: [1]
+      [0] StrLit(line=5)
+        raw: '{tools-module.twice(2)}'
+    newline: True

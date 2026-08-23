@@ -86,7 +86,7 @@ def main(argv):
         return 0
 
     if cmd == "run":
-        interp = Interp(seed=seed)
+        interp = Interp(seed=seed, root_dir=os.path.dirname(os.path.abspath(path)))
         try:
             interp.run(stmts)
             return 0
@@ -95,6 +95,9 @@ def main(argv):
             return 1
         except NothingSignal as ns:
             print(f"\nNova-fejl — linje {ns.line}: {ns.msg}", file=sys.stderr)
+            return 1
+        except (NovaLexError, NovaParseError) as e:  # fx fejl i et modul under kørsel
+            _print_err("Fejl", e)
             return 1
         except ExitSignal:
             return 0

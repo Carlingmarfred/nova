@@ -1,0 +1,5 @@
+# C05: moduler — import-sætning + navnerums-kald (deterministisk dump)
+the tools-module in "tools-module.nova"
+s = tools-module.twice(21)
+set w to the answer of the tools-module
+say "{tools-module.twice(2)}"

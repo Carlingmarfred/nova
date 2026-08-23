@@ -442,6 +442,7 @@ def test_shorthand(tmp):
         ('t.text = "hej"', 'set the text of t to "hej"'),
         ('u = -q + 2', 'u is 0 minus q plus 2'),
         ('u = q? + 1', 'set u to q plus 1?'),
+        ('m = tools-module.twice(21)', 'set m to tools-module.twice(21)'),
     ]
     for i, (short, natural) in enumerate(pairs, 1):
         ps = nova(["parse", prog(short, tmp)], cwd=tmp)
@@ -499,6 +500,99 @@ def test_optional(tmp):
               and "Traceback" not in p.stderr
               and "linje" in p.stderr)
         check(f"optional/{name}", ok, f"rc={p.returncode} err={p.stderr[:220]!r}")
+
+
+def test_modules(tmp):
+    """C05: moduler — the X-module in "fil", navnerum, cirkulær import-fejl."""
+    def write_mod(fname, src):
+        with open(os.path.join(tmp, fname), "w", encoding="utf-8") as f:
+            f.write(src)
+
+    write_mod("tools-module.nova",
+              'to twice with n\n    give back n times 2\ndone\nanswer is 42\n')
+    write_mod("counter-module.nova",
+              'x is 1\nto getx\n    give back x\ndone\n')
+    write_mod("ping-module.nova", 'say "ping"\n')
+    write_mod("a-module.nova", 'the b-module in "b-module.nova"\n')
+    write_mod("b-module.nova", 'the a-module in "a-module.nova"\n')
+
+    # 1) import + navnerums-kald + felt-læsning af modul-variabel
+    src = ('the tools-module in "tools-module.nova"\n'
+           'say "{tools-module.twice(21)}"\n'
+           'say "{the answer of the tools-module}"\n')
+    p = nova(["run", prog(src, tmp)], cwd=tmp)
+    check("module/import-call-read",
+          p.returncode == 0 and p.stdout == "42\n42\n",
+          f"rc={p.returncode} out={p.stdout!r} err={p.stderr[:200]!r}")
+
+    # 2) separate navnerum — modulet kan ikke se/forurene hovedprogrammets navne
+    src = ('x is 99\n'
+           'the counter-module in "counter-module.nova"\n'
+           'say "{x}"\n'
+           'say "{counter-module.getx()}"\n')
+    p = nova(["run", prog(src, tmp)], cwd=tmp)
+    check("module/namespace-isolation",
+          p.returncode == 0 and p.stdout == "99\n1\n",
+          f"rc={p.returncode} out={p.stdout!r} err={p.stderr[:200]!r}")
+
+    # 3) idempotent: dobbelt import køres én gang
+    src = ('the ping-module in "ping-module.nova"\n'
+           'the ping-module in "ping-module.nova"\n'
+           'say "klar"\n')
+    p = nova(["run", prog(src, tmp)], cwd=tmp)
+    check("module/idempotent",
+          p.returncode == 0 and p.stdout.count("ping") == 1 and "klar" in p.stdout,
+          f"rc={p.returncode} out={p.stdout!r} err={p.stderr[:200]!r}")
+
+    # 4) kædet import: modul importerer undermodul relativt til sig selv
+    os.makedirs(os.path.join(tmp, "sub"), exist_ok=True)
+    write_mod("sub/inner-module.nova", 'mark is "indre"\n')
+    write_mod("outer-module.nova",
+              'the inner-module in "sub/inner-module.nova"\n'
+              'to pick\n    give back the mark of the inner-module\ndone\n')
+    src = ('the outer-module in "outer-module.nova"\n'
+           'say "{outer-module.pick()}"\n')
+    p = nova(["run", prog(src, tmp)], cwd=tmp)
+    check("module/nested-relative",
+          p.returncode == 0 and "indre" in p.stdout,
+          f"rc={p.returncode} out={p.stdout!r} err={p.stderr[:200]!r}")
+
+    # fejltilfælde: (navn, filer, hovedprogram, påkrævede fragmenter)
+    err_cases = [
+        ("circular", None,
+         'the a-module in "a-module.nova"',
+         ["cirkulær import", "a-module.nova"]),
+        ("missing-file", None,
+         'the ghost-module in "ghost-module.nova"',
+         ["ghost-module.nova", "findes ikke"]),
+        ("mains-forbidden", [("bad-module.nova", "when the program starts\n    say \"x\"\ndone\n")],
+         'the bad-module in "bad-module.nova"',
+         ["modul", "when the program starts"]),
+        ("unknown-member", None,
+         'the tools-module in "tools-module.nova"\nsay "{tools-module.twice(1, 2)}"',
+         ["forventer 1", "fik 2"]),
+        ("non-module-call", None,
+         'n is 5\nsay "{n.foo()}"',
+         ["ikke et modul", "the n-module"]),
+        ("bad-module-name", None,
+         'the tools in "tools-module.nova"',
+         ["'-module'", "tools.nova"]),
+    ]
+    for name, files, src, fragments in err_cases:
+        if files:
+            for fn, fsrc in files:
+                write_mod(fn, fsrc)
+        p = nova(["run", prog(src, tmp)], cwd=tmp)
+        ok = (p.returncode == 1
+              and all(fr in p.stderr for fr in fragments)
+              and "Traceback" not in p.stderr
+              and "linje" in p.stderr)
+        check(f"module/{name}", ok, f"rc={p.returncode} err={p.stderr[:220]!r}")
+
+    # parse-dump: import-sætning og modulkald i golden-korpusset (19-modules)
+    p = nova(["parse", os.path.join(GOLDEN_DIR, "19-modules.nova")], cwd=tmp)
+    check("module/golden-parses", p.returncode == 0 and "UseModule" in p.stdout
+          and "ModuleCall" in p.stdout, f"rc={p.returncode} out={p.stdout[:120]!r}")
 
 
 # ------------------------------------------------------------ examples
@@ -567,6 +661,7 @@ def main():
         test_reserved_words(tmp)
         test_shorthand(tmp)
         test_optional(tmp)
+        test_modules(tmp)
         test_guessing_game()
         test_todo_app()
     finally:

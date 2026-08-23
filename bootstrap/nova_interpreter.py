@@ -8,7 +8,9 @@ import random as _random
 import sys
 import time
 
-from nova_parser import FuncDef, ThingDef, WhenProgramStarts, ItemAt
+from nova_parser import (FuncDef, ThingDef, WhenProgramStarts, ItemAt,
+                         UseModule, ModuleCall, parse_source,
+                         NovaLexError, NovaParseError)
 
 
 def _suggest(name, candidates):
@@ -69,6 +71,18 @@ class Function:
         self.name = name
         self.params = params
         self.body = body
+
+
+class ModuleInstance:
+    """C05: ét importeret modul — separate navnerum (funcs/things/scope)."""
+    __slots__ = ("name", "path", "funcs", "things", "scope")
+
+    def __init__(self, name, path):
+        self.name = name
+        self.path = path
+        self.funcs = {}
+        self.things = {}
+        self.scope = Scope()  # parent=None: fuldstændig isolation fra hovedprogrammet
 
 
 class Scope:
@@ -144,7 +158,7 @@ def to_plain(v):
 
 
 class Interp:
-    def __init__(self, seed=None, stdin=None, stdout=None):
+    def __init__(self, seed=None, stdin=None, stdout=None, root_dir=None):
         self.globals = Scope()
         self.funcs = {}
         self.things = {}
@@ -153,6 +167,9 @@ class Interp:
         self.history = {}   # name -> [snapshots]
         self.redo_stack = {}  # name -> [snapshots]
         self._ensure_frames = []  # stack af [(expr, line)] — udskydes til funktionsafslutning
+        self._modules = {}        # abspath -> ModuleInstance (C05: idempotent import)
+        self._import_stack = []   # [(abspath, filnavn)] — cirkulær import-detektion
+        self._cur_dir = root_dir if root_dir else os.getcwd()  # relativ import-basis
         if seed is not None:
             _random.seed(seed)
         self.stdin = stdin if stdin is not None else sys.stdin
@@ -365,6 +382,10 @@ class Interp:
             return
         if t == "UseLib":
             return
+        if t == "UseModule":
+            inst = self._load_module(st.path, st.name, st.line)
+            scope.set(st.name, inst)
+            return
         if t == "TrackStmt":
             self.tracked.add(st.name)
             self.history.setdefault(st.name, [])
@@ -424,6 +445,55 @@ class Interp:
         if t == "WhenProgramStarts":
             return  # køres til sidst af run()
         raise NovaError(getattr(st, "line", 0), f"ukendt statement {t}")
+
+    def _load_module(self, path_src, bind_name, line):
+        """C05: indlæs (eller genbrug) et modul. Cirkulær import = venlig fejl."""
+        ap = os.path.abspath(os.path.join(self._cur_dir, path_src))
+        if any(p == ap for p, _ in self._import_stack):
+            chain = " → ".join(n for _, n in self._import_stack) + f" → {path_src}"
+            raise NovaError(line, f"cirkulær import: {chain} — moduler kan ikke "
+                                  "importere hinanden i ring; bryd kæden ved at "
+                                  "flytte det fælles ud i en tredje fil")
+        if ap in self._modules:
+            return self._modules[ap]
+        try:
+            with open(ap, "r", encoding="utf-8") as f:
+                src = f.read()
+        except OSError:
+            raise NovaError(line, f"modul-filen '{path_src}' findes ikke "
+                                  f"(søgt i '{self._cur_dir}') — tjek stien og filnavnet")
+        try:
+            stmts = parse_source(src)
+        except NovaLexError as e:
+            e.msg += f" (i modulet '{path_src}')"
+            raise
+        except NovaParseError as e:
+            e.msg += f" (i modulet '{path_src}')"
+            raise
+        inst = ModuleInstance(bind_name, path_src)
+        self._modules[ap] = inst
+        self._import_stack.append((ap, path_src))
+        prev_dir = self._cur_dir
+        self._cur_dir = os.path.dirname(ap)
+        try:
+            for st in stmts:
+                if isinstance(st, FuncDef):
+                    inst.funcs[st.name] = Function(st.name, st.params, st.body)
+                elif isinstance(st, ThingDef):
+                    inst.things[st.name] = st
+                elif isinstance(st, WhenProgramStarts):
+                    raise NovaError(
+                        st.line,
+                        "et modul må ikke indeholde 'when the program starts' — "
+                        "flyt program-starten til hovedprogrammet")
+            for st in stmts:
+                if isinstance(st, (FuncDef, ThingDef, WhenProgramStarts)):
+                    continue
+                self.exec_stmt(st, inst.scope)
+        finally:
+            self._cur_dir = prev_dir
+            self._import_stack.pop()
+        return inst
 
     def _pat_match(self, subj, kind, val, neg, scope):
         if kind == "isnum":
@@ -503,6 +573,15 @@ class Interp:
                 if e.name in obj:
                     return obj[e.name]
                 raise NovaError(e.line, f"databogen har ikke nøglen '{e.name}'")
+            if isinstance(obj, ModuleInstance):
+                if e.name in obj.funcs:
+                    return obj.funcs[e.name]
+                if e.name in obj.scope.vars:
+                    return obj.scope.vars[e.name]
+                known = sorted(set(obj.funcs) | set(obj.scope.vars))
+                raise NovaError(e.line, f"modulet '{obj.path}' har ikke '{e.name}'"
+                                        f"{_suggest(e.name, known)}"
+                                        f" — gyldige navne: {', '.join(known) or '(ingen)'}")
             if obj is NOTHING:
                 raise NothingSignal(
                     e.line,
@@ -516,6 +595,18 @@ class Interp:
             return not self.truth(self.eval(e.e, scope), e.e)
         if t == "Call":
             return self.call(e.name, [self.eval(a, scope) for a in e.args], e.line)
+        if t == "ModuleCall":
+            base = scope.get(e.mod, e.line)
+            if not isinstance(base, ModuleInstance):
+                raise NovaError(e.line, f"'{e.mod}' er ikke et modul — punktum-kald "
+                                        f"kræver 'the {e.mod}-module in \"fil.nova\"' først")
+            fn = base.funcs.get(e.name)
+            if fn is None:
+                raise NovaError(e.line, f"modulet '{base.path}' har ikke funktionen "
+                                        f"'{e.name}'{_suggest(e.name, base.funcs.keys())}"
+                                        f" — kald: {e.mod}.{e.name}(...)")
+            return self._invoke(fn, [self.eval(a, scope) for a in e.args], e.line,
+                                parent=base.scope)
         if t == "NewThing":
             return self.new_thing(e, scope)
         if t == "AskE":
@@ -662,7 +753,16 @@ class Interp:
             raise NovaError(line, f"'{name}' forventer {len(fn.params)} "
                                   f"argument(er), fik {len(args)}"
                                   f" — kald: {name} med {', '.join(fn.params) or 'intet'}")
-        local = Scope(parent=self.globals)
+        return self._invoke(fn, args, line)
+
+    def _invoke(self, fn, args, line, parent=None):
+        """Kør en Function. parent = scope-fader (modulfunktioner ser modulens
+        globals, hovedprogrammets funktioner ser program-globals)."""
+        if len(args) != len(fn.params):
+            raise NovaError(line, f"'{fn.name}' forventer {len(fn.params)} "
+                                  f"argument(er), fik {len(args)}"
+                                  f" — kald: {fn.name} med {', '.join(fn.params) or 'intet'}")
+        local = Scope(parent=parent if parent is not None else self.globals)
         for pname, aval in zip(fn.params, args):
             local.declare(pname, aval)
         pending = []
@@ -676,7 +776,7 @@ class Interp:
             self._ensure_frames.pop()
         for expr_node, ln in pending:
             if not self.truth(self.eval(expr_node, local), expr_node):
-                raise NovaError(ln, f"ensures-kontrakt fejlede i '{name}' — "
+                raise NovaError(ln, f"ensures-kontrakt fejlede i '{fn.name}' — "
                                     "sluttilstanden opfyldte ikke garantien")
         return result
 
