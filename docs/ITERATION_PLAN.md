@@ -195,7 +195,7 @@ Statuses: ☐ Not started · ◐ In progress · ✅ Done (date) · ⏸ Blocked (
 | C05 | Modules: `the tools-module in "tools.nova"` import; namespaces; circular-import error | P0 | M | — | ✅ 2026-08-23 (bootstrap-udsnit i module_system.md §0: import + navnerum + parentes-kald + cirkulær/venlige fejl; golden 19; par7) |
 | C06 | String library v0: upper/lower/trim/split/join/replace/length-of/contains/at/slice | P0 | M | — | ✅ 2026-08-23 (text.* builtins; 1-baseret at/slice; alle-fejl = sætning+hint) |
 | C07 | List/dict library v0: sort/reverse/map(→T2)/filter/fold/min/max/keys/values | P1 | M | C06 | ✅ 2026-08-23 (sort/reverse/min/max/keys/values; map/filter/fold udskudt til C10/T2 som aftalt) |
-| C08 | Math/time/random library v0 per standard_library.md subset | P1 | S | B03 | ☐ |
+| C08 | Math/time/random library v0 per standard_library.md subset | P1 | S | B03 | ✅ 2026-08-23 (math: abs/floor/ceil/pow/PI · time: sleep · random: shuffle kopi+seedbar) |
 | C09 | REPL: `nova repl` — persistent Interp session, `:ast/:undo/:quit`, multiline via `done` | P1 | M | — | ☐ |
 | C10 | Lambdas + pipeline `then` (T2 ergonomics over lists) | P2 | M | C07 | ☐ |
 | C11 | match-exhaustiveness lite: `check` warns on missing otherwise (lint) | P2 | S | — | ☐ |
@@ -316,6 +316,7 @@ units/refinement types, actors/signals, GPU backend, grammar literals, `@increme
 
 | Date | Change |
 |---|---|
+| 2026-08-23 | **C08 ✅**: math udvidet med abs/floor/ceil/pow + PI-konst (læses som modul-felt), time.sleep (afviser negative), random.shuffle (kopi, seedbar via --seed — determinisme-test tilføjet). 7 nye stdlib-tests. Stdlib v0-trioen (B03+C06+C07+C08) er dermed HEL. Suite: 191/191. Næste: C09 REPL → E00+E01 toolchain+CI (P0!). |
 | 2026-08-23 | **C07 ✅**: list-biblioteket (sort/reverse/min/max/keys/values) som BuiltinFunctions; sort returnerer NY liste og afviser blandede typer med sætning; reverse er kopi; keys/values kræver databog (json.parse) og returnerer nøgle-sorteret. map/filter/fold bevidst udskudt til C10/T2 (kræver lambdas). 7 nye stdlib-tests (4 ok + 3 fejl). Suite: 184/184. Næste: C08 math/time/random fyldes op → C09 REPL. |
 | 2026-08-23 | **C06 ✅**: text-biblioteket (upper/lower/trim/split/join/replace/length/contains/at/slice) som BuiltinFunctions; at/slice er 1-baserede (slice inklusiv); replace erstatter alle; join bruger nova_str pr. element; alle type-/grænse-fejl = sætning + gyldigt-interval-hint. 7 nye stdlib-tests (4 ok + 3 fejl). Suite: 177/177. Næste: C07 list → C08 math/time/random. |
 | 2026-08-23 | **B03 ✅**: `use [the] standard NAVN [library]` binder NAVN til et BuiltinFunction-modul (samme ModuleCall-vej som C05; idempotent via Interp._stdlib). Biblioteker v0: json{parse,stringify}, file{read,exists,write}, random{between,pick}, time{now}, math{sqrt,round}. Ukendt lib/form = sætning med de tilgængelige. Test-fundet: `write` var reserveret som feltnavn efter `.` — dotted adgang er attribut-adgang, ikke binding, så reservations-tjekket der er fjernet (B02-bindingssteder uændret). ContentsOf genbruger nu _read_text_file-hjælperen. 11 stdlib-tests. Suite: 170/170. Næste: C06 text-biblioteket → C07 list → C08 math/time/random fyldes op. |

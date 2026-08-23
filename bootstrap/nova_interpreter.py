@@ -240,6 +240,16 @@ def _bi_time_now(args, line):
     return time.time()
 
 
+def _bi_time_sleep(args, line):
+    s = args[0]
+    if not _is_num(s):
+        raise NovaError(line, "'time.sleep' kræver et tal (sekunder)")
+    if s < 0:
+        raise NovaError(line, "'time.sleep' kan ikke sove et negativt antal sekunder")
+    time.sleep(float(s))
+    return NOTHING
+
+
 def _bi_math_sqrt(args, line):
     n = args[0]
     if not _is_num(n) or n < 0:
@@ -252,6 +262,43 @@ def _bi_math_round(args, line):
     if not _is_num(n):
         raise NovaError(line, "'math.round' kræver et tal")
     return int(round(n))
+
+
+def _bi_math_abs(args, line):
+    n = args[0]
+    if not _is_num(n):
+        raise NovaError(line, "'math.abs' kræver et tal")
+    return abs(n)
+
+
+def _bi_math_floor(args, line):
+    n = args[0]
+    if not _is_num(n):
+        raise NovaError(line, "'math.floor' kræver et tal")
+    return int(_math.floor(n))
+
+
+def _bi_math_ceil(args, line):
+    n = args[0]
+    if not _is_num(n):
+        raise NovaError(line, "'math.ceil' kræver et tal")
+    return int(_math.ceil(n))
+
+
+def _bi_math_pow(args, line):
+    b, e = args
+    if not (_is_num(b) and _is_num(e)):
+        raise NovaError(line, "'math.pow' kræver to tal (basis og eksponent)")
+    return b ** e
+
+
+def _bi_random_shuffle(args, line):
+    xs = args[0]
+    if not isinstance(xs, list):
+        raise NovaError(line, f"'random.shuffle' kræver en liste — fandt {nova_str(xs)}")
+    out = list(xs)  # kopi — originalen røres ikke
+    _random.shuffle(out)
+    return out
 
 
 # --- C06: text ---
@@ -410,12 +457,14 @@ def _make_random_lib():
     m = ModuleInstance("random", "(standardbibliotek)")
     m.funcs["between"] = BuiltinFunction("between", ["fra", "til"], _bi_random_between)
     m.funcs["pick"] = BuiltinFunction("pick", ["liste"], _bi_random_pick)
+    m.funcs["shuffle"] = BuiltinFunction("shuffle", ["liste"], _bi_random_shuffle)
     return m
 
 
 def _make_time_lib():
     m = ModuleInstance("time", "(standardbibliotek)")
     m.funcs["now"] = BuiltinFunction("now", [], _bi_time_now)
+    m.funcs["sleep"] = BuiltinFunction("sleep", ["sekunder"], _bi_time_sleep)
     return m
 
 
@@ -423,6 +472,11 @@ def _make_math_lib():
     m = ModuleInstance("math", "(standardbibliotek)")
     m.funcs["sqrt"] = BuiltinFunction("sqrt", ["tal"], _bi_math_sqrt)
     m.funcs["round"] = BuiltinFunction("round", ["tal"], _bi_math_round)
+    m.funcs["abs"] = BuiltinFunction("abs", ["tal"], _bi_math_abs)
+    m.funcs["floor"] = BuiltinFunction("floor", ["tal"], _bi_math_floor)
+    m.funcs["ceil"] = BuiltinFunction("ceil", ["tal"], _bi_math_ceil)
+    m.funcs["pow"] = BuiltinFunction("pow", ["basis", "eksponent"], _bi_math_pow)
+    m.scope.vars["PI"] = _math.pi
     return m
 
 

@@ -658,6 +658,23 @@ def test_stdlib(tmp):
         ("list-min-max",
          'use the standard list library\n'
          'say "{list.min([5, 2, 9])} {list.max([5, 2, 9])}"', "", "2 9"),
+        # --- C08: math/time/random fyldes op ---
+        ("math-extended",
+         'use the standard math library\n'
+         'say "{math.abs(0 - 5)} {math.floor(2.7)} {math.ceil(2.1)}"\n'
+         'say "{math.pow(2, 10)}"\n'
+         'say "{math.PI}"', "", "5 2 3\n1024\n3.14159"),
+        ("random-shuffle-copy",
+         'use the standard random library\n'
+         'xs is [1, 2, 3]\ny is random.shuffle(xs)\n'
+         'if the length of xs is 3 then say "orig-ok"\n'
+         'say "y har {the length of y} ting"', "", "orig-ok\ny har 3 ting"),
+        ("random-shuffle-seeded",
+         'use the standard random library\n'
+         'y is random.shuffle([1, 2, 3, 4, 5])\nsay "{y}"', "", None),
+        ("time-sleep",
+         'use the standard time library\ntime.sleep(0)\nsay "vågen"',
+         "", "vågen"),
         ("list-keys-values",
          'use the standard list library\nuse the standard file library\n'
          'use the standard json library\n'
@@ -671,7 +688,7 @@ def test_stdlib(tmp):
                 f.write('{"navn": "Bo", "alder": 42}')
         p = nova(["run", prog(src, tmp)], stdin=stdin, cwd=tmp)
         check(f"stdlib/{name}",
-              p.returncode == 0 and expect in p.stdout,
+              p.returncode == 0 and (expect is None or expect in p.stdout),
               f"rc={p.returncode} out={p.stdout!r} err={p.stderr[:200]!r}")
 
     err_cases = [
@@ -695,6 +712,11 @@ def test_stdlib(tmp):
          ["ikke-tom liste"]),
         ("list-keys-nondict", "use the standard list library\nsay \"{list.keys([1])}\"",
          ["kræver en databog", "json.parse"]),
+        # --- C08: fejl ---
+        ("math-abs-nonnum", "use the standard math library\nsay \"{math.abs('x')}\"",
+         ["'math.abs' kræver et tal"]),
+        ("time-sleep-negative", "use the standard time library\ntime.sleep(0 - 1)",
+         ["kan ikke sove et negativt antal"]),
     ]
     for name, src, fragments in err_cases:
         p = nova(["run", prog(src, tmp)], cwd=tmp)
@@ -702,6 +724,14 @@ def test_stdlib(tmp):
               and all(fr in p.stderr for fr in fragments)
               and "Traceback" not in p.stderr)
         check(f"stdlib/{name}", ok, f"rc={p.returncode} err={p.stderr[:220]!r}")
+
+    # C08: shuffle er deterministisk under --seed
+    sh = 'use the standard random library\ny is random.shuffle([1, 2, 3, 4, 5])\nsay "{y}"'
+    s1 = nova(["run", prog(sh, tmp), "--seed", "99"], cwd=tmp)
+    s2 = nova(["run", prog(sh, tmp), "--seed", "99"], cwd=tmp)
+    check("stdlib/shuffle-deterministic",
+          s1.returncode == 0 and s1.stdout == s2.stdout and s1.stdout != "",
+          f"{s1.stdout!r} vs {s2.stdout!r}")
 
 
 # ------------------------------------------------------------ examples
