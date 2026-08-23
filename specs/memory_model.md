@@ -1,42 +1,41 @@
 # Nova Memory Model
 
-## 0. Bootstrap-udsnit (v0.14+, item C13)
+## 0. Bootstrap cut (v0.14+, item C13)
 
-Native ARC/escape-analysis er et IR-pass (E05, gate G3). Bootstrap'en fastlægger
-NU allerede den semantik, ARC'en senere skal præservere — og giver én eksplicit
-kopierings-frase:
+Native ARC/escape-analysis is an IR pass (E05, gate G3). The bootstrap pins NOW the
+semantics that ARC must later preserve — and provides one explicit copy phrase.
 
-### 0.1 Værdi- vs. reference-semantik (gælder ALTID, også i native)
+### 0.1 Value vs reference semantics (holds ALWAYS, native too)
 
-| Værdi | Semantik | Assignment/kald |
+| Value | Semantics | Assignment/call |
 |---|---|---|
-| tal, tekst, bool | **værdi** | kopieres (uafhængig) |
-| `nothing` | værdi (én instans) | — |
-| liste `[...]` | **reference** | deles (alias) |
-| thing-instans | **reference** | deles (alias) |
-| databog (json-objekt) | **reference** | deles (alias) |
+| numbers, text, bool | **value** | copied (independent) |
+| `nothing` | value (one instance) | — |
+| lists `[...]` | **reference** | shared (alias) |
+| thing instances | **reference** | shared (alias) |
+| dictionaries (json objects) | **reference** | shared (alias) |
 
-Garanti: `ys is xs` hvor xs er liste/thing betyder ALDRIG kopi — ændringer via
-`ys` ses gennem `xs`. Vil man have uafhængighed, skal man bede om det eksplicit.
+Guarantee: `ys is xs` where xs is a list/thing NEVER means a copy — changes through
+`ys` are visible through `xs`. If you want independence, ask for it explicitly.
 
 ### 0.2 `a copy of X`
 
 ```text
-ks is a copy of xs          # dyb kopi — hele træet (nøstedede lister/things)
-t2 is a copy of t           # ny ThingInstance, samme felt-værdier (dybt kopieret)
+ks is a copy of xs          # deep copy — the whole tree (nested lists/things)
+t2 is a copy of t           # new ThingInstance, same field values (deeply copied)
 ```
 
-Regler:
-1. `a copy of X` er ét udtryk (primær-frase); X parses grådigt som resten af
-   aritmikken (samme konvention som `the contents of ...`).
-2. Kopien er DYB: indlejrede lister/things/databøger kopieres rekursivt.
-3. Kombineres frit med `?`: `a copy of maybe?` → nothing hvis maybe er nothing
-   (hele-udtryksgift gælder).
-4. Moduler/funktioner kan ikke kopieres — venlig fejl ("et modul er ikke en værdi").
-5. Begge skins, identisk AST (`CopyOf`-node; golden 20 + kryds-skin-par 8).
+Rules:
+1. `a copy of X` is one expression (primary phrase); X parses greedily like the rest
+   of the arithmetic (same convention as `the contents of ...`).
+2. The copy is DEEP: nested lists/things/dictionaries are copied recursively.
+3. Combines freely with `?`: `a copy of maybe?` \u2192 nothing if maybe is nothing
+   (whole-expression poisoning applies).
+4. Modules/functions cannot be copied — friendly error ("a module/function is not a value").
+5. Both skins, identical AST (`CopyOf` node; golden 20 + cross-skin pair 8).
 
-Ikke i bootstrap-udsnittet (kommer i native-pipelinen): refcounts der kan aflæses,
-`owned`/move/borrow-checking, `unsafe`, cycle collector, `deinit`.
+Not in the bootstrap cut (arrives in the native pipeline): readable refcounts,
+`owned`/move/borrow checking, `unsafe`, cycle collector, `deinit`.
 
 ## 1. Three tiers
 
@@ -47,7 +46,7 @@ Expert:       unsafe + raw pointers
 Optional:     GC cycle collector (--runtime full)
 ```
 
-## 2. Værdityper vs referencetyper
+## 2. Value types vs reference types
 
 | | struct, enum, tuple, [T;N], primitives | class-instans, closures, dyn Trait, Box |
 |---|---|---|
@@ -114,8 +113,8 @@ unsafe {
 
 - Raw pointers: `*T`, `*mut T`, `null`.
 - Unsafe blokke er de eneste steder med deref/addr-of/malloc/FFI.
-- `unsafe` smitter ikke (ingen unsafe-supertype); funktioner der kræver unsafe markeres `@unsafe fn`.
-- Debug-builds: pointer-sanitizer-agtige checks (poisoning) når muligt.
+- unsafe does not contaminate (no unsafe supertype); functions requiring unsafe are marked `@unsafe fn`.
+- Debug builds: pointer-sanitizer-style checks (poisoning) where possible.
 
 ## 6. Stack and heap
 

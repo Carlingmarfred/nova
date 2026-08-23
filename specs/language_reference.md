@@ -2,7 +2,7 @@
 
 Status: spec v0.9. Alt kode herunder er normativt eksempel-materiale.
 
-> **Syntax-modes:** Denne reference bruger den **kompakte shorthand-form** (`{}`-blokke, `=>`, symbol-operatorer). Den primære brugerflade er **Nova Natural** (se [natural_syntax.md](natural_syntax.md)) — almindelige engelske ord: `say x` ≡ `print(x)`, `set x to 10` ≡ `x = 10`, `repeat until c ... done` ≡ `while !c { }`, `to greet with name ... done` ≡ `fn greet(name) { }`. Begge former producerer **identisk AST** og kan blandes frit i samme fil.
+> **Syntax modes:** This reference uses the **compact shorthand form** (`{}` blocks, `=>`, symbol operators). The primary surface is **Nova Natural** (see [natural_syntax.md](natural_syntax.md)) — plain English words: `say x` ≡ `print(x)`, `set x to 10` ≡ `x = 10`, `repeat until c ... done` ≡ `while !c { }`, `to greet with name ... done` ≡ `fn greet(name) { }`. Both forms produce the **identical AST** and mix freely in the same file.
 
 ---
 
@@ -20,10 +20,10 @@ Regler:
 
 - `navn = udtryk` opretter **mutable** binding med inference (Python-vane).
 - `let` = immutable. `let mut x` er IKKE syntaks — `mut` findes ikke; brug plain.
-- Type-annotation: `navn: Type = værdi`. Annotation uden initializer tilladt kun for klassefelter og parametre.
+- Type annotation: `name: Type = value`. Annotation without initializer allowed only for class fields and parameters.
 - Scope: block-scope, skygge tilladt i indre scope (`let x = x + 1` ok).
-- Konstanter på modulniveau: `const PI = 3.14159` (compile-time evalueret).
-- Top-level kode er tilladt i scripts (`main.nova` kører top-down); biblioteker bruger `fn main()`.
+- Module-level constants: `const PI = 3.14159` (compile-time evaluated).
+- Top-level code allowed in scripts (`main.nova` runs top-down); libraries use `fn main()`.
 
 ## 2. Datatyper
 
@@ -59,7 +59,7 @@ n = "42".parse::<i32>()?
 | `(A, B)` | tuple, heterogen, fixed size | `tuple` |
 | `Map<K,V>` | hash-map | `dict` |
 | `Set<T>` | hash-set | `set` |
-| `SortedMap<K,V>` / `SortedSet<T>` | ordnede (B-træ) | — |
+| `SortedMap<K,V>` / `SortedSet<T>` | ordered (B-tree) | — |
 | `Deque<T>` | double-ended queue | `collections.deque` |
 | `Heap<T>` | priority queue | `heapq` |
 | `[T; N]` | fixed-size array (stack) | — |
@@ -81,8 +81,8 @@ rng  = 0..10                        # Range<i32>, eksklusiv
 ### 2.3 Optional og Result
 
 ```text
-Optional<T> ≡ T?          # værdier: some(v) | none
-Result<T,E>               # værdier: Ok(v) | Err(e)
+Optional<T> ≡ T?          # values: some(v) | none
+Result<T,E>               # values: Ok(v) | Err(e)
 ```
 
 ```text
@@ -104,29 +104,29 @@ Fulde regler i type_system.md §7.
 
 ## 3. Operatorer (komplet tabel)
 
-Præcedens fra lav til høj. Alle venstre-associerende undtagen hvor angivet.
+Precedence low to high. All left-associative except where noted.
 
-| Niveau | Operatorer | Bemærkning |
+| Level | Operators | Note |
 |---|---|---|
-| 1 | `=` `+=` `-=` `*=` `/=` `%=` `//=` `**=` `&=` `\|=` `^=` `<<=` `>>=` `??=` | assignment (højre-assoc.) |
+| 1 | `=` `+=` `-=` `*=` `/=` `%=` `//=` `**=` `&=` `\|=` `^=` `<<=` `>>=` `??=` | assignment (right-assoc.) |
 | 2 | `\|\|` `or` | kortslutter |
 | 3 | `&&` `and` | kortslutter |
 | 4 | `!in` `in` `is not` `is` | membership / typetest |
-| 5 | `==` `!=` `<` `<=` `>` `>=` `<=>` | sammenligning, ikke-kædbare |
+| 5 | `==` `!=` `<` `<=` `>` `>=` `<=>` | comparison, non-chainable |
 | 6 | `..` `..=` `..<` | range (ikke-assoc.) |
 | 7 | `\|` `^` | bitwise |
 | 8 | `&` | bitwise |
 | 9 | `<<` `>>` | shift |
 | 10 | `+` `-` | |
 | 11 | `*` `/` `%` `//` | `//` = floor division |
-| 12 | `**` | potens (højre-assoc.) |
+| 12 | `**` | power (right-assoc.) |
 | 13 | unary `-` `+` `!` `not` `~` `*` (deref) `&` (addr-of, unsafe) | |
 | 14 | postfix `?` `?.` `!` `[]` `()` `.` `?.` `as` `::` | |
 
 Ekstra:
 
 - `??` — nil-coalescing: `a ?? b` = `if a == none then b`.
-- `?.` — optional chaining: `obj?.field?.method()` giver `none` ved første `none`.
+- `?.` — optional chaining: `obj?.field?.method()` yields `none` at the first `none`.
 - `is` — typetest: `x is String`, `x is Array<i32>`.
 - `as` — cast/konvertering.
 - `in` — membership: `x in xs`, `key in map`.
@@ -163,7 +163,7 @@ loop { ... }                          # uendelig; afsluttes med break/return
 
 for x in xs { print(x) }              # alle Iterable
 for i in 0..xs.len() { ... }          # indeks-loop
-for (i, x) in xs.enumerate() { ... }  # indeks + værdi
+for (i, x) in xs.enumerate() { ... }  # index + value
 for (k, v) in map { ... }             # Map itererer (K,V)-par
 ```
 
@@ -203,7 +203,7 @@ match opt {
 }
 ```
 
-Patterns (fuldt sammensætbare): literal, wildcard `_`, binding, tuple, struct `{name, age}`, enum `Variant(pats)`, range `1..=10`, array `[first, ...rest]`, slice `[a, b, ..]`, type-test `x is T`, or-pattern `a | b`, guard `where cond`. Compileren verificerer **ekshaustivitet** og død-gren.
+Patterns (fully composable): literal, wildcard `_`, binding, tuple, struct `{name, age}`, enum `Variant(pats)`, range `1..=10`, array `[first, ...rest]`, slice `[a, b, ..]`, type-test `x is T`, or-pattern `a | b`, guard `where cond`. The compiler verifies **exhaustiveness** and dead branches.
 
 Match er udtryk og skal producere samme type i alle arme (eller unit).
 
@@ -219,7 +219,7 @@ try {
 }
 ```
 
-Bruges kun til undtagelsestilfælde — ikke kontrolflow (se error_handling.md).
+Used only for exceptional cases — never control flow (see error_handling.md).
 
 ### 4.5 use (context management, RAII)
 
@@ -240,10 +240,10 @@ Krav: typen implementerer trait `Disposable { fn dispose(self) }`.
 
 ```text
 fn add(a: i32, b: i32) -> i32 {
-    a + b                            # sidste udtryk = returværdi
+    a + b                            # last expression = return value
 }
 
-fn greet(name = "verden", times: i32 = 1) {     # default-værdier
+fn greet(name = "world", times: i32 = 1) {      # default values
     ("Hej {name}! " * times).trim()
 }
 
@@ -278,14 +278,14 @@ factor = 3
 scale  = x => x * factor             # closure fanger environment (by capture)
 ```
 
-Capture-regel: default **by reference** med ARC; compiler kopierer automatisk hvis levetiden kræver det (escape). Eksplicit: `[x, &y] => ...` (capture by value / by ref).
+Capture rule: default **by reference** with ARC; the compiler copies automatically when the lifetime requires it (escape). Explicit: `[x, &y] => ...` (capture by value / by ref).
 
 Function types: `fn(i32, i32) -> i32`, nullable: `(fn(i32) -> bool)?`.
 
 ### 5.3 Overloads og generiske funktioner
 
 ```text
-fn parse(s: String) -> i32 { ... }       # overloading tilladt på parametertyper
+fn parse(s: String) -> i32 { ... }       # overloading allowed on parameter types
 fn parse(s: String) -> f64 { ... }
 
 fn max<T: Comparable>(a: T, b: T) -> T {
@@ -318,7 +318,7 @@ fn count(n: i32, acc: i32 = 0) -> i32 {
 fn circle_area(r: f64) -> f64 { PI * r ** 2 }
 ```
 
-Doctests køres af `nova test --doc`.
+Doctests run via `nova test --doc`.
 
 ## 6. Collections-operationer (stdlib-core)
 
@@ -338,7 +338,7 @@ xs.chunked(2)                      # [[5,3],[8,1]]
 xs.windowed(2)                     # [[5,3],[3,8],[8,1]]
 xs.flat_map(x => [x, x])           # [5,5,3,3,8,8,1,1]
 
-# Reducér / forespørg
+# Reduce / query
 xs.sum()  xs.product()  xs.min()  xs.max()
 xs.count(x => x > 2)  xs.any(x => x > 7)  xs.all(x => x > 0)
 xs.fold(0, (acc, x) => acc + x)
@@ -404,14 +404,14 @@ s.to::<i32>()  "3.14".to::<f64>()
 s <=> "abc"                          # Unicode-korrekt kollation
 
 # Slice som collections
-s[0..3]  s[^5..]  s[::-1]            # baklænds via step -1
+s[0..3]  s[^5..]  s[::-1]            # backwards via step -1
 ```
 
-Strings er UTF-8; indeksering er **byte-indeks** og O(1) usikkert ved chars — derfor `s.chars()[i]` for positionel adgang (linter fanger `s[i]` på String).
+Strings are UTF-8; indexing is a **byte index** and O(1) access is unsafe per char — therefore `s.chars()[i]` for positional access (the linter flags `s[i]` on String).
 
 ## 8. Klasser, structs, enums, traits
 
-### 8.1 struct (værditype, data)
+### 8.1 struct (value type, data)
 
 ```text
 struct Vec3 {
@@ -426,7 +426,7 @@ w = Vec3(..v, z = 99)                # functional update
 dist = (v.x ** 2 + v.y ** 2 + v.z ** 2).sqrt()
 ```
 
-Structs har værdi-semantik (copy eller move), ingen arv. Felter kan have defaults.
+Structs have value semantics (copy or move), no inheritance. Fields can have defaults.
 
 ### 8.2 class (referencetype, arv)
 
@@ -457,7 +457,7 @@ d.sound()
 ```
 
 - Enkel arv (`:`), interfaces via traits.
-- `virtual`/`override` er **påkrævede ord** — ingen tilfældig polymorfi.
+- `virtual`/`override` are **required words** — no accidental polymorphism.
 - Felter: `pub`, `priv` (default), `protected`. Properties:
 
 ```text
@@ -510,13 +510,13 @@ enum Shape {
 enum Status { Active | Inactive(reason: String?) }
 ```
 
-Enums kan have metoder, fælles felter og generics. Simple enums: `enum Color { Red | Green | Blue }`.
+Enums can have methods, shared fields and generics. Simple enums: `enum Color { Red | Green | Blue }`.
 
 ### 8.5 traits (interfaces + mixins)
 
 ```text
 trait Drawable {
-    fn draw(self, canvas: Canvas)       # påkrævet metode
+    fn draw(self, canvas: Canvas)       # required method
 
     fn draw_twice(self, canvas: Canvas) {   # default-implementering
         self.draw(canvas)
@@ -531,7 +531,7 @@ impl Drawable for Circle {
 
 - Trait-objects (dynamisk dispatch): `dyn Drawable`.
 - Generiske bounds: `fn render<T: Drawable>(items: Array<T>)`.
-- Traits kan kræve associerede typer/konstanter og have blanket-impls (std-traits).
+- Traits can require associated types/constants and have blanket impls (std traits).
 - Operator-overloading og `Iterable`, `Index`, `Comparable` osv. er almindelige traits.
 
 ### 8.6 Extension methods
@@ -557,7 +557,7 @@ import std.io.File
 import std.json as json
 from std.math import sqrt, PI
 
-export                              # gør hele filens pub-symboler offentlige API
+export                              # makes all of the file's pub symbols public API
 ```
 
 Detaljer i module_system.md.
@@ -586,7 +586,7 @@ Detaljer i module_system.md.
 | `f"{obj}"` | `Printable` (`fn format(fmt) -> String`) |
 | `truthy(obj)` / `if obj` | `Truthiness` (default: alt andet end `false`/`none`/`0`/`""` er sandt? NEJ — kun `bool` og `bool?` er betingelser; alt andet er compile-fejl) |
 
-**Bevidst afvigelse fra Python:** betingelser kræver rigtig `bool`. Linter kan slappe af lokalt (`#nova allow truthiness`). Dette fjerner en hel klasse af `=` vs `==`/tomhed-fejl.
+**Deliberate deviation from Python:** conditions require a real `bool`. The linter may relax locally (`#nova allow truthiness`). This removes an entire class of `=` vs `==`/emptiness bugs.
 
 ## 11. Iterators og generators
 
@@ -610,7 +610,7 @@ Iterator-adaptere (fuld liste i stdlib): `map filter take skip take_while skip_w
 
 Terminal-operationer: `collect to_array to_set to_map sum min max count any all find fold reduce for_each join partition_by`.
 
-## 12. Fejlhåndtering (kort — fuldt i error_handling.md)
+## 12. Error handling (brief — full version in error_handling.md)
 
 ```text
 fn read_config(path: String) -> Result<Config, ConfigError> {
@@ -621,8 +621,8 @@ fn read_config(path: String) -> Result<Config, ConfigError> {
 
 port = env.get("PORT").and_then(v => v.parse::<i32>().ok()) ?? 8080
 
-assert(xs.len() > 0, "listen må ikke være tom")   # panic i debug, no-op i release
-require(input != null, "input er påkrævet")        # altid aktiv guard
+assert(xs.len() > 0, "list must not be empty")   # panic in debug, no-op in release
+require(input != null, "input is required")        # always-active guard
 ```
 
 ## 13. Async og parallel (kort — fuldt i concurrency.md)
@@ -641,7 +641,7 @@ async fn fetch_all(urls: Array<String>) {
 parallel {
     a = calculate_a()
     b = calculate_b()
-}                                                # a og b kører samtidigt
+}                                                # a and b run concurrently
 ```
 
 ## 14. Reflection
@@ -684,7 +684,7 @@ struct Order { id: Uuid, total: f64 }
 @gpu(block = (256, 1, 1)) @thread_local @volatile
 ```
 
-Attributes med argumenter kan være vilkårlige compile-time-udtryk. Brugerdefinerede attribute-makroer transformeres i AST (se metaprogramming.md).
+Attributes with arguments can be arbitrary compile-time expressions. User-defined attribute macros transform the AST (see metaprogramming.md).
 
 ## 16. Compile-time evaluering
 
@@ -697,7 +697,7 @@ fn gen_primes(limit: i32) -> Array<i32> { ... }
 const PRIMES = gen_primes(100)
 ```
 
-Alt hvad der er `@pure`-kompatibelt kan køres compile-time: loops, match, generics — ikke IO/tråde/dynamic.
+Anything `@pure`-compatible can run at compile time: loops, match, generics — not IO/threads/dynamic.
 
 ## 17. Unsafe og raw memory (kort — fuldt i memory_model.md)
 
@@ -710,7 +710,7 @@ unsafe {
 }
 ```
 
-`defer` findes også i safe kode (scope-bundet cleanup uden trait-krav).
+`defer` also exists in safe code (scope-bound cleanup without a trait requirement).
 
 ## 18. Scripting og shebang
 
@@ -748,7 +748,7 @@ contents |> split_lines() |> filter(l => l.len() > 0) |> sorted() |> join("\n") 
 ```
 
 ```text
-# Natural — læses som en sætning:
+# Natural — reads as a sentence:
 take the file contents
     then split it by lines
     then keep the ones that are not empty
@@ -757,14 +757,14 @@ take the file contents
 done
 ```
 
-Desugares til almindelige metode-kæder (zero-cost efter inlining). `|>` sender venstre værdi som første argument til højre kald. Natural-fraserne (`then split it by`, `then keep the ones that`, `then turn every X into`) er faste skabeloner i natural_syntax.md-ordbogen.
+Desugars to ordinary method chains (zero cost after inlining). `|>` sends the left value as the first argument to the right call. The Natural phrases (`then split it by`, `then keep the ones that`, `then turn every X into`) are fixed templates in the natural_syntax.md vocabulary.
 
 ## 21. Signals (reaktiv tilstand) — BESLUTTET
 
 ```text
 score = signal(0)
 rank  = computed(() => "Niveau {score.value / 100}")
-effect { print("{score.value} → {rank.value}") }     # genkører ved ændring
+effect { print("{score.value} → {rank.value}") }     # re-runs on change
 score.value += 60                                     # → automatisk opdatering
 ```
 
@@ -780,11 +780,11 @@ add 50 to the score
 
 Semantik:
 
-- Pull-baseret, glitch-fri topologisk invalidering (SolidJS/SwiftUI-model): afledte værdier om-beregnes kun når læst, og aldrig i mellem-tilstande.
-- `computed` memoizer; afhængighedssporing er automatisk (ingen dependency-lister).
-- `effect` kører efter commit; exceptions i effects paniker normalt.
+- Pull-based, glitch-free topological invalidation (SolidJS/SwiftUI model): derived values recompute only when read, never in intermediate states.
+- `computed` memoizes; dependency tracking is automatic (no dependency lists).
+- `effect` runs after commit; exceptions in effects panic normally.
 - GUI-integration: nova-gui binder direkte — `the label text binds to the rank`.
-- Async-kilder: `stream.into_signal()` driver en signal fra events/netværk.
+- Async sources: `stream.into_signal()` drives a signal from events/network.
 
 ## 22. Actors — BESLUTTET
 
@@ -802,7 +802,7 @@ c.send(.add(5))
 print(c.request(.get()))
 ```
 
-Én besked ad gangen pr. actor → ingen locks; felter kan kun berøres fra egne handlers.
+One message at a time per actor → no locks; fields touched only from own handlers.
 
 ## 23. Contracts — BESLUTTET
 
@@ -820,7 +820,7 @@ Natural: `requires amount is greater than 0` / `ensures my balance is at least 0
 
 Regler:
 
-- `requires` evalueres ved indgang, `ensures` ved udgang (har adgang til returværdien via `result`).
+- `requires` evaluated at entry, `ensures` at exit (with access to the return value via `result`).
 - Tjekkes i debug/tests; strippes i release. Profil: `contracts = "debug" | "always" | "never"`.
-- Kontraktsudtryk skal være `@pure`.
+- Contract expressions must be `@pure`.
 - Samme kontrakter driver: fuzzing-input-generering (testkit), docs/hover-visning og refinement-verificeringen (type_system §11).

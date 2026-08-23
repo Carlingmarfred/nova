@@ -7,31 +7,31 @@
 ```text
 the tools-module in "tools.nova"     # binder variablen 'tools-module'
 say "{tools-module.twice(21)}"       # navnerums-kald MED parenteser
-say "{the answer of the tools-module}"   # felt-læsning af modul-variabel
+say "{the answer of the tools-module}"   # field read of a module variable
 ```
 
-Præcise regler:
+Precise rules:
 
-1. **Import-sætning:** `the NAVN in "STI"` hvor NAVN **skal** ende på `-module`
-   (gør sætningen entydig og selvdokumenterende). STI er en streng relativt til
-   den importerende fils mappe. Binder NAVN til en modul-værdi.
+1. **Import statement:** `the NAME in "PATH"` where NAME **must** end in `-module`
+   (making the sentence unambiguous and self-documenting). PATH is a string relative to
+   the importing file's directory. Binds NAME to a module value.
 2. **Separate navnerum:** modulens funktioner, things og top-niveau variabler lever
-   i sit eget scope — import ændrer ALDRIG hovedprogrammets globale navne.
+   in its own scope — an import NEVER changes the main program's global names.
 3. **Navnerums-kald:** `NAVN.funktion(arg, ...)` — parentes-form kun (ord-formen
-   `f with x` gælder ikke for modulkald i bootstrap; almindelige funktioner beholder
-   begge former). Kalder man `.funktion(...)` på noget der IKKE er et modul, får man
-   en venlig fejl der peger på import-sætningen.
-4. **Felt-læsning:** `the NAVN of MODULVARIABEL` / `MODUL.felt` læser modul-global
-   eller funktion. Ukendt navn = sætning + did-you-mean + gyldige navne.
-5. **Idempotent:** samme fil importeret to gøre køres én gang (cache på absolut sti).
-6. **Cirkulær import = fejl** med hele kæden i sætningen
-   ("cirkulær import: a.nova → b.nova → a.nova — ...").
-7. Et modul **må ikke** indeholde `when the program starts` — det giver en fejl
+   `f with x` does not apply to module calls in the bootstrap; ordinary functions keep
+   both forms). Calling `.function(...)` on something that is NOT a module gives
+   a friendly error pointing at the import statement.
+4. **Field reads:** `the NAME of MODULEVAR` / `MODULE.field` read a module global
+   or function. Unknown name = sentence + did-you-mean + valid names.
+5. **Idempotent:** importing the same file twice runs it once (cache on absolute path).
+6. **Circular import = error** with the whole chain in the message
+   ("circular import: a.nova → b.nova → a.nova → ...").
+7. A module **must not** contain `when the program starts` — it gives an error
    ("flyt den til hovedprogrammet"). Manglende fil, lexer-/parserfejl i modulet =
-   venlige sætninger med filnavnet i.
-8. Moduler kan selv importere andre moduler (kædet op imod egen mappe).
+   friendly sentences with the filename in them.
+8. Modules can import other modules themselves (chained relative to their own directory).
 
-Ikke i bootstrap-udsnittet (kommer senere): `pub`/eksport-grænser, inline `mod {}`,
+Not in the bootstrap cut (arrives later): `pub`/export boundaries, inline `mod {}`,
 pakker/project.nova, `as`-alias, selektiv import, ting konstrueret via navnerum.
 
 ## 1. Moduler

@@ -25,11 +25,11 @@ Nedenfor: oprindelige motivationer og eksempler (beholdt som design-rationale).
 
 ---
 
-## Tema A — Typer der læser sig selv og fanger flere fejl
+## Theme A — Types that describe themselves and catch more errors
 
 ### A1. Refinement types (betingede typer)
 
-Typer med indbyggede regler — tjekkes ved grænsefladen, optimeret væk indeni.
+Types with built-in rules — checked at the boundary, optimized away inside.
 
 ```text
 # Natural
@@ -47,12 +47,12 @@ type Age = i32 where self >= 0 && self <= 130
 type NonEmpty<T> = Array<T> where self.len() > 0
 
 fn buy_ticket(age: Age) { ... }
-buy_ticket(user.age)              # runtime-check ved kaldsgrænsen
+buy_ticket(user.age)              # runtime check at the call boundary
 buy_ticket(-5)                    # COMPILE-fejl hvis konstant, ellers runtime-check
 ```
 
-Implementering: subtype af basistype + predicate; SMT-light-verificering af konstante argumenter, ellers automatisk grænse-check. Zero-cost inde i funktionen når flow-analysen kan bevise predikatet.
-**Hvorfor:** fjerner en hel klasse validerings-boilerplate; perfekt match med natural-syntaxens læsbarhed. Risiko: lav-middel. **Milestone: M4.**
+Implementation: subtype of base type + predicate; SMT-light verification of constant arguments, otherwise an automatic boundary check. Zero cost inside the function when flow analysis can prove the predicate.
+**Why:** removes an entire class of validation boilerplate; a perfect match for natural-syntax readability. Risk: low-medium. **Milestone: M4.**
 
 ### A2. Enheder og dimensioner (units of measurement)
 
@@ -74,19 +74,19 @@ let v = d / t            # Unit<Length/Time> — dimensionsanalyse i typesysteme
 v.to::<km/h>()
 ```
 
-Implementering: generisk `Unit<L,M,T,...>` med heltals-eksponenter; monomorphiserer til rå floats — **nul runtime-omkostning**. SI-enheder + præfikser i stdlib; valuta baseret på `Decimal`.
+Implementation: generic `Unit<L,M,T,...>` with integer exponents; monomorphizes to raw floats — **zero runtime cost**. SI units + prefixes in stdlib; currency based on `Decimal`.
 **Hvorfor:** Nova vil erstatte Python i science-computing — NASA's Mars Climate Orbiter-tab (~$327M) var et enhedsfejl. Risiko: middel (typesystem-arbejde). **Milestone: M5 (med nova-array).**
 
 ### A3. Compile-time verificerede format-strenge
 
-`"{pris:.2} kr"` verificeres mod argumenttyper ved kompilering: forkert specifier (`{navn:.2}` på String) eller manglende variabel = compile-fejl, ikke runtime-crash. Gælder `say`, `format`, logning. Regex-literals er allerede compile-checkede — dette fuldender mønstret.
+`"{price:.2} kr"` is verified against argument types at compile time: wrong specifier (`{name:.2}` on String) or a missing variable = compile error, not a runtime crash. Applies to `say`, `format`, logging. Regex literals are already compile-checked — this completes the pattern.
 Risiko: lav. **Milestone: M2.**
 
 ---
 
 ## Tema B — Nye udtryksformer
 
-### B1. Pipelines (`|>` og `then`-kæder)
+### B1. Pipelines (`|>` and `then` chains)
 
 ```text
 # Kompakt
@@ -94,7 +94,7 @@ contents |> split_lines |> filter(l => l.len() > 0) |> sorted() |> join("\n") |>
 ```
 
 ```text
-# Natural — taler præcis som man tænker:
+# Natural — speaks exactly like you think:
 take the file contents
     then split it by lines
     then keep the ones that are not empty
@@ -109,7 +109,7 @@ Desugares til almindelige metode-kald (zero-cost). `then` er reserveret ord kun 
 
 ## Tema C — Reaktivitet (GUI/games uden boilerplate)
 
-### C1. Signals — automatiske afledte værdier
+### C1. Signals — automatic derived values
 
 ```text
 # Natural
@@ -132,7 +132,7 @@ effect { print("{score.value} → {rank.value}") }
 score.value += 60
 ```
 
-Pull-baseret, glitch-fri (topologisk invalidering) — samme model som SolidJS/SwiftUI `@Observable`. Bliver fundamentet under nova-gui: `the button text binds to the label` — UI der bare *er* sin tilstand. **Hvorfor:** GUI-spillet er i M5; signals skal være i kernen først, ikke bagklogt boltet på. Risiko: middel. **Milestone: M4 (kerne) → M5 (GUI-integration).**
+Pull-based, glitch-free (topological invalidation) — same model as SolidJS/SwiftUI `@Observable`. Becomes the foundation under nova-gui: `the button text binds to the label` — UI that simply *is* its state. **Why:** the GUI push is M5; signals must be in the kernel first, not bolted on retroactively. Risk: medium. **Milestone: M4 (kernel) → M5 (GUI integration).**
 
 ---
 
@@ -157,16 +157,16 @@ done
 
 account is a new BankAccount
 send account "deposit" with 100
-answer is ask account to "withdraw" with 150     # request/response, venter på svar
+answer is ask account to "withdraw" with 150     # request/response, waits for the reply
 ```
 
-Én besked ad gangen pr. actor → ingen locks, ingen dataracer mulige. Implementeres ovenpå eksisterende tasks + channels (ingen ny runtime). Godt fit til spil-entities, servere og distribuerede systemer senere. **Milestone: M4.**
+One message at a time per actor → no locks, no data races possible. Implemented on top of existing tasks + channels (no new runtime). Good fit for game entities, servers and later distributed systems. **Milestone: M4.**
 
 ---
 
 ## Tema E — Robusthed og sikkerhed
 
-### E1. Contracts (krav og løfter)
+### E1. Contracts (requirements and promises)
 
 ```text
 to withdraw with amount
@@ -178,7 +178,7 @@ to withdraw with amount
 done
 ```
 
-Kompakt: `@requires(x > 0) @ensures(result >= 0)`. Tjekkes i debug/tests; strippes i release (eller beholdes via profil). Samme mekanisme driver: fuzzing-generatorene (kontrakterne ER test-input-reglerne), dokumentationen (vises i hover/doc) og fremtidig letvægts-formel verificering. **Milestone: M3.**
+Compact: `@requires(x > 0) @ensures(result >= 0)`. Checked in debug/tests; stripped in release (or kept via profile). The same mechanism drives: the fuzzing generators (the contracts ARE the test-input rules), documentation (shown in hover/doc) and future lightweight formal verification. **Milestone: M3.**
 
 ### E2. Capability-tilladelser for scripts og pakker
 
@@ -191,16 +191,16 @@ network = ["api.example.com"]
 spawn  = false
 ```
 
-- Scripts/pakker skal **erklære** hvad de har brug for (som app-rettigheder på telefonen).
-- Runtime håndhæver det; `nova install` viser tilladelses-dialog.
-- Malicious-supply-chain angreb begrænses fra "fuld maskine" til "erklæret scope".
-Bygger på den eksisterende VM-sandbox; native builds får den via runtime-hook på fs/net/process-API'erne. **Milestone: M4.**
+- Scripts/packages must **declare** what they need (like app permissions on a phone).
+- The runtime enforces it; `nova install` shows a permission dialog.
+- Malicious supply-chain attacks are limited from "full machine" to "declared scope".
+Builds on the existing VM sandbox; native builds get it via a runtime hook on the fs/net/process APIs. **Milestone: M4.**
 
 ### E3. Reproducible builds + signeret provenance
 
 - `nova build --reproducible`: byte-identisk output fra samme source + compiler-version (frossen stdlib, deterministisk kodegen).
-- Registry gemmer build-manifest + signatur; `nova verify <pkg>` efterprøver kæden.
-**Hvorfor:** økosystem-tillid (XZ-utils-lektionen). **Milestone: M4-M5.**
+- The registry stores a build manifest + signature; `nova verify <pkg>` checks the chain.
+**Why:** ecosystem trust (the XZ-utils lesson). **Milestone: M4-M5.**
 
 ---
 
@@ -216,12 +216,12 @@ BREAK ved tour.nova:42 (gang 847 af 1000)
 [← tilbage] [frem →] [hvor kom 'tries' fra?] [watch: secret]
 ```
 
-"Hvor fik denne variabel sin værdi?" = omvendt dataflow-søgning. Native-byggets instrumenteringstilstand giver det samme (langsommere). **Hvorfor:** beginner-venligt OG pro-værktøj; RR/time-travel findes i C++-verdenen men er sjældent og svært — her er det standard. Risiko: høj kompleksitet, men VM'en ejer allerede hele eksekveringen. **Milestone: M5-M6.**
+"Where did this variable get its value?" = reverse dataflow search. The native build's instrumentation mode provides the same (slower). **Why:** beginner-friendly AND a pro tool; RR/time-travel exist in the C++ world but are rare and hard — here it is standard. Risk: high complexity, but the VM already owns the entire execution. **Milestone: M5-M6.**
 
 ### F2. Notebook + literate mode
 
 - `nova notebook` → lokal web-kernel (Jupyter-protokol): celler, grafer inline (nova-plot), markdown mellem koden.
-- `.nova.md`-filer: ```nova-fences udføres af `nova test --doc` — dokumentation der ALDRIG bliver forældet, fordi den testes.
+- `.nova.md` files: ```nova fences executed by `nova test --doc` — documentation that NEVER goes stale because it is tested.
 **Milestone: M4 (kernel), M6 (plot-integration).**
 
 ### F3. `nova explain` — fejlmeddelelser med underviser
@@ -234,25 +234,25 @@ error[E2031]: du sammenlignede en tekst med et tal
    |         ------          ------
    |         tekst ('"75"')  tal (i32)
    |
-help: konverter først:  set guess to the number value of answer
+help: convert first:  set guess to the number value of answer
 note: hvorfor: tekster sammenlignes bogstav for bogstav ("10" < "9"!)
 ```
 
-Hver diagnostik har stabilt ID + offline vidensbase (`nova explain E2031`). Ingen cloud-afhængighed. **Milestone: løbende fra M1.**
+Every diagnostic has a stable ID + an offline knowledge base (`nova explain E2031`). No cloud dependency. **Milestone: ongoing from M1.**
 
 ### F4. API-diff og semver-politi
 
-`nova api-diff v1.2.0..HEAD` → liste af tilføjede/fjernede/ændrede offentlige symboler + semver-dom: *"breaking: Parameter `timeout` fik default-værdi fjernet → kræver major bump"*. CI-gate for pakker. **Milestone: M5.**
+`nova api-diff v1.2.0..HEAD` → list of added/removed/changed public symbols + semver verdict: *"breaking: parameter `timeout` had its default value removed → requires a major bump"*. CI gate for packages. **Milestone: M5.**
 
 ### F5. Undervisningspakken
 
 - `nova trace fil.nova` — Python-Tutor-agtig linje-for-linje-visualisering af alle variabler (terminal + web).
-- **Nova Blocks**: Scratch-agtig blok-editor der **eksporterer til Nova Natural-tekst** (én vej — ingen lock-in). Natural-syntaxen er designet til netop dette: hver blok = én sætning.
+- **Nova Blocks**: a Scratch-like block editor that **exports to Nova Natural text** (one way — no lock-in). The Natural syntax is designed for exactly this: every block = one sentence.
 **Milestone: M6+.**
 
 ---
 
-## Tema G — Platform-rækkevidde
+## Theme G — Platform reach
 
 ### G1. Embedding-API (Novas Lua-niche)
 
@@ -266,29 +266,29 @@ nova_run(vm, nova_readfile("level1.nova"));
 
 Minimal-profilen (< 100 KB, statisk, ingen GC) er allerede designet til netop dette. Mod-scrip­ting, plugin-systemer, konfiguration-som-kode. **Milestone: M4.**
 
-### G2. Hot reload også til native dev-builds
+### G2. Hot reload for native dev builds too
 
-VM-mode har hot reload fra dag 1. Dev-native-tilstand bygger til dynamiske biblioteker og swapper ved safe-points (game-engine-mønstret). Ikke garanteret for alle programmer — compileren rapporterer præcis hvornår et reload kræver genstart. **Milestone: M6.**
+VM mode has hot reload from day 1. Dev-native mode builds to dynamic libraries and swaps at safe points (the game-engine pattern). Not guaranteed for all programs — the compiler reports exactly when a reload requires a restart. **Milestone: M6.**
 
 ---
 
 ## Prioriteret oversigt
 
-| # | Feature | Værdi | Omkostning | Milepæl |
+| # | Feature | Value | Cost | Milestone |
 |---|---|---|---|---|
-| 1 | A3 Format-strenge verificeres compile-time | Høj | Lav | M2 |
-| 2 | B1 Pipelines / `then` | Høj | Lav | M2 |
-| 3 | F3 `nova explain` | Høj | Lav | M1+ |
-| 4 | E1 Contracts | Høj | Mellem | M3 |
-| 5 | C1 Signals | Meget høj (GUI-spillets fundament) | Mellem | M4 |
-| 6 | D1 Actors | Høj | Mellem | M4 |
-| 7 | E2 Capabilities/sandbox | Meget høj (sikkerhed) | Mellem | M4 |
-| 8 | G1 Embedding-API | Høj (ny målgruppe) | Mellem | M4 |
-| 9 | F2 Notebook/literate | Høj | Mellem | M4 |
-| 10 | A1 Refinement types | Mellem-høj | Mellem | M4 |
-| 11 | E3 Reproducible builds | Mellem-høj | Mellem | M4-M5 |
-| 12 | A2 Units | Meget høj for science | Høj | M5 |
-| 13 | F1 Time-travel debug | Meget høj (differentiator) | Høj | M5-M6 |
+| 1 | A3 Format strings verified at compile time | High | Low | M2 |
+| 2 | B1 Pipelines / `then` | High | Low | M2 |
+| 3 | F3 `nova explain` | High | Low | M1+ |
+| 4 | E1 Contracts | High | Medium | M3 |
+| 5 | C1 Signals | Very high (foundation of the GUI push) | Medium | M4 |
+| 6 | D1 Actors | High | Medium | M4 |
+| 7 | E2 Capabilities/sandbox | Very high (security) | Medium | M4 |
+| 8 | G1 Embedding API | High (new audience) | Medium | M4 |
+| 9 | F2 Notebook/literate | High | Medium | M4 |
+| 10 | A1 Refinement types | Medium-high | Medium | M4 |
+| 11 | E3 Reproducible builds | Medium-high | Medium | M4-M5 |
+| 12 | A2 Units | Very high for science | High | M5 |
+| 13 | F1 Time-travel debug | Very high (differentiator) | High | M5-M6 |
 | 14 | F4 API-diff | Mellem | Lav-mellem | M5 |
-| 15 | F5 Undervisningspakke + Blocks | Høj strategisk | Høj | M6+ |
-| 16 | G2 Native hot reload | Mellem | Høj | M6 |
+| 15 | F5 Teaching pack + Blocks | Strategically high | High | M6+ |
+| 16 | G2 Native hot reload | Medium | High | M6 |
