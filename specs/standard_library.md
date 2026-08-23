@@ -1,23 +1,23 @@
 # Nova Standardbibliotek — komplet overflade
 
-Princip: **Python-paritet først** — hver Python-modulekategori har et Nova-modsvar, native implementeret. Derefter Java-agtig enterprise-struktur og C-agtig kontrol.
+Principle: **Python parity first** — every Python module category has a native Nova counterpart. Then Java-style enterprise structure and C-style control.
 
 ## 0a. Bootstrap-udsnit (v0.12+, items B03 + C06 + C07 + C08) — IMPLEMENTERET FULDT (v0.12)
 
-`use` binder et ÆGTE navnerums-modul (samme maskineri som C05-moduler):
+`use` binds a REAL namespace module (same machinery as C05 modules):
 
 ```text
 use the standard json library      # eller: use standard json
 say "{json.stringify([1, 2])}"     # navnerums-kald med parenteser
-say "{math.PI}"                    # konstanter læses som felt
+say "{math.PI}"                    # constants read as a field
 ```
 
 Regler:
 
 1. Formen er `use [the] standard NAVN [library]`. Anden form = venlig fejl der
-   viser den rigtige ordlyd. Ukendt NAVN = fejl der lister de tilgængelige.
-2. NAVN bliver en almindelig variabel (modul-værdi) — funktioner kaldes
-   `NAVN.funktion(arg, ...)`, konstanter læses `NAVN.KONST`. Gen-brug af samme
+   shows the correct wording. Unknown NAME = an error listing the available ones.
+2. NAME becomes an ordinary variable (a module value) — functions are called
+   `NAME.function(arg, ...)`, constants read as `NAME.CONST`. Re-using the same
    bibliotek to gange giver samme instans (ingen dobbelt-init).
 3. Fejl i biblioteks-funktioner er almindelige fangbare NovaErrors med linjetal.
 4. Bibliotekerne (bootstrap v0):
@@ -32,8 +32,8 @@ Regler:
 | `text` | `upper`, `lower`, `trim`, `split(s, sep)`, `join(liste, sep)`, `replace(s, fra, til)`, `length(s)`, `contains(s, sub)`, `at(s, n)` (1-baseret), `slice(s, fra, til)` (1-baseret, inklusiv) | C06 |
 | `list` | `sort(liste)`, `reverse(liste)`, `min(liste)`, `max(liste)`, `keys(objekt)`, `values(objekt)` | C07 |
 
-Ikke i bootstrap-udsnittet: `map/filter/fold` (kræver lambdas → C10/T2),
-regex/net/http/database og alt andet på M2+ — `use` af ukendt bibliotek fejler
+Not in the bootstrap cut: `map/filter/fold` (requires lambdas → C10/T2),
+regex/net/http/database and everything else on M2+ — `use` of an unknown library fails
 venligt i stedet for at lyve.
 
 ## 0. Paritetstabel (Python → Nova)
@@ -96,7 +96,7 @@ replace replace_all remove_prefix remove_suffix
 reverse slice substr
 to_int to_float to_bool parse::<T>()
 encode_utf8 decode(from) escape unescape
-compare_options (kultur-følsom kollation via ICU-lite)
+compare_options (culture-sensitive collation via ICU-lite)
 format(spec)                     # f"{x:{spec}}"
 ```
 
@@ -146,8 +146,8 @@ factorial gcd lcm isqrt comb perm
 fma nextafter epsilon ulp total_cmp
 Complex: abs arg conj exp sqrt polar
 BigInt: + - * / // % pow gcd modpow to_string parse factorial bit_ops
-Rational: exakte brøker, automatisk forkortelse
-Decimal: penge-præcis fastpoint, banker-afrunding
+Rational: exact fractions, automatic reduction
+Decimal: money-exact fixed point, banker's rounding
 checked-aritmetik: add_checked sub_checked ... -> Result
 ```
 
@@ -204,11 +204,11 @@ JsonBuilder typed-schema (via reflection eller makro)
 JSON-pointer (/a/b/0), JSON Merge Patch, JSON Schema-validering (M4)
 ```
 
-std.formats: `csv toml yaml ini xml` (M3+), samme builder/streaming-mønster.
+std.formats: `csv toml yaml ini xml` (M3+), same builder/streaming pattern.
 
 ## 10. std.regex
 
-RE2-agtig syntaks (ingen backreferences i safe-mode → lineær tid), compile-time-checked literals: `rx"\d{3}-\d{4}"`. Match-groups, named groups, replace, split, scan, global match iterator. Backtracking-motor tilgængelig som opt-in feature.
+RE2-like syntax (no backreferences in safe mode → linear time), compile-time-checked literals: `rx"\d{3}-\d{4}"`. Match groups, named groups, replace, split, scan, global match iterator. A backtracking engine is available as opt-in.
 
 ## 11. std.time
 
@@ -234,7 +234,7 @@ compile-time niveau-strip i release (--log-level=warn fjerner trace/debug-kald)
 ## 13. std.cli
 
 ```text
-CLI.app("mit værktøj")
+CLI.app("my tool")
    .arg(required = true, help = "inputfil")
    .option("-o --output", default = "out.txt")
    .flag("-v --verbose", multiple = true)
@@ -296,7 +296,7 @@ cipher: aes-gcm chacha20-poly1305 (AEAD-only i safe API)
 signaturer: ed25519 ecdsa rsa(pss)
 random: CSPRNG (OS-seeded), secrets.token(bytes/url/hex)
 constant-time compare overalt
-x509/pki hjælpere (M6)
+x509/pki helpers (M6)
 ```
 
 ## 17. std.serialization (M3)
@@ -329,10 +329,10 @@ CStrings pointers structs callbacks (unsafe-zone)
 Python: import py "numpy" → np; py.eval(...)
 Java: import jvm "java.util.ArrayList" (bridge, M6)
 WASM: host-functions import/export
-COM/WinRT-bindings på Windows (M6)
+COM/WinRT bindings on Windows (M6)
 ```
 
-## 20. std.gpu / nova-array / nova-ml / nova-gui (øko-pakker)
+## 20. std.gpu / nova-array / nova-ml / nova-gui (ecosystem packages)
 
 ```text
 @gpu kernels → CUDA/SPIR-V/Metal; device-arrays; map/filter/reduce/matmul
@@ -350,7 +350,7 @@ Dimensional analysis (typesystem: type_system.md §12):
 ```text
 basis: m s kg A K mol cd rad sr bit
 afledte: N J W Pa Hz C V Ohm T ... (alle kombinationer via Unit-aritmetik)
-præfikser: k M G T m µ n p ...
+prefixes: k M G T m µ n p ...
 konverteringer: 100.m.in::<km>()  v.in::<km/h>()  2.h.in::<min>()
 fysikkonstanter: c g G h e NA R — med korrekt dimension, ikke bare tal
 imperiale/enhedssystemer: ft lb mi gal (eksplicit konvertering kun)
@@ -363,17 +363,17 @@ parse/format: "37.6 km/h".to::<Speed>()
 Signals og actors er sprog-features (language_reference §21-22), men eksponerer disse stdlib-navne:
 
 ```text
-signal(v) computed(fn) effect(fn) unobserve(s) batch { ... }   # atomær multi-opdatering
+signal(v) computed(fn) effect(fn) unobserve(s) batch { ... }   # atomic multi-update
 stream.into_signal() debounce(throttle) sample(period)
 actor-supervision: link(a,b) unlink(a) restart_strategy(:one_for_one)
 ```
 
 ## 23. Flow<T> og Table — BESLUTTET (unikke kernetyper)
 
-**Flow<T>** (unique_features.md U1) — én lazy-sekvenstype for alt: Array-view, generatorer, fillinjer, netværks-events, kanaler, signal-historik. Alle iterator-operationer fra §3 virker; async/sync vælges af compileren.
+**Flow<T>** (unique_features.md U1) — one lazy sequence type for everything: array views, generators, file lines, network events, channels, signal history. Every iterator operation from §3 works; async/sync is chosen by the compiler.
 
 ```text
-every line of "huge.log" that contains "ERROR"     # Flow<String>, strømmende
+every line of "huge.log" that contains "ERROR"     # Flow<String>, streaming
 repeat for each message in the inbox { ... }        # kanal som Flow
 ```
 
@@ -381,12 +381,12 @@ repeat for each message in the inbox { ... }        # kanal som Flow
 
 ```text
 sales is a table from "sales.csv"
-big is the rows of sales where beløb > 1000
-per-product is sales grouped by produkt summing beløb
+big is the rows of sales where amount > 1000
+per-product is sales grouped by product summing amount
 enriched is sales joined-with prices matching product == name
 sales.save-as("arkiv.ntab")
 ```
 
 - Kolonne-layout, SIMD-aggregationer, zero-copy mmap.
 - Query-fraserne (§U6) kompilerer til samme plan for Array/Table/Flow/**SQL** (pushdown via std.database).
-- `nova why` og time-travel-debuggeren læser samme historik-motor som `track`/undo.
+- `nova why` and the time-travel debugger read the same history engine as `track`/undo.
