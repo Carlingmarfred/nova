@@ -647,8 +647,28 @@ def test_stdlib(tmp):
          'use the standard text library\n'
          'say text.at("abcdef", 2)\n'
          'say text.slice("abcdef", 2, 4)', "", "b\nbcd"),
+        # --- C07: list ---
+        ("list-sort",
+         'use the standard list library\n'
+         'nums is list.sort([3, 1, 2])\nsay "{nums}"\n'
+         'ords is list.sort(["b", "a"])\nsay "{ords}"', "", "[1, 2, 3]\n[a, b]"),
+        ("list-reverse",
+         'use the standard list library\nsay "{list.reverse([1, 2, 3])}"',
+         "", "[3, 2, 1]"),
+        ("list-min-max",
+         'use the standard list library\n'
+         'say "{list.min([5, 2, 9])} {list.max([5, 2, 9])}"', "", "2 9"),
+        ("list-keys-values",
+         'use the standard list library\nuse the standard file library\n'
+         'use the standard json library\n'
+         'raw is the contents of "person.json" parsed as json\n'
+         'say "{list.keys(raw)}"\nsay "{list.values(raw)}"', "",
+         "[alder, navn]\n[42, Bo]"),
     ]
     for name, src, stdin, expect in ok_cases:
+        if name == "list-keys-values":
+            with open(os.path.join(tmp, "person.json"), "w", encoding="utf-8") as f:
+                f.write('{"navn": "Bo", "alder": 42}')
         p = nova(["run", prog(src, tmp)], stdin=stdin, cwd=tmp)
         check(f"stdlib/{name}",
               p.returncode == 0 and expect in p.stdout,
@@ -656,7 +676,7 @@ def test_stdlib(tmp):
 
     err_cases = [
         ("unknown-lib", "use the standard turbo library",
-         ["ukendt standardbibliotek 'turbo'", "file, json, math, random, text, time"]),
+         ["ukendt standardbibliotek 'turbo'", "file, json, list, math, random, text, time"]),
         ("bad-use-form", "use magic stuff",
          ["ukendt 'use'-form", "use the standard <navn> library"]),
         ("missing-func", "use the standard json library\nsay \"{json.mangle(1)}\"",
@@ -668,6 +688,13 @@ def test_stdlib(tmp):
          ["gyldige slutværdier er 1 til 3"]),
         ("text-type-error", "use the standard text library\nsay \"{text.upper(5)}\"",
          ["kræver tekst"]),
+        # --- C07: liste-fejl ---
+        ("list-sort-mixed", 'use the standard list library\nsay "{list.sort([1, \\"a\\"])}"',
+         ["blande typer", "tal eller tekst"]),
+        ("list-min-empty", "use the standard list library\nsay \"{list.min([])}\"",
+         ["ikke-tom liste"]),
+        ("list-keys-nondict", "use the standard list library\nsay \"{list.keys([1])}\"",
+         ["kræver en databog", "json.parse"]),
     ]
     for name, src, fragments in err_cases:
         p = nova(["run", prog(src, tmp)], cwd=tmp)

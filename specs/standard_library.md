@@ -2,7 +2,7 @@
 
 Princip: **Python-paritet først** — hver Python-modulekategori har et Nova-modsvar, native implementeret. Derefter Java-agtig enterprise-struktur og C-agtig kontrol.
 
-## 0a. Bootstrap-udsnit (v0.12+, items B03 + C06 + C07 + C08) — B03+C06 IMPLEMENTERET; list + C08-udvidelser følger
+## 0a. Bootstrap-udsnit (v0.12+, items B03 + C06 + C07 + C08) — B03+C06+C07 IMPLEMENTERET; C08-udvidelser følger
 
 `use` binder et ÆGTE navnerums-modul (samme maskineri som C05-moduler):
 

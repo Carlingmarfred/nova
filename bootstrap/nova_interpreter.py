@@ -333,6 +333,64 @@ def _bi_text_slice(args, line):
     return s[a - 1:b]
 
 
+# --- C07: list ---
+
+def _bi_list_xs(name, v, line):
+    if not isinstance(v, list):
+        raise NovaError(line, f"'list.{name}' kræver en liste — fandt {nova_str(v)}")
+    return v
+
+
+def _bi_list_sort(args, line):
+    xs = _bi_list_xs("sort", args[0], line)
+    if all(_is_num(x) for x in xs):
+        return sorted(xs)
+    if all(isinstance(x, str) for x in xs):
+        return sorted(xs)
+    typer = ", ".join(sorted({"tal" if _is_num(x) else "tekst" if isinstance(x, str)
+                              else nova_str(x) for x in xs}))
+    raise NovaError(line, f"'list.sort' kan ikke blande typer ({typer}) — "
+                          "giv den en liste med ENTEN tal eller tekst")
+
+
+def _bi_list_reverse(args, line):
+    return list(reversed(_bi_list_xs("reverse", args[0], line)))
+
+
+def _bi_list_min(args, line):
+    xs = _bi_list_xs("min", args[0], line)
+    if not xs:
+        raise NovaError(line, "'list.min' kræver en ikke-tom liste")
+    if not all(_is_num(x) for x in xs):
+        raise NovaError(line, "'list.min' kræver en liste af tal")
+    return min(xs)
+
+
+def _bi_list_max(args, line):
+    xs = _bi_list_xs("max", args[0], line)
+    if not xs:
+        raise NovaError(line, "'list.max' kræver en ikke-tom liste")
+    if not all(_is_num(x) for x in xs):
+        raise NovaError(line, "'list.max' kræver en liste af tal")
+    return max(xs)
+
+
+def _bi_list_keys(args, line):
+    bog = args[0]
+    if not isinstance(bog, dict):
+        raise NovaError(line, "'list.keys' kræver en databog (fx fra json.parse)"
+                              f" — fandt {nova_str(bog)}")
+    return sorted(bog.keys())
+
+
+def _bi_list_values(args, line):
+    bog = args[0]
+    if not isinstance(bog, dict):
+        raise NovaError(line, "'list.values' kræver en databog (fx fra json.parse)"
+                              f" — fandt {nova_str(bog)}")
+    return [bog[k] for k in sorted(bog.keys())]
+
+
 def _make_json_lib():
     m = ModuleInstance("json", "(standardbibliotek)")
     m.funcs["parse"] = BuiltinFunction("parse", ["text"], _bi_json_parse)
@@ -383,6 +441,17 @@ def _make_text_lib():
     return m
 
 
+def _make_list_lib():
+    m = ModuleInstance("list", "(standardbibliotek)")
+    m.funcs["sort"] = BuiltinFunction("sort", ["liste"], _bi_list_sort)
+    m.funcs["reverse"] = BuiltinFunction("reverse", ["liste"], _bi_list_reverse)
+    m.funcs["min"] = BuiltinFunction("min", ["liste"], _bi_list_min)
+    m.funcs["max"] = BuiltinFunction("max", ["liste"], _bi_list_max)
+    m.funcs["keys"] = BuiltinFunction("keys", ["databog"], _bi_list_keys)
+    m.funcs["values"] = BuiltinFunction("values", ["databog"], _bi_list_values)
+    return m
+
+
 STDLIB_FACTORIES = {
     "json": _make_json_lib,
     "file": _make_file_lib,
@@ -390,6 +459,7 @@ STDLIB_FACTORIES = {
     "time": _make_time_lib,
     "math": _make_math_lib,
     "text": _make_text_lib,
+    "list": _make_list_lib,
 }
 
 
