@@ -7,7 +7,7 @@ Regler (v0.1 bootstrap):
 - Feltadgang ALTID: `the <felt> of <objekt>` (kan kædes).
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, is_dataclass, fields as dc_fields, replace as dc_replace
 from nova_lexer import lex, NovaLexError, Token
 
 
@@ -231,6 +231,14 @@ class EveryTurnedInto:
 @dataclass
 class AskE:
     prompt: object; line: int = 0
+
+
+@dataclass
+class QuestionE:
+    """OptionalGuard (C03): opstår KUN ved roden af et udtryk der bar en `?`.
+    Markere fjernes under parse; hele træet pakkes ét sted
+    (specs/error_handling.md §2.1)."""
+    e: object; line: int = 0
 
 
 class NovaParseError(Exception):
@@ -627,7 +635,9 @@ class Parser:
             return LastItem(self.parse_arith(), t.line)
         if w == "number" and self.at_word("value"):
             self.next(); self.expect_word("of")
-            return NumVal(self.parse_arith(), t.line)
+            # operand på factor-niveau: 'the number value of x? plus 1' skal
+            # parse som (nv x?) + 1 — ellers ligger '?'-giften udenom konverteringen
+            return NumVal(self.parse_factor(), t.line)
         if w == "length":
             self.eat_word("of")
             return CountOf(self.parse_arith(), t.line)
@@ -775,7 +785,7 @@ class Parser:
 
     # ---------------- udtryk ----------------
     def parse_expr(self):
-        return self.parse_or()
+        return wrap_optional(self.parse_or())
 
     def parse_or(self):
         left = self.parse_and()
@@ -950,15 +960,21 @@ class Parser:
 
     def parse_postfix(self):
         e = self.parse_primary()
-        while self.at_kind("DOT"):
-            dot_t = self.next()
-            nxt = self.peek()
-            if nxt.kind == "LPAREN":
-                raise NovaParseError(nxt.line,
-                                     "metodekald som .navn(...) kommer i en senere version — "
-                                     "brug indbyggede funktioner eller 'the ... of ...'", nxt.col)
-            name = self.expect_name("feltnavn efter '.'")
-            e = Field(e, name, dot_t.line)
+        while True:
+            if self.at_kind("DOT"):
+                dot_t = self.next()
+                nxt = self.peek()
+                if nxt.kind == "LPAREN":
+                    raise NovaParseError(nxt.line,
+                                         "metodekald som .navn(...) kommer i en senere version — "
+                                         "brug indbyggede funktioner eller 'the ... of ...'", nxt.col)
+                name = self.expect_name("feltnavn efter '.'")
+                e = Field(e, name, dot_t.line)
+            elif self.at_kind("QUESTION"):
+                t = self.next()
+                e = QuestionE(e, t.line)
+            else:
+                break
         return e
 
     def parse_primary(self):
@@ -1088,6 +1104,57 @@ class Parser:
                 args.append(self.parse_arith())
             return Call(nt.value, args, nt.line)
         return Var(nt.value, nt.line)
+
+
+def _has_question(v):
+    """Indeholder træet/delen nogen QuestionE-marker?"""
+    if isinstance(v, QuestionE):
+        return True
+    if is_dataclass(v):
+        return any(_has_question(getattr(v, f.name)) for f in dc_fields(v))
+    if isinstance(v, (list, tuple)):
+        return any(_has_question(x) for x in v)
+    if isinstance(v, dict):
+        return any(_has_question(x) for x in v.values())
+    return False
+
+
+def _strip_question(e):
+    """Fjern ALLE QuestionE-markere (bygger træet om uden dem)."""
+    if isinstance(e, QuestionE):
+        return _strip_question(e.e)
+    if not is_dataclass(e):
+        return e
+    changed = False
+    vals = {}
+    for f in dc_fields(e):
+        old = getattr(e, f.name)
+        new = _strip_question_value(old)
+        changed = changed or (new is not old)
+        vals[f.name] = new
+    return dc_replace(e, **vals) if changed else e
+
+
+def _strip_question_value(v):
+    if isinstance(v, list):
+        items = [_strip_question_value(x) for x in v]
+        return items if any(a is not b for a, b in zip(items, v)) else v
+    if isinstance(v, tuple):
+        items = tuple(_strip_question_value(x) for x in v)
+        return items if any(a is not b for a, b in zip(items, v)) else v
+    if isinstance(v, dict):
+        items = {k: _strip_question_value(x) for k, x in v.items()}
+        return items if any(items[k] is not x for k, x in v.items()) else v
+    return _strip_question(e=v)
+
+
+def wrap_optional(e):
+    """C03 hele-udtryksgift: bar træet en `?`, fjernes markere og HELE træet
+    pakkes præcis ét sted (QuestionE ved roden). Uden `?` returneres uændret."""
+    if not _has_question(e):
+        return e
+    stripped = _strip_question(e)
+    return QuestionE(stripped, getattr(stripped, "line", 0))
 
 
 def parse_source(src):

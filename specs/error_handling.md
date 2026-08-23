@@ -22,7 +22,7 @@ forced = u!                   # unwrap-or-panic (kun med god grund; lint)
 
 Flow-sensitive typing: efter `if x == none { return }` er `x` kendt non-none. Gælder også efter `?`, assert, match.
 
-### 2.1 Bootstrap-udsnit (v0.11+, item C03)
+### 2.1 Bootstrap-udsnit (v0.11+, item C03) — IMPLEMENTERET i bootstrap v0.12
 
 Bootstrap'en implementerer én præcis delregel af `?` — **hele-udtryksgift**:
 
@@ -36,14 +36,29 @@ v = the number value of "41"? + 1       #                  →  v = 42
 say "{the text of maybe?}"              # maybe = nothing  →  "nothing"
 ```
 
-Præcise regler:
-1. `?` skrives postfix bag EN del af udtrykket, men gælder for HELE udtrykket
-   (`a? + b` beskytter også `b`). Marker fjernes ved parse; hele træet pakkes ét sted.
-2. KUN fravær-af-værdi propagater: regne-/sammenlignings-operationer på `nothing`
-   og felt-læsning fra `nothing`. Out-of-bounds (`item 9 of xs`), ukendte felter på
-   rigtige things og ukendte funktioner FEJLER stadig — også under `?`.
-3. Resultatet testes med de eksisterende tjek: `if x is nothing then ...` /
-   `if x is not nothing then ...`.
+Præcise regler (C03-kontrakten i ITERATION_PLAN §4.5):
+1. **Hele-udtryksgift — én regel, sætningsformet:** hvis NOGEN del af et udtryk er
+   `nothing`, og udtrykket bærer en `?`, er HELE udtrykket `nothing`.
+2. **Markerens placering er fri:** `q? plus 1` og `q plus 1?` er SAMME udtryk.
+   Ved parse fjernes alle `?`-markere, og hele det færdige træ pakkes præcis ét
+   sted (`QuestionE`). Der findes aldrig indlejrede markere i det dumpede AST —
+   kun én rod-pakning (fastlåst af golden 18-optional og kryds-skin-par).
+3. **KUN fravær-af-værdi propagater** — nøjagtigt to throw-sites i fortolkeren:
+   - regne-/rækkefølge-operationer på `nothing` (`plus/minus/times/divided/mod`,
+     `gt/gte/lt/lte`),
+   - felt-læsning fra `nothing` (`the text of maybe?` / `maybe.text?`).
+   Out-of-bounds (`item 9 of xs`), ukendte felter på RIGTIGE things, ukendte
+   funktioner og ugyldig json FEJLER stadig — også under `?`. `?` dækker aldrig
+   logikfejl.
+4. **Lighed med `nothing` er ALDRIG gift** — det ER testen:
+   `if x is nothing then ...` / `if x is not nothing then ...` virker som altid,
+   også når `x` er `nothing` (eq/ne er fritaget for regl 3).
+5. **Uden `?` fejler det stadig højt** med den venlige sætning + fix-hint
+   ("kan ikke regne med 'nothing' — tilføj '?' ... eller tjek værdien med
+   'is nothing' først"). `NothingSignal` fanget af `try ... if it fails`? NEJ —
+   det er fravær, ikke en fejl; kun `QuestionE`-grænsen opsluger signalet.
+6. Resultatet testes med de eksisterende tjek fra regel 4; `say "{...}"` viser
+   `nothing` som tekst. Gælder begge skins og streng-interpolation `{...}`.
 
 ## 3. Result<T,E>
 

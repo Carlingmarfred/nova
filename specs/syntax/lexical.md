@@ -94,6 +94,8 @@ SAMME AST-operatorstrenge som Natural (én AST, to skins):
 + - * / %  → plus / minus / times / divided / mod
 == !=  → eq / ne       < <= > >=  → lt / lte / gt / gte
 && || ! → and / or / not        .navn → Field (som "the navn of ...")
+?      → OptionalGuard-postfix (C03): fjernes ved parse; HELE udtrykket
+         pakkes i QuestionE — se specs/error_handling.md §2.1
 ( ) [ ] , ; . { }  → som forventet; { } lexes rent men har ENDNU ingen
                      statement-grammatik (lambdas/fn kommer i C10/T3)
 ```
@@ -108,7 +110,7 @@ MINUS. Dermed er `a-b` ét navn, `a -b`, `a- b` og `a - b` alle subtraktion.
 ```text
 or / ||   <   and / &&   <   sammenligning (is..., ==, !=, <, <=, >, >=)
 <   plus/minus (+ -)   <   times/divided/mod (* / %)
-<   unær (!, -)   <   postfix (.felt)   <   primærer
+<   unær (!, -)   <   postfix (? og .felt)   <   primærer
 ```
 
 Symbol-operander blandes frit med ord-operatorer; `1 plus 2 * 3 == 6 + x && y`

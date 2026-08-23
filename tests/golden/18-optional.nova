@@ -1,0 +1,9 @@
+# C03: Optional/? — hele-udtryksgift. Markere fjernes; hele træet pakkes
+# præcis ét sted (QuestionE ved roden). Se specs/error_handling.md §2.1.
+answer is "41"
+n is the number value of answer? plus 1
+u = q? + 1
+set w to the text of maybe?
+if n is nothing then say "tom"
+if u is not nothing then say "ok"
+say "{the text of maybe?}"

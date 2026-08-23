@@ -1,0 +1,74 @@
+Program (7 statements)
+  Assign(line=3)
+    target: Var(line=3)
+      name: 'answer'
+    expr: StrLit(line=3)
+      raw: '41'
+  Assign(line=4)
+    target: Var(line=4)
+      name: 'n'
+    expr: QuestionE(line=4)
+      e: Bin(line=4)
+        op: 'plus'
+        l: NumVal(line=4)
+          e: Var(line=4)
+            name: 'answer'
+        r: Lit(line=4)
+          value: 1
+  Assign(line=5)
+    target: Var(line=5)
+      name: 'u'
+    expr: QuestionE(line=5)
+      e: Bin(line=5)
+        op: 'plus'
+        l: Var(line=5)
+          name: 'q'
+        r: Lit(line=5)
+          value: 1
+  Assign(line=6)
+    target: Var(line=6)
+      name: 'w'
+    expr: QuestionE(line=6)
+      e: Field(line=6)
+        obj: Var(line=6)
+          name: 'maybe'
+        name: 'text'
+  If(line=7)
+    branches: [1]
+      [0] tuple(2)
+        [0] Bin(line=7)
+          op: 'eq'
+          l: Var(line=7)
+            name: 'n'
+          r: Lit(line=7)
+            value: None
+        [1] Block(line=7)
+          stmts: [1]
+            [0] Say(line=7)
+              exprs: [1]
+                [0] StrLit(line=7)
+                  raw: 'tom'
+              newline: True
+    otherwise: None
+  If(line=8)
+    branches: [1]
+      [0] tuple(2)
+        [0] Bin(line=8)
+          op: 'ne'
+          l: Var(line=8)
+            name: 'u'
+          r: Lit(line=8)
+            value: None
+        [1] Block(line=8)
+          stmts: [1]
+            [0] Say(line=8)
+              exprs: [1]
+                [0] StrLit(line=8)
+                  raw: 'ok'
+              newline: True
+    otherwise: None
+  Say(line=9)
+    exprs: [1]
+      [0] StrLit(line=9)
+        raw: '{the text of maybe?}'
+    newline: True

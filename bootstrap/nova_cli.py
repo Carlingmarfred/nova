@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from nova_lexer import lex, NovaLexError          # noqa: E402
 from nova_parser import parse_source, NovaParseError  # noqa: E402
-from nova_interpreter import Interp, NovaError, ExitSignal  # noqa: E402
+from nova_interpreter import Interp, NovaError, ExitSignal, NothingSignal  # noqa: E402
 from nova_dump import dump_program  # noqa: E402
 
 VERSION = "0.11.0-bootstrap"
@@ -92,6 +92,9 @@ def main(argv):
             return 0
         except NovaError as e:
             print(f"\nNova-fejl — linje {e.line}: {e.msg}", file=sys.stderr)
+            return 1
+        except NothingSignal as ns:
+            print(f"\nNova-fejl — linje {ns.line}: {ns.msg}", file=sys.stderr)
             return 1
         except ExitSignal:
             return 0

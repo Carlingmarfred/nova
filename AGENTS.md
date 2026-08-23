@@ -38,9 +38,11 @@ python bootstrap/nova_cli.py parse examples/todo.nova       # AST dump
 
 ## Current state (update this date when it changes)
 
-- v0.11-bootstrap: Python interpreter, **132/132** tests green, guessing_game + todo done.
+- v0.12-bootstrap (i gang): Python interpreter, **146/146** tests green, guessing_game + todo done.
 - Done 2026-08-22: B05 golden dumps · B01 error audit · B02 reserved words ·
   C01 shorthand skin · C02 equivalence pairs · B04 unary minus.
-- Next up per plan §7: C03 Optional → C05 modules → C06–C08 stdlib v0.
+- Done 2026-08-23: C03 Optional (`?` hele-udtryksgift; golden 18; par6; NumVal
+  factor-binding; plus type-mismatch-sætning).
+- Next up per plan §7: C05 modules → C06–C08 stdlib v0.
 - Golden dumps: after BEVIDSTE grammar/format changes run
   `python tests/run_tests.py --update-goldens` and review the diff.

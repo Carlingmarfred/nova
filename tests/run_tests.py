@@ -314,6 +314,7 @@ def test_error_catalog(tmp):
          ["mente du 'greet'"]),
         ("arg-count", 'to f with x\n    say "{x}"\ndone\nf()', "", ["forventer 1", "fik 0"]),
         ("div-zero", 'say "{1 divided by 0}"', "", ["division med nul", "nævneren"]),
+        ("type-mismatch", 'say "{1 + \\"a\\"}"', "", ["lægge", "to tal eller to tekster"]),
         ("item-bounds", 'xs is [1]\nsay "{item 5 of xs}"', "", ["findes ikke", "gyldige numre"]),
         ("field-missing",
          'a T is a thing with\n    a text\ndone\nx is a new T\nsay "{the txt of x}"', "",
@@ -440,6 +441,7 @@ def test_shorthand(tmp):
          'cmp is x is greater than 3 and y is less than 4 or ok'),
         ('t.text = "hej"', 'set the text of t to "hej"'),
         ('u = -q + 2', 'u is 0 minus q plus 2'),
+        ('u = q? + 1', 'set u to q plus 1?'),
     ]
     for i, (short, natural) in enumerate(pairs, 1):
         ps = nova(["parse", prog(short, tmp)], cwd=tmp)
@@ -447,6 +449,56 @@ def test_shorthand(tmp):
         check(f"equivalence/pair{i}",
               ps.returncode == 0 and pn.returncode == 0 and ps.stdout == pn.stdout,
               f"kort={ps.stdout!r} naturlig={pn.stdout!r}")
+
+
+def test_optional(tmp):
+    """C03: Optional/? — hele-udtryksgift; kun fravær-af-værdi propagater
+    (specs/error_handling.md §2.1). Uden ? fejler det stadig med fix-hint."""
+    cases = [
+        # gift-sagen der ville crashet uden grænse: NumVal("abc") → nothing, plus 1
+        ("poison-guarded",
+         'answer is "abc"\nn = the number value of answer? + 1\n'
+         'if n is nothing then say "tom"', "", "tom"),
+        ("value-passes", 'v = the number value of "41"? + 1\nsay "{v}"', "", "42"),
+        ("natural-spelling",
+         'answer is "7"\nn is the number value of answer? plus 1\nsay "{n}"', "", "8"),
+        ("field-of-nothing-guarded",
+         'a Box is a thing with\n    an inside set to nothing\ndone\n'
+         'b = a new Box\nsay "{b.inside.label?}"', "", "nothing"),
+        ("interpolation-guarded",
+         'maybe is nothing\nsay "{the text of maybe?}"', "", "nothing"),
+        ("eq-nothing-still-works",
+         'x is nothing\nif x is nothing then say "tom"', "", "tom"),
+        ("double-marker", 'k = the number value of "5"?? * 2\nsay "{k}"', "", "10"),
+        ("marker-position-free",
+         'q = 4\nu = q + 1?\nsay "{u}"', "", "5"),
+        ("logic-error-not-covered",
+         'xs = [1]\nn = item 9 of xs?\nsay "{n}"', "", None),  # fejler stadig → rc=1
+    ]
+    for name, src, stdin, expect in cases:
+        p = nova(["run", prog(src, tmp)], stdin=stdin, cwd=tmp)
+        if name == "logic-error-not-covered":
+            ok = (p.returncode == 1 and "item 9" in p.stderr
+                  and "Traceback" not in p.stderr)
+        else:
+            ok = p.returncode == 0 and (expect is None or expect in p.stdout)
+        check(f"optional/{name}", ok,
+              f"rc={p.returncode} out={p.stdout!r} err={p.stderr[:200]!r}")
+
+    # uden ? : samme udtryk giver venlig sætning + fix-hint (aldrig crash)
+    fail_cases = [
+        ("unguarded-arith", 'answer is "abc"\nn is the number value of answer plus 1',
+         ["kan ikke regne med 'nothing'", "'?'"]),
+        ("unguarded-field", 'maybe is nothing\nsay "{the text of maybe}"',
+         ["fra nothing", "'?'"]),
+    ]
+    for name, src, fragments in fail_cases:
+        p = nova(["run", prog(src, tmp)], cwd=tmp)
+        ok = (p.returncode == 1
+              and all(fr in p.stderr for fr in fragments)
+              and "Traceback" not in p.stderr
+              and "linje" in p.stderr)
+        check(f"optional/{name}", ok, f"rc={p.returncode} err={p.stderr[:220]!r}")
 
 
 # ------------------------------------------------------------ examples
@@ -514,6 +566,7 @@ def main():
         test_error_catalog(tmp)
         test_reserved_words(tmp)
         test_shorthand(tmp)
+        test_optional(tmp)
         test_guessing_game()
         test_todo_app()
     finally:

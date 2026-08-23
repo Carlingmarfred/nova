@@ -41,6 +41,16 @@ class ExitSignal(Exception):
     pass
 
 
+class NothingSignal(Exception):
+    """C03: fravær-af-værdi under et '?'-udtryk. Opsluges KUN af QuestionE-
+    grænsen; når toppen = venlig sætning + fix-hint (specs/error_handling.md §2.1)."""
+
+    def __init__(self, line, msg):
+        super().__init__(msg)
+        self.line = line
+        self.msg = msg
+
+
 NOTHING = None
 
 
@@ -493,6 +503,12 @@ class Interp:
                 if e.name in obj:
                     return obj[e.name]
                 raise NovaError(e.line, f"databogen har ikke nøglen '{e.name}'")
+            if obj is NOTHING:
+                raise NothingSignal(
+                    e.line,
+                    f"kan ikke læse feltet '{e.name}' fra nothing — tilføj '?' "
+                    f"hvis udtrykket må være nothing (fx: the {e.name} of x?), "
+                    f"eller tjek værdien med 'is nothing' først")
             raise NovaError(e.line, f"kan ikke læse feltet '{e.name}' fra {nova_str(obj)}")
         if t == "Bin":
             return self.eval_bin(e, scope)
@@ -504,6 +520,12 @@ class Interp:
             return self.new_thing(e, scope)
         if t == "AskE":
             return self.ask(self.eval(e.prompt, scope), e.line)
+        if t == "QuestionE":
+            # C03-grænsen: hele-udtryksgift — ét signal gør hele udtrykket nothing
+            try:
+                return self.eval(e.e, scope)
+            except NothingSignal:
+                return NOTHING
         if t == "RandomBetween":
             a = self.eval(e.a, scope)
             b = self.eval(e.b, scope)
@@ -683,7 +705,11 @@ class Interp:
         # numeriske/sammenlignende
         if op in ("gt", "lt", "gte", "lte", "plus", "minus", "times", "divided", "mod"):
             if l is NOTHING or r is NOTHING:
-                raise NovaError(e.line, "kan ikke regne med 'nothing' — tjek at variablerne har værdier")
+                raise NothingSignal(
+                    e.line,
+                    "kan ikke regne med 'nothing' — tilføj '?' hvis udtrykket må "
+                    "være nothing (fx: n = the number value of answer? + 1), "
+                    "eller tjek værdien med 'is nothing' først")
         if op == "gt":  return l > r
         if op == "lt":  return l < r
         if op == "gte": return l >= r
@@ -691,7 +717,10 @@ class Interp:
         if op == "plus":
             if isinstance(l, str) and isinstance(r, str):
                 return l + r
-            return l + r
+            if _is_num(l) and _is_num(r):
+                return l + r
+            raise NovaError(e.line, f"kan ikke lægge {nova_str(l)} og {nova_str(r)} "
+                                    f"sammen — '+' kræver to tal eller to tekster")
         if op == "minus": return l - r
         if op == "times":
             if isinstance(l, str) and _is_num(r):

@@ -1,7 +1,7 @@
 # Nova — Project Notes
 
-> **Status v0.11-bootstrap:** hele Next Steps-listen (§4) er gennemført; 49/49 end-to-end
-> tests grønne (`python tests/run_tests.py`). Se changelog i §5.
+> **Status v0.12-bootstrap (i gang):** B05/B01/B02 + C01/C02/B04 + C03 gennemført;
+> 146/146 end-to-end tests grønne (`python tests/run_tests.py`). Se changelog i §5.
 
 ## 1. Context & Goals
 
@@ -95,6 +95,10 @@ done
   number value of / length of). Generic postfix `of` was REMOVED (reversal bug source).
 - `parse_term_first_only()` = arithmetic WITHOUT `times` operator (for `repeat N times`,
   `between A and B`, `item N of`).
+- **`the number value of X` binder X på factor-niveau (v0.12/C03):** ellers sluger
+  NumVal hele aritmikken (`nv x? plus 1` blev `NumVal(x plus 1)`), `?`-giften når
+  aldrig konverteringen, og `"5" * 2` inde i frasen gav `"55"`. Samme princip som
+  `between A and B` / `item N of`. For numeriske X er resultatet uændret.
 - **RESERVED_WORDS (v0.11/B02):** frozenset i `nova_parser.py`; alle navne-bindingssteder
   går gennem `expect_name(what)` (WORD-tjek + reservations-fejl "— vælg et andet navn").
   Politik + ordliste: specs/syntax/lexical.md §Reserverede ord. `number/length/first/
@@ -125,7 +129,18 @@ done
   byte-for-byte; udvid ved hver ny konstruktion (C02-politik).
 
 **Interpreter notes (bootstrap/nova_interpreter.py):**
-- Control flow via exceptions: `BreakSignal`, `ContinueSignal`, `ReturnSignal`, `ExitSignal`.
+- Control flow via exceptions: `BreakSignal`, `ContinueSignal`, `ReturnSignal`, `ExitSignal`,
+  `NothingSignal` (v0.12/C03).
+- **Optional (v0.12/C03):** parseren pakker hvert udtryk der bar en `?` i ÉN
+  `QuestionE` ved roden (`wrap_optional()` i nova_parser.py — markere findes ALDRIG
+  indlejret i dumpede AST). Fortolkeren kaster `NothingSignal` på præcis to steder
+  (Bin regne-/rækkefølge-operand = nothing; Field-læsning af nothing); QuestionE-
+  eval er eneste catch-site → returnerer NOTHING. Ingen eksplicit dybdetæller:
+  Python-unwinding er grænsemekanikken, og grænsen er leksikalsk/AST-rodfast.
+  eq/ne med nothing er fritaget (det ER testen: `if x is nothing`). `try ... if it
+  fails` fanger IKKE NothingSignal (fravær ≠ fejl). Uden guard konverterer CLI'en
+  signalet til sætning + fix-hint. `plus` med blandet tal/tekst = NovaError-sætning
+  (var rå TypeError).
 - `Scope` chains to globals; assignment declares-in-place. `ThingInstance` = class + fields dict.
 - `truth()` enforces bool-only conditions (language rule: no truthiness).
 - Tracked vars (`track x`) snapshot via `copy.deepcopy` on mutation → `undo`/`redo`.
@@ -146,6 +161,21 @@ done
    funktions-lokalt scope (post-betingelser ser sluttilstanden). Dokumenteret i README.
 
 ## 5. v0.11 changelog
+
+**2026-08-23 — C03 Optional/`?` (v0.12, 146/146):**
+- Lexer: `?` → QUESTION (skin-symboltabel). Parser: `QuestionE`-node + postfix i
+  `parse_postfix()` + `wrap_optional()`/`_strip_question()` ved hvert `parse_expr()`-
+  toppunkt (gælder også `{...}`-interpolation og parenteser — indlejrede pakninger
+  komponerer til én rod-pakning). Dump: QuestionE er en almindelig node (dumper uændret).
+- Fortolker: `NothingSignal(line,msg)`; throw-sites = eval_bin regne-/rækkefølge-guard
+  + Field af nothing; catch-site = QuestionE-eval. CLI: NothingSignal → "Nova-fejl —
+  linje L: ..." rc=1.
+- Testafslørrete fixes: `the number value of X` → `parse_factor()`-operand
+  (giften lå udenom NumVal; `"5" * 2` gav `"55"`); str+tal `plus` → sætning + hint.
+- Beviser: 11 optional-tests (inkl. poison-case, logic-error-not-covered,
+  marker-position-free, double-marker), kryds-skin-par 6 (`u = q? + 1` ≡
+  `set u to q plus 1?`, byte-identiske dumps), golden `18-optional`; alle 17 gamle
+  goldener uændrede.
 
 **Parser-fixes (bootstrap/nova_parser.py):**
 - `parse_the_chain()`: indbyggede fraser (`contents/first item/last item/number value/

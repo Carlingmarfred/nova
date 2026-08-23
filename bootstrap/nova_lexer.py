@@ -29,7 +29,8 @@ _SINGLE = {"(": "LPAREN", ")": "RPAREN", "[": "LBRACKET",
 # kompakt-skin-symboler (C01) — samme semantik som ord-operatorerne
 _SKIN_SINGLE = {"=": "EQUALS", "+": "PLUS", "-": "MINUS", "*": "STAR",
                 "/": "SLASH", "%": "PERCENT", "<": "LT", ">": "GT",
-                "!": "BANG", ".": "DOT", "{": "LBRACE", "}": "RBRACE"}
+                "!": "BANG", ".": "DOT", "{": "LBRACE", "}": "RBRACE",
+                "?": "QUESTION"}
 _SKIN_DOUBLE = {"==": "EQUALEQUAL", "!=": "BANGEQUAL", "<=": "LTE",
                 ">=": "GTE", "&&": "AMPAMP", "||": "PIPEPIPE"}
 
