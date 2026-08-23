@@ -1,4 +1,4 @@
-# Nova Standardbibliotek — komplet overflade
+# Nova Standard Library — complete surface
 
 Principle: **Python parity first** — every Python module category has a native Nova counterpart. Then Java-style enterprise structure and C-style control.
 
@@ -7,40 +7,40 @@ Principle: **Python parity first** — every Python module category has a native
 `use` binds a REAL namespace module (same machinery as C05 modules):
 
 ```text
-use the standard json library      # eller: use standard json
-say "{json.stringify([1, 2])}"     # navnerums-kald med parenteser
+use the standard json library      # or: use standard json
+say "{json.stringify([1, 2])}"     # namespace call with parentheses
 say "{math.PI}"                    # constants read as a field
 ```
 
-Regler:
+Rules:
 
-1. Formen er `use [the] standard NAVN [library]`. Anden form = venlig fejl der
-   shows the correct wording. Unknown NAME = an error listing the available ones.
+1. The form is `use [the] standard NAME [library]`. Any other form = a friendly error
+   that shows the correct wording. Unknown NAME = an error listing the available ones.
 2. NAME becomes an ordinary variable (a module value) — functions are called
    `NAME.function(arg, ...)`, constants read as `NAME.CONST`. Re-using the same
-   bibliotek to gange giver samme instans (ingen dobbelt-init).
-3. Fejl i biblioteks-funktioner er almindelige fangbare NovaErrors med linjetal.
-4. Bibliotekerne (bootstrap v0):
+   library twice gives the same instance (no double init).
+3. Errors in library functions are ordinary catchable NovaErrors with line numbers.
+4. The libraries (bootstrap v0):
 
-| Bibliotek | Indhold v0 | Item |
+| Library | Contents v0 | Item |
 |---|---|---|
 | `json` | `parse(text)`, `stringify(v)` | B03 |
-| `file` | `read(sti)`, `exists(sti)`, `write(sti, tekst)` | B03 |
-| `random` | `between(a, b)`, `pick(liste)`, `shuffle(liste)` (kopi) | B03+C08 |
-| `time` | `now()` (sekunder), `sleep(sekunder)` | B03+C08 |
-| `math` | `sqrt`, `round`, `abs`, `floor`, `ceil`, `pow(b, e)` + konstant `PI` | B03+C08 |
-| `text` | `upper`, `lower`, `trim`, `split(s, sep)`, `join(liste, sep)`, `replace(s, fra, til)`, `length(s)`, `contains(s, sub)`, `at(s, n)` (1-baseret), `slice(s, fra, til)` (1-baseret, inklusiv) | C06 |
-| `list` | `sort(liste)`, `reverse(liste)`, `min(liste)`, `max(liste)`, `keys(objekt)`, `values(objekt)` | C07 |
+| `file` | `read(path)`, `exists(path)`, `write(path, text)` | B03 |
+| `random` | `between(a, b)`, `pick(list)`, `shuffle(list)` (copy) | B03+C08 |
+| `time` | `now()` (seconds), `sleep(seconds)` | B03+C08 |
+| `math` | `sqrt`, `round`, `abs`, `floor`, `ceil`, `pow(b, e)` + constant `PI` | B03+C08 |
+| `text` | `upper`, `lower`, `trim`, `split(s, sep)`, `join(list, sep)`, `replace(s, from, to)`, `length(s)`, `contains(s, sub)`, `at(s, n)` (1-based), `slice(s, from, to)` (1-based, inclusive) | C06 |
+| `list` | `sort(list)`, `reverse(list)`, `min(list)`, `max(list)`, `keys(object)`, `values(object)` | C07 |
 
 Not in the bootstrap cut: `map/filter/fold` (requires lambdas → C10/T2),
 regex/net/http/database and everything else on M2+ — `use` of an unknown library fails
-venligt i stedet for at lyve.
+politely instead of lying.
 
-## 0. Paritetstabel (Python → Nova)
+## 0. Parity table (Python → Nova)
 
 | Python | Nova | Status |
 |---|---|---|
-| builtins (len, range, enumerate, zip, ...) | core (indbygget) | M1 |
+| builtins (len, range, enumerate, zip, ...) | core (built-in) | M1 |
 | str / string | core.String + std.text | M1 |
 | list/dict/set/tuple/collections | core.Array/Map/Set/Tuple + std.collections | M1 |
 | math / cmath / statistics / random | std.math / std.stats / std.random | M1 |
@@ -50,13 +50,13 @@ venligt i stedet for at lyve.
 | re | std.regex | M2 |
 | datetime / zoneinfo / calendar | std.time | M2 |
 | itertools / functools | std.iter / std.func | M1/M2 |
-| typing / dataclasses / enum | sproget indbygget | M1 |
+| typing / dataclasses / enum | built into the language | M1 |
 | logging | std.log | M2 |
 | argparse | std.cli | M2 |
-| unittest / pytest | indbygget (@test, testkit) | M1 |
+| unittest / pytest | built-in (@test, testkit) | M1 |
 | base64 / binascii / hashlib / hmac / secrets / uuid | std.encoding / std.crypto | M2/M4 |
 | csv / configparser / tomllib / xml.etree | std.formats.* | M3 |
-| sqlite3 (+ DB-API) | std.database (sqlite driver indbygget) | M3 |
+| sqlite3 (+ DB-API) | std.database (sqlite driver built-in) | M3 |
 | http.client/server / urllib / socket / ssl | std.net.http / std.net.tcp / std.net.tls | M3 |
 | socket / select / asyncio | std.async + std.net | M2/M3 |
 | threading / multiprocessing / concurrent.futures | std.sync + std.async + parallel | M2 |
@@ -66,12 +66,12 @@ venligt i stedet for at lyve.
 | ctypes / cffi | std.ffi (import c "...") | M2 |
 | gc / weakref | std.mem (weak, collect-stats) | M2 |
 | decimal / fractions | std.num.Decimal / Rational | M3 |
-| gettext / locale | std.i18n | senere |
-| tkinter / GUI | nova-gui (officiel pakke) | M5 |
-| numpy / pandas | nova-array (officiel pakke, BLAS-backed) | M5 |
+| gettext / locale | std.i18n | later |
+| tkinter / GUI | nova-gui (official package) | M5 |
+| numpy / pandas | nova-array (official package, BLAS-backed) | M5 |
 | matplotlib | nova-plot (GPU-canvas) | M6 |
 
-## 1. core (indbygget, altid til stede)
+## 1. core (built-in, always present)
 
 ```text
 print(eprintln debug assert require panic todo unreachable exit)
@@ -83,7 +83,7 @@ Array Map Set Tuple Range Bytes StringBuilder Deque Heap
 Comparable Equals Hashable Printable Callable Index Slice Disposable
 ```
 
-### String (uddrag af fuld API)
+### String (excerpt of the full API)
 
 ```text
 len is_empty chars bytes code_points graphemes words lines
@@ -107,9 +107,9 @@ Deque push_front push_back pop_front pop_back rotate extend
 Heap push pop peek from_iter heapify
 Counter most_common elements total
 DefaultMap get_or_insert with_default
-FrozenMap FrozenSet (immutable, hashbare)
+FrozenMap FrozenSet (immutable, hashable)
 BitSet rank select count_ones intervals
-LRUCache TTLCache (thread-safe varianter: Sync*)
+LRUCache TTLCache (thread-safe variants: Sync*)
 BTreeMap BTreeSet SortedList
 RingBuffer CircularBuffer
 ```
@@ -124,7 +124,7 @@ product permutations combinations combinations_with_replacement
 cycle repeat repeat_with successions unfold
 collect into_array into_map into_set join partition counts
 sum_count min_by max_by find_map position all_equal
-lazy evaluation: alt er Iterator<T> indtil terminal-operation
+lazy evaluation: everything is Iterator<T> until a terminal operation
 ```
 
 ## 4. std.func
@@ -137,7 +137,7 @@ once defer retry(backoff) tap negate constant
 ## 5. std.math
 
 ```text
-konstanter PI E TAU PHI INF NAN
+constants PI E TAU PHI INF NAN
 sqrt cbrt exp exp2 ln log log2 log10 pow hypot
 sin cos tan asin acos atan atan2 sinh ...
 floor ceil trunc round round_half_even fract
@@ -148,7 +148,7 @@ Complex: abs arg conj exp sqrt polar
 BigInt: + - * / // % pow gcd modpow to_string parse factorial bit_ops
 Rational: exact fractions, automatic reduction
 Decimal: money-exact fixed point, banker's rounding
-checked-aritmetik: add_checked sub_checked ... -> Result
+checked arithmetic: add_checked sub_checked ... -> Result
 ```
 
 ## 6. std.stats / std.random
@@ -156,9 +156,9 @@ checked-aritmetik: add_checked sub_checked ... -> Result
 ```text
 mean median mode variance stdev quantile percentile skewness kurtosis
 covariance correlation pearson spearman linregress moving_average z_score
-normalisering standardiser histogram bins
+normalization standardize histogram bins
 
-Random: default seeded fra OS-entropy; Random(seed) deterministisk (PCG64)
+Random: default seeded from OS entropy; Random(seed) deterministic (PCG64)
 uniform int_range normal log_normal poisson exponential bernoulli binomial
 choice choices(weights) shuffle sample(k)
 ```
@@ -167,7 +167,7 @@ choice choices(weights) shuffle sample(k)
 
 ```text
 Path: join parent name ext stem exists is_file is_dir size
-     walk(depth-limited) glob("**/*.nova") absolute relative normalize
+      walk(depth-limited) glob("**/*.nova") absolute relative normalize
 read_text read_bytes write_text write_bytes append
 open(Read/Write/Append, create, truncate, exclusive)
 copy move remove mkdir mkdirs rmdir remove_tree
@@ -191,17 +191,17 @@ StringWriter BytesWriter
 MemoryStream Pipe duplex
 mmap(file, mode) — zero-copy file views
 compression: gzip zlib deflate brotli zstd (M4)
-tar zip archive-API (M4)
+tar zip archive API (M4)
 ```
 
 ## 9. std.json
 
 ```text
-parse(text) -> Result<Json>      Json = dynamic-model
+parse(text) -> Result<Json>      Json = dynamic model
 stringify(v, pretty indent sort_keys)
-streaming parser/writer (SAX-stil events)
-JsonBuilder typed-schema (via reflection eller makro)
-JSON-pointer (/a/b/0), JSON Merge Patch, JSON Schema-validering (M4)
+streaming parser/writer (SAX-style events)
+JsonBuilder typed schema (via reflection or macro)
+JSON pointer (/a/b/0), JSON Merge Patch, JSON Schema validation (M4)
 ```
 
 std.formats: `csv toml yaml ini xml` (M3+), same builder/streaming pattern.
@@ -216,32 +216,32 @@ RE2-like syntax (no backreferences in safe mode → linear time), compile-time-c
 Instant (monotonic) SystemTime Duration TimeSpan
 DateTime Date Time TimeZone Calendar
 ISO8601/RFC2822/rfc3339 parse/format
-aritmetik: dt + days(3); duration.humanize() ("for 3 timer siden")
-zoneinfo: IANA-databaser indbygget ("Europe/Copenhagen")
-sleep timeout interval stopwatch benchmark-helper
+arithmetic: dt + days(3); duration.humanize() ("3 hours ago")
+zoneinfo: IANA databases built in ("Europe/Copenhagen")
+sleep timeout interval stopwatch benchmark helper
 ```
 
 ## 12. std.log
 
 ```text
-niveauer trace debug info warn error fatal
-log.info("connect til {host}:{port}")
-scopes, structured fields (JSON-logning), rotation
+levels trace debug info warn error fatal
+log.info("connect to {host}:{port}")
+scopes, structured fields (JSON logging), rotation
 handlers: console file syslog net(wire-format)
-compile-time niveau-strip i release (--log-level=warn fjerner trace/debug-kald)
+compile-time level stripping in release (--log-level=warn removes trace/debug calls)
 ```
 
 ## 13. std.cli
 
 ```text
 CLI.app("my tool")
-   .arg(required = true, help = "inputfil")
+   .arg(required = true, help = "input file")
    .option("-o --output", default = "out.txt")
    .flag("-v --verbose", multiple = true)
    .subcommand("build")...
    .parse()
 
-genererer automatisk --help, completion (bash/zsh/fish/ps), man-side
+automatically generates --help, completion (bash/zsh/fish/ps), man page
 ```
 
 ## 14. std.net (M3)
@@ -249,17 +249,17 @@ genererer automatisk --help, completion (bash/zsh/fish/ps), man-side
 ```text
 tcp: connect listen accept streams (async-native)
 udp: sockets multicast
-tls: rustls-agtig pure-Nova implementation (M4) + SChannel/OpenSSL-bindinger
+tls: rustls-like pure-Nova implementation (M4) + SChannel/OpenSSL bindings
 dns: resolve async, SRV/TXT
 url: parse encode punycode query-params
 http: client (HTTP/1.1, HTTP/2, pooling, cookies, redirects, proxies)
       server (routing middleware websocket SSE graceful shutdown)
 websocket: client + server
-email/smtp ftp ssh(sftp) (senere)
+email/smtp ftp ssh(sftp) (later)
 ip: IPv4/IPv6 CIDR
 ```
 
-Eksempel:
+Example:
 
 ```text
 import std.net.http
@@ -276,10 +276,10 @@ server.run()
 ## 15. std.database (M3)
 
 ```text
-DB-API-agtig: connect execute query transaction prepared statements
-sqlite3 indbygget (pure binding)
-postgres mysql mssql mongodb redis via officielle pakker
-ORM-agtig lag via reflection/makroer:
+DB-API-like: connect execute query transaction prepared statements
+sqlite3 built-in (pure binding)
+postgres mysql mssql mongodb redis via official packages
+ORM-like layer via reflection/macros:
 
 @Table
 class User { @id id: i64; name: String }
@@ -289,13 +289,13 @@ users = db.select::<User>().where(u => u.age > 18).limit(10).all()
 ## 16. std.crypto (M4)
 
 ```text
-hash: sha256 sha512 blake3 md5(kun legacy) crc32
+hash: sha256 sha512 blake3 md5(legacy only) crc32
 mac: hmac poly1305
 kdf: pbkdf2 scrypt argon2 hkdf
-cipher: aes-gcm chacha20-poly1305 (AEAD-only i safe API)
-signaturer: ed25519 ecdsa rsa(pss)
+cipher: aes-gcm chacha20-poly1305 (AEAD-only in the safe API)
+signatures: ed25519 ecdsa rsa(pss)
 random: CSPRNG (OS-seeded), secrets.token(bytes/url/hex)
-constant-time compare overalt
+constant-time compare everywhere
 x509/pki helpers (M6)
 ```
 
@@ -303,29 +303,29 @@ x509/pki helpers (M6)
 
 ```text
 traits: Serializable Deserializable Schema
-formater: json cbor msgpack binary(nova) csv
-@derive(Serializable) auto-implementering
-versionerede formater (schema-evolution, frem/tilbage-komp.)
+formats: json cbor msgpack binary(nova) csv
+@derive(Serializable) auto-implementation
+versioned formats (schema evolution, forward/backward compat.)
 ```
 
 ## 18. std.testing (testkit)
 
 ```text
-@test fn navn() { expect_eq expect_ne expect_true expect_close
+@test fn name() { expect_eq expect_ne expect_true expect_close
                   expect_throws expect_matches expect_len }
 fixtures setup teardown parameterized(@cases)
-mocks (makro-baserede), snapshot-testing, property-based (fuzz),
-coverage (--coverage), benchmarks (@bench + statistik-rapport)
+mocks (macro-based), snapshot testing, property-based (fuzz),
+coverage (--coverage), benchmarks (@bench + statistics report)
 ```
 
 ## 19. std.ffi (interop)
 
 ```text
-import c "sqlite3.h"            # header-import → bindings (libclang-agtig)
+import c "sqlite3.h"            # header import → bindings (libclang-like)
 @extern("C", lib = "ws2_32")
 fn socket(domain: i32, type_: i32, protocol: i32) -> i32
 
-CStrings pointers structs callbacks (unsafe-zone)
+CStrings pointers structs callbacks (unsafe zone)
 Python: import py "numpy" → np; py.eval(...)
 Java: import jvm "java.util.ArrayList" (bridge, M6)
 WASM: host-functions import/export
@@ -336,57 +336,57 @@ COM/WinRT bindings on Windows (M6)
 
 ```text
 @gpu kernels → CUDA/SPIR-V/Metal; device-arrays; map/filter/reduce/matmul
-nova-array: ndarray + broadcasting + BLAS/LAPACK + fft (numpy-paritet)
-nova-ml: autograd, optimizers, layers, datasets (pytorch-agtig API)
-nova-plot: GPU-accelereret plotting (line/scatter/hist/heatmap/3d)
-nova-gui: deklarativ widgets, layout, event-loop integreret med async,
-          signals-bindinger (label.text binds to ...)
+nova-array: ndarray + broadcasting + BLAS/LAPACK + fft (numpy parity)
+nova-ml: autograd, optimizers, layers, datasets (pytorch-like API)
+nova-plot: GPU-accelerated plotting (line/scatter/hist/heatmap/3d)
+nova-gui: declarative widgets, layout, event loop integrated with async,
+          signals bindings (label.text binds to ...)
 ```
 
-## 21. std.units — BESLUTTET
+## 21. std.units — DECIDED
 
-Dimensional analysis (typesystem: type_system.md §12):
+Dimensional analysis (type system: type_system.md §12):
 
 ```text
-basis: m s kg A K mol cd rad sr bit
-afledte: N J W Pa Hz C V Ohm T ... (alle kombinationer via Unit-aritmetik)
+base: m s kg A K mol cd rad sr bit
+derived: N J W Pa Hz C V Ohm T ... (all combinations via Unit arithmetic)
 prefixes: k M G T m µ n p ...
-konverteringer: 100.m.in::<km>()  v.in::<km/h>()  2.h.in::<min>()
-fysikkonstanter: c g G h e NA R — med korrekt dimension, ikke bare tal
-imperiale/enhedssystemer: ft lb mi gal (eksplicit konvertering kun)
-valuta: Money<Decimal, "DKK"> — kurser altid eksplicitte .exchange::<USD>(rate)
+conversions: 100.m.in::<km>()  v.in::<km/h>()  2.h.in::<min>()
+physics constants: c g G h e NA R — with correct dimension, not just numbers
+imperial/unit systems: ft lb mi gal (explicit conversion only)
+currency: Money<Decimal, "DKK"> — rates always explicit .exchange::<USD>(rate)
 parse/format: "37.6 km/h".to::<Speed>()
 ```
 
-## 22. Signals/actors-API-overflade (sprogniveau)
+## 22. Signals/actors API surface (language level)
 
-Signals og actors er sprog-features (language_reference §21-22), men eksponerer disse stdlib-navne:
+Signals and actors are language features (language_reference §21-22), but they expose these stdlib names:
 
 ```text
 signal(v) computed(fn) effect(fn) unobserve(s) batch { ... }   # atomic multi-update
 stream.into_signal() debounce(throttle) sample(period)
-actor-supervision: link(a,b) unlink(a) restart_strategy(:one_for_one)
+actor supervision: link(a,b) unlink(a) restart_strategy(:one_for_one)
 ```
 
-## 23. Flow<T> og Table — BESLUTTET (unikke kernetyper)
+## 23. Flow<T> and Table — DECIDED (unique kernel types)
 
 **Flow<T>** (unique_features.md U1) — one lazy sequence type for everything: array views, generators, file lines, network events, channels, signal history. Every iterator operation from §3 works; async/sync is chosen by the compiler.
 
 ```text
 every line of "huge.log" that contains "ERROR"     # Flow<String>, streaming
-repeat for each message in the inbox { ... }        # kanal som Flow
+repeat for each message in the inbox { ... }        # channel as Flow
 ```
 
-**Table** (U2) — kolonne-tabel-primitiv med eget `.ntab`-format:
+**Table** (U2) — column-table primitive with its own `.ntab` format:
 
 ```text
 sales is a table from "sales.csv"
 big is the rows of sales where amount > 1000
 per-product is sales grouped by product summing amount
 enriched is sales joined-with prices matching product == name
-sales.save-as("arkiv.ntab")
+sales.save-as("archive.ntab")
 ```
 
-- Kolonne-layout, SIMD-aggregationer, zero-copy mmap.
-- Query-fraserne (§U6) kompilerer til samme plan for Array/Table/Flow/**SQL** (pushdown via std.database).
+- Column layout, SIMD aggregations, zero-copy mmap.
+- The query phrases (§U6) compile to the same plan for Array/Table/Flow/**SQL** (pushdown via std.database).
 - `nova why` and the time-travel debugger read the same history engine as `track`/undo.

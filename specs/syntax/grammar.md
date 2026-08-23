@@ -162,7 +162,7 @@ type_path      = ident , { "::" , ident } , [ generics_args ] ;
 
 Slice: `[ start? , ":" , end? , [ ":" , step? ] ]` or a Range object `a..b`; negative indexing via `^n`.
 
-## 5. Typer
+## 5. Types
 
 ```ebnf
 type           = union_type ;

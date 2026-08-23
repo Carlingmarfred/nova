@@ -305,11 +305,16 @@ CSV reading (blocks A4), date/formatting in time-lib, string-interpolation-as-AS
 | Q8 | No LICENSE file | hard blocker for public release | ✅ RESOLVED: Apache-2.0 |
 | Q9 | String interpolation re-lexed at runtime; invisible to goldens | E02 landmine | ◐ parked (interpolation-as-AST) |
 | Q10 | No test-runner/formatter yet (D01/D02) | gates G2 | ☐ tracked as D-items |
+| Q11 | When is `X is E` a declaration vs a comparison? The context rule is implemented but never written down | T1 learnability; blocks the natural-syntax coverage audit (G1) | ☐ |
+| Q12 | No normative grammar doc for the Natural skin (`grammar.md` covers compact only; `natural_syntax.md` §3 is a sketch) | E02 native parser has no spec to build against — goldens are the de-facto spec | ☐ decide before E02 |
+| Q13 | Map phrase `set the age of X in M to V` exists in natural_syntax.md but is not implemented in bootstrap | spec/impl gap misleads learners; breaks "no dead ends" trust | ☐ implement or move to parking lot |
+| Q14 | Integer model: bootstrap bigint now vs promised i32 later | E06 differential tester will diverge on big literals / overflow | ◐ revisit with corpus design at E02/E06 |
 
 ## 11. Changelog (newest first — mandatory updates)
 
 | Date | Change |
 |---|---|
+| 2026-08-23 | **i18n docs sweep completed (for real)**: EXTENSIONS, language_reference, unique_features, standard_library, module_system, concurrency, memory_model, grammar → 100% English (grep-audited). Owner decisions: `it` reserved (protects check/try patterns; +2 tests → suite **236/236**), open questions Q11–Q14 added to §12. |
 | 2026-08-23 | **E01 ✅ + repo LIVE**: github.com/Carlingmarfred/nova public (Apache-2.0); CI green first run (windows+ubuntu, 39s). Q5/Q6/Q7/Q8 decisions resolved. v0.15.1 tagged. Suite: 234/234. Next: D01/D05/D06 → C04/C10.
 | 2026-08-23 | **Decisions landed (v0.15.1)**: Apache-2.0 LICENSE added; E01 CI workflow created (.github/workflows/ci.yml, windows+ubuntu); Q5 phrases-primary, Q6 verb-first methods, Q7 Ask/Act rule (+11 pin tests), Q8 license — all resolved in README log + §12. Suite: 234/234.
 | 2026-08-23 | **v0.15.0-bootstrap**: full English documentation sweep completed (12 specs + ARCHITECTURE/ROADMAP/EXTENSIONS/README/AGENTS/notes — zero Danish lines remain anywhere); version bump; E00 Rust recorded.

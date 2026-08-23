@@ -7,7 +7,7 @@ Layer 1: async/await      — I/O concurrency on one (or few) threads, M:N tasks
 Layer 2: parallel { }     — compiler-managed data parallelism (work-stealing)
 Layer 3: spawn/channels   — explicit threads/tasks, message passing
 Layer 4: sync primitives  — Mutex, RwLock, Atomics, Condvar, Once, Barrier
-Lag 5: GPU             — @gpu kernels (se ARCHITECTURE §backend)
+Layer 5: GPU             — @gpu kernels (see ARCHITECTURE §backend)
 ```
 
 Ground principle: **structured concurrency** — child tasks cannot outlive their scope.
@@ -41,7 +41,7 @@ fn main() {
 
 - `await` may only appear inside `async fn`/`async {}` — the effect system enforces this (compile error "blocking call in async context" for synchronous heavier operations marked `@blocking`).
 - Async fns lower to state machines (heap-allocated only on escape); zero-cost at non-suspension points.
-- `gather`, `join`, `any`, `race`, `timeout`, `sleep`, `yield_now` i `std.async`.
+- `gather`, `join`, `any`, `race`, `timeout`, `sleep`, `yield_now` in `std.async`.
 - Cancellation is cooperative: token-based (`ctx.cancelled()?` raises a `Cancelled` Err at checkpoints).
 
 ## 3. parallel { }
@@ -54,14 +54,14 @@ parallel {
 print(result_a + result_b)
 ```
 
-Semantik:
+Semantics:
 
 1. Independent statements become tasks (dependency analysis via dataflow).
 2. The scheduler (work-stealing, N=cores) distributes.
 3. Scope-exit joins all; exceptions propagate deterministically.
 4. Variables written inside the parallel block read afterwards; shared mutable variables across branches = compile error (no data races by construction).
 
-Dataparallelisme:
+Data parallelism:
 
 ```text
 results = parallel_map(items, heavy_fn)
@@ -126,7 +126,7 @@ Rules:
 - One IO reactor per runtime (IOCP/epoll/kqueue); file/net/dns are async-native in stdlib.
 - Blocking FFI calls auto-wrap onto a blocking pool.
 
-## 7. Actors — BESLUTTET
+## 7. Actors — DECIDED
 
 An actor = task + private state + mailbox. Processes **one message at a time** → no locks, data races against the actor's state are impossible.
 
@@ -170,7 +170,7 @@ acc.send(.deposit(100))
 answer = acc.request(.withdraw(150))      # awaited under the hood in async context
 ```
 
-### 7.2 Semantik
+### 7.2 Semantics
 
 - Actor instances run as tasks; each actor has a bounded mailbox (same backpressure semantics as channels).
 - `send` = fire-and-forget; `request` = awaited reply via a one-shot channel.

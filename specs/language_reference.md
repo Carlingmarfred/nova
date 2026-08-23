@@ -1,84 +1,84 @@
-# Nova Sprogreference (fuld)
+# Nova Language Reference (full)
 
-Status: spec v0.9. Alt kode herunder er normativt eksempel-materiale.
+Status: spec v0.9. All code below is normative example material.
 
 > **Syntax modes:** This reference uses the **compact shorthand form** (`{}` blocks, `=>`, symbol operators). The primary surface is **Nova Natural** (see [natural_syntax.md](natural_syntax.md)) — plain English words: `say x` ≡ `print(x)`, `set x to 10` ≡ `x = 10`, `repeat until c ... done` ≡ `while !c { }`, `to greet with name ... done` ≡ `fn greet(name) { }`. Both forms produce the **identical AST** and mix freely in the same file.
 
 ---
 
-## 1. Variabler og bindinger
+## 1. Variables and bindings
 
 ```text
-x = 10              # mutable binding, type infereret → i32
+x = 10              # mutable binding, type inferred → i32
 let y = 3.14        # immutable, → f64
-var z: i64 = 10     # 'var' er synonym for plain assignment (eksplicit stil)
+var z: i64 = 10     # 'var' is a synonym for plain assignment (explicit style)
 x = 20              # ok
-y = 1.0             # FEJL: immutable
+y = 1.0             # ERROR: immutable
 ```
 
-Regler:
+Rules:
 
-- `navn = udtryk` opretter **mutable** binding med inference (Python-vane).
-- `let` = immutable. `let mut x` er IKKE syntaks — `mut` findes ikke; brug plain.
+- `name = expression` creates a **mutable** binding with inference (Python habit).
+- `let` = immutable. `let mut x` is NOT syntax — `mut` does not exist; use plain.
 - Type annotation: `name: Type = value`. Annotation without initializer allowed only for class fields and parameters.
-- Scope: block-scope, skygge tilladt i indre scope (`let x = x + 1` ok).
+- Scope: block scope, shadowing allowed in inner scopes (`let x = x + 1` is fine).
 - Module-level constants: `const PI = 3.14159` (compile-time evaluated).
 - Top-level code allowed in scripts (`main.nova` runs top-down); libraries use `fn main()`.
 
-## 2. Datatyper
+## 2. Data types
 
-### 2.1 Primitiver
+### 2.1 Primitives
 
-| Kategori | Typer | Default-literal |
+| Category | Types | Default literal |
 |---|---|---|
-| Heltal signed | `i8 i16 i32 i64 i128 isize` | `42` → `i32` |
-| Heltal unsigned | `u8 u16 u32 u64 u128 usize` | `42u8` osv. |
+| Signed integers | `i8 i16 i32 i64 i128 isize` | `42` → `i32` |
+| Unsigned integers | `u8 u16 u32 u64 u128 usize` | `42u8` etc. |
 | BigInt (arbitrary precision) | `BigInt` | `99999999999999999999999999n` |
 | Float | `f32 f64` | `3.14` → `f64`; `2.5f32` |
 | Decimal/Rational | `Decimal`, `Rational` | `Decimal("0.1")` |
 | Complex | `Complex<f64>` | `3 + 4i` |
-| Andre | `bool`, `char`, `String`, `() ` (unit) | |
+| Other | `bool`, `char`, `String`, `()` (unit) | |
 
-Overflow: debug-builds paniker; release wrappes. Opt-in streng: `@checked fn ...`.
+Overflow: debug builds panic; release wraps. Opt-in strictness: `@checked fn ...`.
 
-Konvertering: eksplicit med `as` (numerisk), `to::<T>()` (fallible), `.parse::<i32>()?`.
+Conversion: explicit with `as` (numeric), `to::<T>()` (fallible), `.parse::<i32>()?`.
 
 ```text
 b = 255u8
-big = b as u32            # altid ok
-lossy = 300 as u8         # tilladt men linter-advarsel (wraps)
-safe = 300.to::<u8>()     # Result<u8> — Err ved overflow
+big = b as u32            # always ok
+lossy = 300 as u8         # allowed but linter warning (wraps)
+safe = 300.to::<u8>()     # Result<u8> — Err on overflow
 n = "42".parse::<i32>()?
 ```
 
 ### 2.2 Collections
 
-| Type | Beskrivelse | Python-modsvar |
+| Type | Description | Python counterpart |
 |---|---|---|
-| `Array<T>` | growable dynamisk array | `list` |
-| `(A, B)` | tuple, heterogen, fixed size | `tuple` |
+| `Array<T>` | growable dynamic array | `list` |
+| `(A, B)` | tuple, heterogeneous, fixed size | `tuple` |
 | `Map<K,V>` | hash-map | `dict` |
 | `Set<T>` | hash-set | `set` |
 | `SortedMap<K,V>` / `SortedSet<T>` | ordered (B-tree) | — |
 | `Deque<T>` | double-ended queue | `collections.deque` |
 | `Heap<T>` | priority queue | `heapq` |
 | `[T; N]` | fixed-size array (stack) | — |
-| `Range` | `a..b` (eksklusiv), `a..=b` (inklusiv) | `range` |
-| `Iterator<T>` | lazily chainable | iterator-protokol |
+| `Range` | `a..b` (exclusive), `a..=b` (inclusive) | `range` |
+| `Iterator<T>` | lazily chainable | iterator protocol |
 | `Bytes`, `StringBuilder` | byte-array / string-builder | `bytes`, io.StringIO |
 
 Literals:
 
 ```text
 xs   = [1, 2, 3]                    # Array<i32>
-pair = (1, "hej")                   # (i32, String)
+pair = (1, "hi")                    # (i32, String)
 m    = {"a": 1, "b": 2}             # Map<String,i32>
 s    = {1, 2, 3}                    # Set<i32>
-fxd  = [1, 2, 3] as [i32; 3]        # stack-allokeret
-rng  = 0..10                        # Range<i32>, eksklusiv
+fxd  = [1, 2, 3] as [i32; 3]        # stack-allocated
+rng  = 0..10                        # Range<i32>, exclusive
 ```
 
-### 2.3 Optional og Result
+### 2.3 Optional and Result
 
 ```text
 Optional<T> ≡ T?          # values: some(v) | none
@@ -90,30 +90,30 @@ maybe: i32? = none
 r = File.read("x.txt")    # Result<String, IoError>
 ```
 
-Se error_handling.md for `?`, `??`, `?.` osv.
+See error_handling.md for `?`, `??`, `?.` etc.
 
 ### 2.4 dynamic
 
 ```text
 d: dynamic = get_json()
-d.name                       # runtime lookup, returnerer dynamic
-d.items[0].price as f64      # eksplicit konvertering
+d.name                       # runtime lookup, returns dynamic
+d.items[0].price as f64      # explicit conversion
 ```
 
-Fulde regler i type_system.md §7.
+Full rules in type_system.md §7.
 
-## 3. Operatorer (komplet tabel)
+## 3. Operators (complete table)
 
 Precedence low to high. All left-associative except where noted.
 
 | Level | Operators | Note |
 |---|---|---|
 | 1 | `=` `+=` `-=` `*=` `/=` `%=` `//=` `**=` `&=` `\|=` `^=` `<<=` `>>=` `??=` | assignment (right-assoc.) |
-| 2 | `\|\|` `or` | kortslutter |
-| 3 | `&&` `and` | kortslutter |
-| 4 | `!in` `in` `is not` `is` | membership / typetest |
+| 2 | `\|\|` `or` | short-circuits |
+| 3 | `&&` `and` | short-circuits |
+| 4 | `!in` `in` `is not` `is` | membership / type test |
 | 5 | `==` `!=` `<` `<=` `>` `>=` `<=>` | comparison, non-chainable |
-| 6 | `..` `..=` `..<` | range (ikke-assoc.) |
+| 6 | `..` `..=` `..<` | range (non-assoc.) |
 | 7 | `\|` `^` | bitwise |
 | 8 | `&` | bitwise |
 | 9 | `<<` `>>` | shift |
@@ -123,78 +123,78 @@ Precedence low to high. All left-associative except where noted.
 | 13 | unary `-` `+` `!` `not` `~` `*` (deref) `&` (addr-of, unsafe) | |
 | 14 | postfix `?` `?.` `!` `[]` `()` `.` `?.` `as` `::` | |
 
-Ekstra:
+Extras:
 
 - `??` — nil-coalescing: `a ?? b` = `if a == none then b`.
 - `?.` — optional chaining: `obj?.field?.method()` yields `none` at the first `none`.
-- `is` — typetest: `x is String`, `x is Array<i32>`.
-- `as` — cast/konvertering.
+- `is` — type test: `x is String`, `x is Array<i32>`.
+- `as` — cast/conversion.
 - `in` — membership: `x in xs`, `key in map`.
-- `=>` — lambda-arrow og match-arme.
-- Ingen `++`/`--` — brug `x += 1`.
+- `=>` — lambda arrow and match arms.
+- No `++`/`--` — use `x += 1`.
 
-Overloading: operatorer overloades via traits (`Add`, `Sub`, `Mul`, `Div`, `Index`, `Compare`, `Equals`, `Iterate`, `Call`, ...) — se §10.
+Overloading: operators are overloaded via traits (`Add`, `Sub`, `Mul`, `Div`, `Index`, `Compare`, `Equals`, `Iterate`, `Call`, ...) — see §10.
 
-## 4. Kontrolflow
+## 4. Control flow
 
 ### 4.1 if / else if / else
 
 ```text
 if x > 10 {
-    print("stor")
+    print("big")
 } else if x > 5 {
-    print("mellem")
+    print("medium")
 } else {
-    print("lille")
+    print("small")
 }
 ```
 
-If er et **udtryk**:
+If is an **expression**:
 
 ```text
-kategori = if x > 10 { "stor" } else { "lille" }
+category = if x > 10 { "big" } else { "small" }
 ```
 
 ### 4.2 while / loop / for-in
 
 ```text
-while betingelse { ... }
-loop { ... }                          # uendelig; afsluttes med break/return
+while condition { ... }
+loop { ... }                          # infinite; ends via break/return
 
-for x in xs { print(x) }              # alle Iterable
-for i in 0..xs.len() { ... }          # indeks-loop
+for x in xs { print(x) }              # anything Iterable
+for i in 0..xs.len() { ... }          # index loop
 for (i, x) in xs.enumerate() { ... }  # index + value
-for (k, v) in map { ... }             # Map itererer (K,V)-par
+for (k, v) in map { ... }             # Map iterates (K,V)-pairs
 ```
 
 Labels:
 
 ```text
-ydre: for i in 0..10 {
+outer: for i in 0..10 {
     for j in 0..10 {
-        if i * j > 50 { continue ydre }
-        if i + j > 99 { break ydre }
+        if i * j > 50 { continue outer }
+        if i + j > 99 { break outer }
     }
 }
 ```
 
-`for`-loops er sukker over `Iterator`-traiettens `next()`.
+`for` loops are sugar over the `Iterator` trait's `next()`.
 
-### 4.3 match (ekshaustivt)
+### 4.3 match (exhaustive)
 
 ```text
 match value {
-    0                => "nul"
-    1 | 2 | 3        => "lille tal"
-    n if n % 2 == 0  => "lige"
-    n                => "ulige: {n}"
+    0                => "zero"
+    1 | 2 | 3        => "small number"
+    n if n % 2 == 0  => "even"
+    n                => "odd: {n}"
 }
 
 match point {
-    Point(0, 0)       => "origo"
-    Point(x, 0)       => "x-akse: {x}"
-    Point(_, y) where y > 0 => "over"
-    _                 => "andre"
+    Point(0, 0)       => "origin"
+    Point(x, 0)       => "x-axis: {x}"
+    Point(_, y) where y > 0 => "above"
+    _                 => "others"
 }
 
 match opt {
@@ -205,9 +205,9 @@ match opt {
 
 Patterns (fully composable): literal, wildcard `_`, binding, tuple, struct `{name, age}`, enum `Variant(pats)`, range `1..=10`, array `[first, ...rest]`, slice `[a, b, ..]`, type-test `x is T`, or-pattern `a | b`, guard `where cond`. The compiler verifies **exhaustiveness** and dead branches.
 
-Match er udtryk og skal producere samme type i alle arme (eller unit).
+Match is an expression and must produce the same type in all arms (or unit).
 
-### 4.4 try / catch (panic-handlers)
+### 4.4 try / catch (panic handlers)
 
 ```text
 try {
@@ -228,15 +228,15 @@ Python `with` ↔ Nova `use`:
 ```text
 use f = File.open("data.txt") {
     contents = f.read_all()
-}                                   # f.close() kaldes deterministisk her
+}                                   # f.close() is called deterministically here
 
-use lock = mutex.acquire() { ... }  # lock frigives ved blok-slut
-use (a, b) = acquire_two() { ... }  # destructurerende use
+use lock = mutex.acquire() { ... }  # lock released at block end
+use (a, b) = acquire_two() { ... }  # destructuring use
 ```
 
-Krav: typen implementerer trait `Disposable { fn dispose(self) }`.
+Requirement: the type implements trait `Disposable { fn dispose(self) }`.
 
-## 5. Funktioner
+## 5. Functions
 
 ```text
 fn add(a: i32, b: i32) -> i32 {
@@ -244,17 +244,17 @@ fn add(a: i32, b: i32) -> i32 {
 }
 
 fn greet(name = "world", times: i32 = 1) {      # default values
-    ("Hej {name}! " * times).trim()
+    ("Hello {name}! " * times).trim()
 }
 
-greet(times = 3)                     # navngivne argumenter
+greet(times = 3)                     # named arguments
 ```
 
-### 5.1 Variadiske parametre
+### 5.1 Variadic parameters
 
 ```text
 fn sum(...nums: i32) -> i32 {        # positional variadic
-    nums.iter().sum()                # nums er Array<i32>
+    nums.iter().sum()                # nums is Array<i32>
 }
 
 fn config(**opts: dynamic) {         # keyword-collect → Map<String, dynamic>
@@ -262,12 +262,12 @@ fn config(**opts: dynamic) {         # keyword-collect → Map<String, dynamic>
 }
 
 sum(1, 2, 3)
-config(timeout = 5, retries = 2)     # named args samles i opts
+config(timeout = 5, retries = 2)     # named args collected into opts
 ```
 
-Spread ved kald: `sum(...[1, 2, 3])`.
+Spread at call site: `sum(...[1, 2, 3])`.
 
-### 5.2 Lambdas og closures
+### 5.2 Lambdas and closures
 
 ```text
 square = x => x * x
@@ -275,14 +275,14 @@ add    = (a, b) => a + b
 body   => { let t = prep(); compute(t) }
 
 factor = 3
-scale  = x => x * factor             # closure fanger environment (by capture)
+scale  = x => x * factor             # closure captures environment (by capture)
 ```
 
 Capture rule: default **by reference** with ARC; the compiler copies automatically when the lifetime requires it (escape). Explicit: `[x, &y] => ...` (capture by value / by ref).
 
 Function types: `fn(i32, i32) -> i32`, nullable: `(fn(i32) -> bool)?`.
 
-### 5.3 Overloads og generiske funktioner
+### 5.3 Overloads and generic functions
 
 ```text
 fn parse(s: String) -> i32 { ... }       # overloading allowed on parameter types
@@ -292,14 +292,14 @@ fn max<T: Comparable>(a: T, b: T) -> T {
     if a > b { a } else { b }
 }
 
-fn first<T>(xs: [T]) -> T? { xs.first() }   # [T] = Array<T> i generisk kontekst
+fn first<T>(xs: [T]) -> T? { xs.first() }   # [T] = Array<T> in generic context
 ```
 
-Generics monomorphiseres (native backend); VM bruger type-erased + caches. Bounds via traits. Se type_system.md.
+Generics are monomorphized (native backend); the VM uses type-erased + caches. Bounds via traits. See type_system.md.
 
-### 5.4 Rekursion og tail calls
+### 5.4 Recursion and tail calls
 
-Tail-call optimering garanteret for selv-rekursion markeret `@tailrec` (compiler-fejl hvis ikke tail-position).
+Tail-call optimization guaranteed for self-recursion marked `@tailrec` (compiler error if not in tail position).
 
 ```text
 @tailrec
@@ -308,31 +308,31 @@ fn count(n: i32, acc: i32 = 0) -> i32 {
 }
 ```
 
-### 5.5 Doc-kommentarer
+### 5.5 Doc comments
 
 ```text
-/// Returnerer arealet af en cirkel.
+/// Returns the area of a circle.
 ///
-/// # Eksempel
+/// # Example
 /// area = circle_area(2.0)  // ≈ 12.566
 fn circle_area(r: f64) -> f64 { PI * r ** 2 }
 ```
 
 Doctests run via `nova test --doc`.
 
-## 6. Collections-operationer (stdlib-core)
+## 6. Collection operations (stdlib-core)
 
-Alle metoder der returnerer ny collection er lazy hvor muligt (iterator-baserede):
+All methods returning a new collection are lazy where possible (iterator-based):
 
 ```text
 xs = [5, 3, 8, 1]
 
-# Transformér
+# Transform
 xs.map(x => x * 2)                 # [10, 6, 16, 2]
 xs.filter(x => x > 2)              # [5, 3, 8]
 xs.rev()                           # [1, 8, 3, 5]
 xs.sorted()                        # [1, 3, 5, 8]
-xs.sorted(by = (a, b) => b <=> a)  # faldende
+xs.sorted(by = (a, b) => b <=> a)  # descending
 xs.zip([9, 8, 7])                  # [(5,9),(3,8),(8,7)]
 xs.chunked(2)                      # [[5,3],[8,1]]
 xs.windowed(2)                     # [[5,3],[3,8],[8,1]]
@@ -347,15 +347,15 @@ xs.find(x => x > 4)                # some(5) | none
 xs.position(x => x == 8)           # Index? = some(2)
 xs.group_by(x => x % 2)            # Map<Bool, Array>
 
-# Indeks/slice (negativ indeks ^1 = sidste)
+# Index/slice (negative index ^1 = last)
 xs[0]  xs[^1]  xs[1..3]  xs[..2]  xs[2..]  xs[0.. by 2]
-xs[1:3]                            # Python-stil sukker for 1..<3
+xs[1:3]                            # Python-style sugar for 1..<3
 
 # Mutation
 xs.push(4)  xs.pop()  xs.insert(0, 9)  xs.remove_at(2)
 xs.extend([7, 7])  xs.clear()  xs.sort()  xs.reverse()
 
-# Medlemsskab/forekomst
+# Membership/instance
 3 in xs  xs.index_of(8)  xs.unique()  xs.contains_all([1, 3])
 ```
 
@@ -363,15 +363,15 @@ Map/Set:
 
 ```text
 m = {"a": 1}
-m["b"] = 2            m.get("c")           # none, ikke exception
+m["b"] = 2            m.get("c")           # none, not an exception
 m.get_or_insert("c", 0)
 "b" in m              m.keys()  m.values()  m.items()
-{k: v * 2 for (k, v) in m}                 # dict-comprehension
-{x % 3 for x in 0..30}                     # set-comprehension
-m.merge({"z": 9})     m | {"w": 0}         # union-operatorer
+{k: v * 2 for (k, v) in m}                 # dict comprehension
+{x % 3 for x in 0..30}                     # set comprehension
+m.merge({"z": 9})     m | {"w": 0}         # union operators
 ```
 
-Comprehensions (generel form):
+Comprehensions (general form):
 
 ```text
 [expr for x in iter if cond if cond2]
@@ -382,34 +382,34 @@ Comprehensions (generel form):
 ## 7. Strings
 
 ```text
-s = "Verden"
+s = "World"
 name = "Nova"
-msg = "Hej {name}, {1 + 1}"          # interpolation: Hej Nova, 2
-pi_msg = "π ≈ {PI:.3}"               # format-spec (som Pythons :.3f)
-raw = r"C:\sti\uden\escapes"
+msg = "Hi {name}, {1 + 1}"           # interpolation: Hi Nova, 2
+pi_msg = "π ≈ {PI:.3}"               # format spec (like Python's :.3f)
+raw = r"C:\path\without\escapes"
 multi = """
-    flere linjer
+    multiple lines
 """
 bytes_s = b"ABC"                     # Bytes
 ch = 'A'                             # char (Unicode scalar)
 
-# Metoder (uddrag — fuld liste i standard_library.md §core.string)
+# Methods (excerpt — full list in standard_library.md §core.string)
 s.lower()  s.upper()  s.trim()  s.strip(" ")
 s.split(",")  s.rsplit(",", max = 1)  s.split_lines()
-"-".join(["a", "b"])  s.replace("e", "E")  s.remove_prefix("He")
-s.starts_with("V")  s.ends_with("n")  s.find("r")  s.count("e")
+"-".join(["a", "b"])  s.replace("e", "E")  s.remove_prefix("Hi")
+s.starts_with("W")  s.ends_with("d")  s.find("r")  s.count("e")
 s.repeat(2)  s.pad_left(10)  s.center(20, '*')
-s.chars()  s.bytes()  s.code_points()  s.graphemes()   # iteratorer
+s.chars()  s.bytes()  s.code_points()  s.graphemes()   # iterators
 s.to::<i32>()  "3.14".to::<f64>()
-s <=> "abc"                          # Unicode-korrekt kollation
+s <=> "abc"                          # Unicode-correct collation
 
-# Slice som collections
+# Slice like collections
 s[0..3]  s[^5..]  s[::-1]            # backwards via step -1
 ```
 
 Strings are UTF-8; indexing is a **byte index** and O(1) access is unsafe per char — therefore `s.chars()[i]` for positional access (the linter flags `s[i]` on String).
 
-## 8. Klasser, structs, enums, traits
+## 8. Classes, structs, enums, traits
 
 ### 8.1 struct (value type, data)
 
@@ -428,7 +428,7 @@ dist = (v.x ** 2 + v.y ** 2 + v.z ** 2).sqrt()
 
 Structs have value semantics (copy or move), no inheritance. Fields can have defaults.
 
-### 8.2 class (referencetype, arv)
+### 8.2 class (reference type, inheritance)
 
 ```text
 class Animal {
@@ -449,16 +449,16 @@ class Dog : Animal {
         self.breed = breed
     }
 
-    override fn sound() -> String { "Vuf" }
+    override fn sound() -> String { "Woof" }
 }
 
 d = Dog("Rex", "labrador")
 d.sound()
 ```
 
-- Enkel arv (`:`), interfaces via traits.
+- Single inheritance (`:`), interfaces via traits.
 - `virtual`/`override` are **required words** — no accidental polymorphism.
-- Felter: `pub`, `priv` (default), `protected`. Properties:
+- Fields: `pub`, `priv` (default), `protected`. Properties:
 
 ```text
 class Account {
@@ -467,18 +467,18 @@ class Account {
     balance: f64 {
         get { self.balance_ }
         set(v) {
-            if v < 0 { throw Error("negativ saldo") }
+            if v < 0 { throw Error("negative balance") }
             self.balance_ = v
         }
     }
 }
 ```
 
-- Static members: `static fn create()`. 
-- Destructors: `fn deinit()` (kaldes deterministisk under ARC).
-- Auto-generering: `@derive(Equals, Compare, Hashable, Printable, Serializable)`.
+- Static members: `static fn create()`.
+- Destructors: `fn deinit()` (called deterministically under ARC).
+- Auto-generation: `@derive(Equals, Compare, Hashable, Printable, Serializable)`.
 
-### 8.3 Dataklasser
+### 8.3 Data classes
 
 ```text
 @dataclass
@@ -486,8 +486,8 @@ class Person {
     name: String
     age: i32 = 0
 }
-# giver gratis: init med named args, Equals, Hashable, Printable,
-# copy-with, Serializable (se metaprogramming.md)
+# gives for free: init with named args, Equals, Hashable, Printable,
+# copy-with, Serializable (see metaprogramming.md)
 ```
 
 ### 8.4 enums (tagged unions)
@@ -518,7 +518,7 @@ Enums can have methods, shared fields and generics. Simple enums: `enum Color { 
 trait Drawable {
     fn draw(self, canvas: Canvas)       # required method
 
-    fn draw_twice(self, canvas: Canvas) {   # default-implementering
+    fn draw_twice(self, canvas: Canvas) {   # default implementation
         self.draw(canvas)
         self.draw(canvas)
     }
@@ -529,10 +529,10 @@ impl Drawable for Circle {
 }
 ```
 
-- Trait-objects (dynamisk dispatch): `dyn Drawable`.
-- Generiske bounds: `fn render<T: Drawable>(items: Array<T>)`.
+- Trait objects (dynamic dispatch): `dyn Drawable`.
+- Generic bounds: `fn render<T: Drawable>(items: Array<T>)`.
 - Traits can require associated types/constants and have blanket impls (std traits).
-- Operator-overloading og `Iterable`, `Index`, `Comparable` osv. er almindelige traits.
+- Operator overloading and `Iterable`, `Index`, `Comparable` etc. are ordinary traits.
 
 ### 8.6 Extension methods
 
@@ -541,15 +541,15 @@ extend String {
     fn shout(self) -> String { self.upper() + "!" }
 }
 
-"hej".shout()
+"hey".shout()
 ```
 
-## 9. Moduler
+## 9. Modules
 
 ```text
 mod math_utils {
     pub fn helper() {}
-    fn internal() {}                 # privat for modulet
+    fn internal() {}                 # private to the module
 }
 
 import math_utils
@@ -560,11 +560,11 @@ from std.math import sqrt, PI
 export                              # makes all of the file's pub symbols public API
 ```
 
-Detaljer i module_system.md.
+Details in module_system.md.
 
-## 10. Operator-overloading (traits-tabel)
+## 10. Operator overloading (traits table)
 
-| Udtryk | Trait der skal implenteres |
+| Expression | Trait to implement |
 |---|---|
 | `a + b` | `Add` (`fn add`) |
 | `a - b` | `Sub` |
@@ -577,18 +577,18 @@ Detaljer i module_system.md.
 | `~a` | `Invert` |
 | `a & b` `\| ^ << >>` | `BitAnd` `BitOr` `BitXor` `Shl` `Shr` |
 | `a == b` | `Equals` |
-| `a < b` osv. | `Compare` (`fn cmp -> Ordering`) |
+| `a < b` etc. | `Compare` (`fn cmp -> Ordering`) |
 | `xs[i]` / `xs[i] = v` | `Index` / `IndexSet` |
 | `xs[a..b]` | `Slice` |
 | `for x in obj` | `Iterable` (`fn iterator`) |
 | `obj(...)` | `Callable` (`fn call`) |
-| `"x" * 3` | `Mul` med asymmetriske typer tilladt |
+| `"x" * 3` | `Mul` with asymmetric types allowed |
 | `f"{obj}"` | `Printable` (`fn format(fmt) -> String`) |
-| `truthy(obj)` / `if obj` | `Truthiness` (default: alt andet end `false`/`none`/`0`/`""` er sandt? NEJ — kun `bool` og `bool?` er betingelser; alt andet er compile-fejl) |
+| `truthy(obj)` / `if obj` | `Truthiness` (default: everything except `false`/`none`/`0`/`""` is true? NO — only `bool` and `bool?` are conditions; anything else is a compile error) |
 
 **Deliberate deviation from Python:** conditions require a real `bool`. The linter may relax locally (`#nova allow truthiness`). This removes an entire class of `=` vs `==`/emptiness bugs.
 
-## 11. Iterators og generators
+## 11. Iterators and generators
 
 ```text
 fn fibonacci() -> Iterator<i32> {
@@ -604,17 +604,17 @@ fib = fibonacci().take(10)          # lazy
 even_fibs = fib.filter(x => x % 2 == 0)
 ```
 
-`yield` omskrives af compileren til en state machine (som async). Generatorer er bare funktioner der returnerer `Iterator<T>`. Iterator-chain er zero-cost efter inlining (monomorphiseret).
+`yield` is rewritten by the compiler into a state machine (like async). Generators are just functions returning `Iterator<T>`. Iterator chains are zero-cost after inlining (monomorphized).
 
-Iterator-adaptere (fuld liste i stdlib): `map filter take skip take_while skip_while enumerate zip chain interleave flat_map scan fuse peekable chunked windowed step_by rev sorted unique group_by product permutations combinations`.
+Iterator adapters (full list in stdlib): `map filter take skip take_while skip_while enumerate zip chain interleave flat_map scan fuse peekable chunked windowed step_by rev sorted unique group_by product permutations combinations`.
 
-Terminal-operationer: `collect to_array to_set to_map sum min max count any all find fold reduce for_each join partition_by`.
+Terminal operations: `collect to_array to_set to_map sum min max count any all find fold reduce for_each join partition_by`.
 
 ## 12. Error handling (brief — full version in error_handling.md)
 
 ```text
 fn read_config(path: String) -> Result<Config, ConfigError> {
-    text = File.read(path)?                  # propagerer
+    text = File.read(path)?                  # propagates
     parsed = json.parse(text)?
     Config.from_json(parsed)
 }
@@ -622,10 +622,10 @@ fn read_config(path: String) -> Result<Config, ConfigError> {
 port = env.get("PORT").and_then(v => v.parse::<i32>().ok()) ?? 8080
 
 assert(xs.len() > 0, "list must not be empty")   # panic in debug, no-op in release
-require(input != null, "input is required")        # always-active guard
+require(input != null, "input is required")      # always-active guard
 ```
 
-## 13. Async og parallel (kort — fuldt i concurrency.md)
+## 13. Async and parallel (brief — full in concurrency.md)
 
 ```text
 async fn fetch(url: String) -> Bytes {
@@ -634,14 +634,14 @@ async fn fetch(url: String) -> Bytes {
 }
 
 async fn fetch_all(urls: Array<String>) {
-    results = await gather(urls.map(fetch))     # konkurrentielt
+    results = await gather(urls.map(fetch))     # concurrent
     ...
 }
 
 parallel {
     a = calculate_a()
     b = calculate_b()
-}                                                # a and b run concurrently
+}                                              # a and b run concurrently
 ```
 
 ## 14. Reflection
@@ -655,13 +655,13 @@ for f in t.fields {
 
 p = Person(name = "Carl", age = 30)
 v = p["name"]                        # reflection-index (dynamic)
-q = t.construct({name: "Anna"})      # dynamisk konstruktion
+q = t.construct({name: "Anna"})      # dynamic construction
 
-if obj is Drawable { obj.draw(c) }   # typetest + cast
-d = obj as dyn Drawable              # trait-object cast (Result ved fejl)
+if obj is Drawable { obj.draw(c) }   # type test + cast
+d = obj as dyn Drawable              # trait-object cast (Result on failure)
 ```
 
-Runtime-metadata inkluderes i `--runtime full`; i minimal strippes den (reflection-kald = compile-fejl).
+Runtime metadata is included in `--runtime full`; in minimal it is stripped (reflection calls = compile error).
 
 ## 15. Attributes (decorators/metadata)
 
@@ -671,13 +671,13 @@ fn addition_works() {
     expect(add(1, 2) == 3)
 }
 
-@deprecated("brug new_api()")
+@deprecated("use new_api()")
 fn old_api() {}
 
 @benchmark(warmup = 100)
 fn matrix_bench() {}
 
-@generate_serialization              # makro (metaprogramming.md)
+@generate_serialization              # macro (metaprogramming.md)
 struct Order { id: Uuid, total: f64 }
 
 @inline @cold @simd @checked @pure @noinline
@@ -686,10 +686,10 @@ struct Order { id: Uuid, total: f64 }
 
 Attributes with arguments can be arbitrary compile-time expressions. User-defined attribute macros transform the AST (see metaprogramming.md).
 
-## 16. Compile-time evaluering
+## 16. Compile-time evaluation
 
 ```text
-const TABLE = [x ** 2 for x in 0..256]      # beregnes ved kompilering
+const TABLE = [x ** 2 for x in 0..256]      # computed at compile time
 
 @compile
 fn gen_primes(limit: i32) -> Array<i32> { ... }
@@ -699,12 +699,12 @@ const PRIMES = gen_primes(100)
 
 Anything `@pure`-compatible can run at compile time: loops, match, generics — not IO/threads/dynamic.
 
-## 17. Unsafe og raw memory (kort — fuldt i memory_model.md)
+## 17. Unsafe and raw memory (brief — full in memory_model.md)
 
 ```text
 unsafe {
     buf = malloc(n)
-    defer { free(buf) }                  # defer: kaldes ved scope-exit, LIFO
+    defer { free(buf) }                  # defer: called at scope exit, LIFO
     ptr = &buf[0]
     *ptr = 42
 }
@@ -712,18 +712,18 @@ unsafe {
 
 `defer` also exists in safe code (scope-bound cleanup without a trait requirement).
 
-## 18. Scripting og shebang
+## 18. Scripting and shebang
 
 ```text
 #!/usr/bin/env nova
 print("script!")
-args = CLI.args()                        # kommandolinjeargumenter
+args = CLI.args()                        # command-line arguments
 exit(CLI.exit_code)
 ```
 
-`nova run script.nova` starter VM'en direkte (ingen link-fase). REPL: `nova repl`.
+`nova run script.nova` starts the VM directly (no link phase). REPL: `nova repl`.
 
-## 19. Reserverede keywords (komplet)
+## 19. Reserved keywords (complete)
 
 ```text
 fn let const var struct class enum trait impl extend mod import export from
@@ -735,15 +735,15 @@ try catch throw finally defer use unsafe owned weak dyn dynamic
 init deinit operator test expect macro compile base
 actor signal computed effect on send request reply requires ensures
 then take bind undo redo track ever exact every states becomes waits
-_ (wildcard er ikke keyword men symbol)
+_ (wildcard is not a keyword but a symbol)
 ```
 
-`null` findes kun i unsafe/FFI-kontekst (raw pointers).
+`null` exists only in unsafe/FFI contexts (raw pointers).
 
-## 20. Pipelines — BESLUTTET
+## 20. Pipelines — DECIDED
 
 ```text
-# Kompakt
+# Compact
 contents |> split_lines() |> filter(l => l.len() > 0) |> sorted() |> join("\n") |> print()
 ```
 
@@ -759,13 +759,13 @@ done
 
 Desugars to ordinary method chains (zero cost after inlining). `|>` sends the left value as the first argument to the right call. The Natural phrases (`then split it by`, `then keep the ones that`, `then turn every X into`) are fixed templates in the natural_syntax.md vocabulary.
 
-## 21. Signals (reaktiv tilstand) — BESLUTTET
+## 21. Signals (reactive state) — DECIDED
 
 ```text
 score = signal(0)
-rank  = computed(() => "Niveau {score.value / 100}")
+rank  = computed(() => "Level {score.value / 100}")
 effect { print("{score.value} → {rank.value}") }     # re-runs on change
-score.value += 60                                     # → automatisk opdatering
+score.value += 60                                     # → automatic update
 ```
 
 Natural:
@@ -778,17 +778,17 @@ done
 add 50 to the score
 ```
 
-Semantik:
+Semantics:
 
 - Pull-based, glitch-free topological invalidation (SolidJS/SwiftUI model): derived values recompute only when read, never in intermediate states.
 - `computed` memoizes; dependency tracking is automatic (no dependency lists).
 - `effect` runs after commit; exceptions in effects panic normally.
-- GUI-integration: nova-gui binder direkte — `the label text binds to the rank`.
+- GUI integration: nova-gui binds directly — `the label text binds to the rank`.
 - Async sources: `stream.into_signal()` drives a signal from events/network.
 
-## 22. Actors — BESLUTTET
+## 22. Actors — DECIDED
 
-Fuld semantik: concurrency.md §7. Kortform:
+Full semantics: concurrency.md §7. Short form:
 
 ```text
 actor Counter {
@@ -804,7 +804,7 @@ print(c.request(.get()))
 
 One message at a time per actor → no locks; fields touched only from own handlers.
 
-## 23. Contracts — BESLUTTET
+## 23. Contracts — DECIDED
 
 ```text
 fn withdraw(amount: f64) {
@@ -818,9 +818,9 @@ fn withdraw(amount: f64) {
 
 Natural: `requires amount is greater than 0` / `ensures my balance is at least 0`.
 
-Regler:
+Rules:
 
 - `requires` evaluated at entry, `ensures` at exit (with access to the return value via `result`).
-- Tjekkes i debug/tests; strippes i release. Profil: `contracts = "debug" | "always" | "never"`.
+- Checked in debug/tests; stripped in release. Profile: `contracts = "debug" | "always" | "never"`.
 - Contract expressions must be `@pure`.
-- Samme kontrakter driver: fuzzing-input-generering (testkit), docs/hover-visning og refinement-verificeringen (type_system §11).
+- The same contracts drive: fuzzing input generation (testkit), docs/hover display and the refinement verification (type_system §11).

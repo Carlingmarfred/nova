@@ -1,12 +1,12 @@
-# Nova Modulsystem & Packages
+# Nova Module System & Packages
 
 ## 0. Bootstrap cut (v0.12+, item C05) — IMPLEMENTED in bootstrap v0.12
 
-Én fil = ét modul. Import i Natural-skin:
+One file = one module. Import in the Natural skin:
 
 ```text
-the tools-module in "tools.nova"     # binder variablen 'tools-module'
-say "{tools-module.twice(21)}"       # navnerums-kald MED parenteser
+the tools-module in "tools.nova"     # binds the variable 'tools-module'
+say "{tools-module.twice(21)}"       # namespace call WITH parentheses
 say "{the answer of the tools-module}"   # field read of a module variable
 ```
 
@@ -15,10 +15,10 @@ Precise rules:
 1. **Import statement:** `the NAME in "PATH"` where NAME **must** end in `-module`
    (making the sentence unambiguous and self-documenting). PATH is a string relative to
    the importing file's directory. Binds NAME to a module value.
-2. **Separate navnerum:** modulens funktioner, things og top-niveau variabler lever
+2. **Separate namespace:** the module's functions, things and top-level variables live
    in its own scope — an import NEVER changes the main program's global names.
-3. **Navnerums-kald:** `NAVN.funktion(arg, ...)` — parentes-form kun (ord-formen
-   `f with x` does not apply to module calls in the bootstrap; ordinary functions keep
+3. **Namespace calls:** `NAME.function(arg, ...)` — parenthesized form only (the word
+   form `f with x` does not apply to module calls in the bootstrap; ordinary functions keep
    both forms). Calling `.function(...)` on something that is NOT a module gives
    a friendly error pointing at the import statement.
 4. **Field reads:** `the NAME of MODULEVAR` / `MODULE.field` read a module global
@@ -27,17 +27,17 @@ Precise rules:
 6. **Circular import = error** with the whole chain in the message
    ("circular import: a.nova → b.nova → a.nova → ...").
 7. A module **must not** contain `when the program starts` — it gives an error
-   ("flyt den til hovedprogrammet"). Manglende fil, lexer-/parserfejl i modulet =
+   ("move it to the main program"). Missing file, lexer/parser errors in the module =
    friendly sentences with the filename in them.
 8. Modules can import other modules themselves (chained relative to their own directory).
 
 Not in the bootstrap cut (arrives later): `pub`/export boundaries, inline `mod {}`,
-pakker/project.nova, `as`-alias, selektiv import, ting konstrueret via navnerum.
+packages/project.nova, `as` aliases, selective imports, things constructed via namespaces.
 
-## 1. Moduler
+## 1. Modules
 
 - One file = one module. A directory = a submodule namespace (`net/http.nova` → `import net.http`).
-- `mod navn { ... }` inline-moduler tilladt.
+- `mod name { ... }` inline modules allowed.
 - Symbols are private by default; `pub` exports.
 
 ```text
@@ -45,7 +45,7 @@ pakker/project.nova, `as`-alias, selektiv import, ting konstrueret via navnerum.
 pub fn lerp(a: f64, b: f64, t: f64) -> f64 { a + (b - a) * t }
 fn internal() {}
 
-// andetsteds
+// elsewhere
 from math_utils import lerp
 import math_utils as mu
 mu.lerp(0, 10, 0.5)
@@ -102,7 +102,7 @@ fn prebuild(cfg) {
 }
 ```
 
-### Capability-tilladelser — BESLUTTET
+### Capability permissions — DECIDED
 
 Scripts and packages declare their needs; the runtime enforces them (see docs/EXTENSIONS.md E2):
 
@@ -112,7 +112,7 @@ read  = ["data/*"]          # glob-scoped file reading
 write = false
 network = ["api.example.com"]
 spawn  = false
-ffi    = []                 # liste af native-biblioteker
+ffi    = []                 # list of native libraries
 ```
 
 - `nova install` shows a permission dialog for packages requesting new rights.

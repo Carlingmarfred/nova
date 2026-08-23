@@ -79,6 +79,8 @@ python bootstrap/nova_cli.py version                     # Nova 0.14.0-bootstrap
   `every item of X turned into a T`.
 - RESERVED_WORDS frozenset; every name-binding site goes through
   `expect_name(what)` with ENGLISH what-strings ("variable name", "field name", ...).
+  `it` added 2026-08-23 (owner decision): implicit subject of check/try patterns must
+  not be shadowable.
 - `my x is E` is a valid declaration (sugar).
 - **Golden AST dumps (B05):** canonical format in nova_dump.py header; native M0 must
   match byte-for-byte. After deliberate grammar changes run

@@ -283,6 +283,8 @@ RESERVED_WORDS = frozenset({
     "true", "false", "nothing", "none", "null",
     # indbyggede udtryks-hoveder
     "ask", "every", "everything", "item", "how", "many",
+    # implicit subjekt i check/try-mønstre
+    "it",
 })
 
 

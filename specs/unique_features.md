@@ -1,6 +1,6 @@
-# Nova Unikke Features — "kun Nova kan dette"
+# Nova Unique Features — "only Nova can do this"
 
-Status: **BESLUTTET** — del af sprogets identitet. Krav til hver feature:
+Status: **DECIDED** — part of the language's identity. Requirements per feature:
 1. It does something no mainstream language can (or only in fragmented/academic form).
 2. It reads as natural sentences in Nova Natural.
 3. It builds on the kernel (IR, ARC, Flow runtime) without changing it.
@@ -9,7 +9,7 @@ Honesty rule: where an idea exists elsewhere (research, niche languages), we say
 
 ---
 
-## U1. Flow<T> — én samlingstypе for ALT der flyder
+## U1. Flow<T> — ONE collection type for EVERYTHING that flows
 
 Lists, lazy generators, file lines, network events, channel messages and signal history are **the same type**: `Flow<T>`. One vocabulary (~40 operations) works everywhere.
 
@@ -29,9 +29,9 @@ done
 ```
 
 **Why unique:** Rust separates `Iterator`/`Stream` (+ async-colored functions); JS separates iterable/observable; Python separates list/generator/async-generator. Nova has **one** API, synchronous or asynchronous by context — the compiler picks the implementation, the user writes the same thing.
-Kerne: `Iterable`-traiettens generalisering; monomorphiseret → zero-cost. **M2.**
+Core: generalization of the `Iterable` trait; monomorphized → zero-cost. **M2.**
 
-## U2. Table — kolonnetabellen er en primitiv
+## U2. Table — the column table is a primitive
 
 A pandas/numpy feel **in the language itself**, not a library:
 
@@ -45,17 +45,17 @@ top3 is per-product biggest-first take 3
 enriched is sales joined-with prices matching product == name
 ```
 
-- Kolonneorienteret hukommelse, vektoriserede aggregationer, zero-copy import af CSV/JSON.
-- Eget filformat `.ntab` (kolonne-komprimeret, memory-mappable).
+- Column-oriented memory, vectorized aggregations, zero-copy import of CSV/JSON.
+- Own file format `.ntab` (column-compressed, memory-mappable).
 - **Query pushdown:** point the table at a database (std.database) and SQL is generated from the same phrases — filter/groupby/sum run in the database, not in Nova.
-**Hvorfor unikt:** kun kdb+/q har tabeller som primitiver — men q er skrivebords-ekstoterisk. Nova bringer det til et general-purpose sprog med natural-syntax. **M5** (med nova-array).
+**Why unique:** only kdb+/q has tables as primitives — but q is desktop-exotic. Nova brings it to a general-purpose language with natural syntax. **M5** (with nova-array).
 
-## U3. Persistent collections + UNDO som sprog-service
+## U3. Persistent collections + UNDO as a language service
 
 All core collections are persistent (structural sharing) under the hood — the mutation APIs feel ordinary. Any binding can be tracked:
 
 ```text
-track the shopping-list                # nu gemmes alle versioner
+track the shopping-list                # now all versions are stored
 add "milk" to shopping-list
 add "bread" to shopping-list
 
@@ -64,7 +64,7 @@ redo it                                # → ["milk","bread"]
 ```
 
 **Why unique:** no mainstream language gives undo/redo as a language feature. GUI apps get undo for free; nova-gui binds a timeline slider directly: `the slider position binds to a version of tasks`.
-Pris: kun for trackede bindings (ARC-version-noder, delt struktur = billig). **M4.**
+Price: only for tracked bindings (ARC version nodes, shared structure = cheap). **M4.**
 
 ## U4. Temporal queries about variables
 
@@ -72,7 +72,7 @@ Tracked bindings can be queried about their **past**:
 
 ```text
 did the score ever go above 500
-when did the score first reach 100                 # tidspunkt + version
+when did the score first reach 100                 # time + version
 how many times did the temperature fall            # number of drops between readings
 what was the temperature an hour ago
 ```
@@ -80,19 +80,19 @@ what was the temperature an hour ago
 One mechanism drives four things: **undo (U3), temporal queries, the time-travel debugger (F1) and revision log/traceability** (`nova audit` prints the change history as a table).
 Signals (§21) track automatically — `when the score changes` is already temporal syntax. **Why unique:** no other language has variable history as a query language. **M4-M5.**
 
-## U5. Tillids-sporing (data-taint) i typesystemet
+## U5. Trust tracking (data taint) in the type system
 
 Values from untrusted sources carry invisible stamps; sensitive "sinks" require clean values:
 
 ```text
-name is ask "Navn: "                               # stemplet: ←tastatur
+name is ask "Name: "                               # stamped: ←keyboard
 page is http.get(url).body_text()                  # stamped: ←network
 
-database.query("SELECT * WHERE navn = '{name}'")   # COMPILE-FEJL:
+database.query("SELECT * WHERE name = '{name}'")   # COMPILE ERROR:
                                                    #   the network stamp cannot reach the db sink
 
 clean is sanitize(name)                            # new, clean value (documented check)
-database.query("SELECT * WHERE navn = '{clean}'")  # ok
+database.query("SELECT * WHERE name = '{clean}'")  # ok
 ```
 
 - Stamps propagate through operations (concatenation preserves origin).
@@ -109,7 +109,7 @@ counts  is orders grouped-by city counting rows
 
 The same phrases work on: Arrays (in-memory, monomorphized), Tables (vectorized), Flows (streaming), database connections (**SQL pushdown**), CRDT replicas (see U13 note). The Linq idea — but in natural sentences and with pushdown to SQL *and* `.ntab`. **M3 (arrays/db), M5 (tables).**
 
-## U7. Tilstandsmaskiner som deklaration
+## U7. State machines as declaration
 
 ```text
 a TrafficLight is the states
@@ -125,21 +125,21 @@ say light                           # "green"
 
 - The compiler verifies: every state reachable, no dead ends (without `finishes`), exhaustive `check light state` matches.
 - Transitions can carry guards and actions: `red waits 30 seconds when emergency then becomes flashing`.
-- Brug: spil-AI, protokoller, UI-flow, ordre-livscyklusser — klassisk kilde til bugs der bliver umulige.
+- Use: game AI, protocols, UI flow, order lifecycles — classic bug sources that become impossible.
 **Why unique:** SCXML/Statecharts exist as tools; no major language has state-machine declaration in the kernel with exhaustiveness checks. **M3.**
 
-## U8. Eksakt matematik-blokke
+## U8. Exact math blocks
 
 ```text
 exact
-    if 0.1 plus 0.2 is equal to 0.3 then say "matematik stemmer!"    # JA her
-    price is 19.99 times 3                                            # eksakt decimal
+    if 0.1 plus 0.2 is equal to 0.3 then say "math checks out!"      # YES here
+    price is 19.99 times 3                                            # exact decimal
 done
 ```
 
-Inde i blokken promoveres literals til `Rational`/`Decimal`; sammenligninger er eksakte. Bliver beregningen irrationel (`sqrt`), falder den bevidst tilbage til float med compiler-note. Undervisnings-guld og penge-sikkert. **M2.**
+Inside the block, literals are promoted to `Rational`/`Decimal`; comparisons are exact. If the computation becomes irrational (`sqrt`), it deliberately falls back to float with a compiler note. Teaching gold and money-safe. **M2.**
 
-## U9. Deterministisk simulering indbygget
+## U9. Deterministic simulation built in
 
 ```text
 nova test --sim seed=42 --speed=1000x
@@ -164,20 +164,20 @@ Salsa/Adapton-inspired function-level memoization with fine-grained input tracki
 ```text
 every 5 seconds { ping }
 every day at 09:00 { make-backup }
-in 30 seconds { remind-me "pause nu" }
+in 30 seconds { remind-me "take a break now" }
 when the clock strikes friday 16:00 { say "weekend!" }
 ```
 
 Scheduler integration: scripts keep the VM alive until timers fire; services use the same syntax. Cron/systemd timer logic becomes readable code. **M3.**
 
-## U12. `nova why` — programmet forklarer sig selv
+## U12. `nova why` — the program explains itself
 
-Ved breakpoint, crash eller `pause the program`:
+At breakpoint, crash or `pause the program`:
 
 ```text
 > why did we enter this branch
 score was 512 (over the limit 500) — last changed by add 12 to score (line 88),
-som blev kaldt fra level-up() (linje 41). Historik: 480 → 512.
+which was called from level-up() (line 41). History: 480 → 512.
 
 > what touched the config most recently
 file watch (config.nova, 14:02:11)
@@ -194,9 +194,9 @@ Nova's stdlib depends on **nothing but OS syscalls**:
 
 ```text
 own regex engine (RE2 model, linear time)      own JSON/TOML/CSV/CBOR
-egen TLS-stack (pure-Nova, M4)                egen indlejret db ("nova-db", sqlite-API)
+own TLS stack (pure-Nova, M4)                  own embedded db ("nova-db", sqlite-API)
 own compression (deflate/zstd-lite)            own image format set (png/jpeg decode)
-egen .ntab kolonneformat                      egen unicode-kollationstabell-generator
+own .ntab column format                        own unicode collation table generator
 libc optional on Linux (direct syscalls)       Windows: pure WinAPI
 ```
 
@@ -222,33 +222,33 @@ The compiler generates a recursive-descent parser + AST types at compile time (P
 
 | Feature | Nova | Python | Rust | JS/TS | Java | Swift | q/kdb |
 |---|---|---|---|---|---|---|---|
-| U1 Ét Flow-API sync+async | Ja | Nej (4 varianter) | Delvis (Iterator/Stream) | Nej | Nej | Nej | — |
-| U2 Tabel-primitiv | Ja | Bibliotek | Bibliotek | Bibliotek | Bibliotek | Bibliotek | **Ja** |
-| U3 Undo som sprog-feature | Ja | Nej | Nej | Nej | Nej | Nej | Nej |
+| U1 One Flow API sync+async | Yes | No (4 variants) | Partial (Iterator/Stream) | No | No | No | — |
+| U2 Table primitive | Yes | Library | Library | Library | Library | Library | **Yes** |
+| U3 Undo as language feature | Yes | No | No | No | No | No | No |
 | U4 Variable-history queries | Yes | No | No | No | No | No | No |
-| U5 Typet taint-tracking | Ja | Nej | Nej | Nej | Nej | Nej | Nej |
-| U6 Query-fraser m/ SQL-pushdown | Delvist unik (Linq-agtig, natural) | Nej | Nej | Delvis (LinQ i C#) | Nej | Nej | Delvis |
-| U7 Tilstandsmaskiner i kernen | Ja | Nej | Nej | Nej | Nej | Nej | Nej |
-| U8 Eksakte matematik-blokke | Ja | Delvis (fractions manuelt) | Nej | Nej | BigDecimal manuelt | Decimal manuelt | — |
-| U9 Deterministisk sim-test standard | Ja | Nej | Delvist (loom/externelt) | Nej | Nej | Nej | — |
-| U10 @incremental i sproget | Ja | Nej | Biblioteker | Nej | Nej | Nej | — |
-| U13 Pure self-hosted stdlib | Ja | C-bundet | Delvis | Runtime-bundet | JVM-bundet | C-bundet | C-bundet |
+| U5 Typed taint tracking | Yes | No | No | No | No | No | No |
+| U6 Query phrases w/ SQL pushdown | Partly unique (Linq-like, natural) | No | No | Partial (LinQ in C#) | No | No | Partial |
+| U7 State machines in the kernel | Yes | No | No | No | No | No | No |
+| U8 Exact math blocks | Yes | Partial (fractions manually) | No | No | BigDecimal manually | Decimal manually | — |
+| U9 Deterministic sim-test standard | Yes | No | Partial (loom/external) | No | No | No | — |
+| U10 @incremental in the language | Yes | No | Libraries | No | No | No | — |
+| U13 Pure self-hosted stdlib | Yes | C-bound | Partial | Runtime-bound | JVM-bound | C-bound | C-bound |
 
-Konklusionen er ikke "vi opfandt alle idéerne" — det er **at kombinationen, integrationen og natural-syntaxen er unik**: historik-motoren driver undo + debugging + revision; Flow motiverer iteratorer + streams + kanaler; taint + capabilities giver end-to-end sikkerhed.
+The conclusion is not "we invented every idea" — it is **that the combination, the integration and the natural syntax are unique**: the history engine drives undo + debugging + revisions; Flow motivates iterators + streams + channels; taint + capabilities give end-to-end security.
 
 ## Milestones
 
 | Feature | M |
 |---|---|
-| U8 exact-blokke | M2 |
+| U8 exact blocks | M2 |
 | U1 Flow | M2 |
-| U11 Tid-udtryk | M3 |
+| U11 Time expressions | M3 |
 | U6 Queries (array/db) | M3 |
-| U7 Tilstandsmaskiner | M3 |
+| U7 State machines | M3 |
 | U9 Sim-test | M4 |
-| U3 Undo / U4 Historik | M4-M5 |
+| U3 Undo / U4 History | M4-M5 |
 | U5 Taint | M4 |
 | U10 @incremental | M5 |
 | U2 Table | M5 |
 | U12 nova why | M6 |
-| U14 Grammatik-literals | M6 |
+| U14 Grammar literals | M6 |

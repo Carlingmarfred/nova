@@ -29,7 +29,7 @@ Rules:
 1. `a copy of X` is one expression (primary phrase); X parses greedily like the rest
    of the arithmetic (same convention as `the contents of ...`).
 2. The copy is DEEP: nested lists/things/dictionaries are copied recursively.
-3. Combines freely with `?`: `a copy of maybe?` \u2192 nothing if maybe is nothing
+3. Combines freely with `?`: `a copy of maybe?` → nothing if maybe is nothing
    (whole-expression poisoning applies).
 4. Modules/functions cannot be copied — friendly error ("a module/function is not a value").
 5. Both skins, identical AST (`CopyOf` node; golden 20 + cross-skin pair 8).
@@ -48,7 +48,7 @@ Optional:     GC cycle collector (--runtime full)
 
 ## 2. Value types vs reference types
 
-| | struct, enum, tuple, [T;N], primitives | class-instans, closures, dyn Trait, Box |
+| | struct, enum, tuple, [T;N], primitives | class instance, closures, dyn Trait, Box |
 |---|---|---|
 | Semantics | value (copy if Copy, else move) | reference (ARC-counted) |
 | Layout | inline, stack/embedded | heap-allocated, counted pointer |
@@ -112,7 +112,7 @@ unsafe {
 ```
 
 - Raw pointers: `*T`, `*mut T`, `null`.
-- Unsafe blokke er de eneste steder med deref/addr-of/malloc/FFI.
+- Unsafe blocks are the only places with deref/addr-of/malloc/FFI.
 - unsafe does not contaminate (no unsafe supertype); functions requiring unsafe are marked `@unsafe fn`.
 - Debug builds: pointer-sanitizer-style checks (poisoning) where possible.
 

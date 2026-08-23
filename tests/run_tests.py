@@ -370,6 +370,8 @@ def test_reserved_words(tmp):
         ("field-name", 'a T is a thing with\n    a done\ndone'),
         ("try-errname", 'try\n    x is 1 divided by 0\nif it fails as done\n    say "e"\ndone'),
         ("new-thing-reserved", "a Task is a thing with\n    a text\ndone\nx is a new the"),
+        ("it-decl-var", "it is 5"),
+        ("it-param-name", 'to greet with it\n    say "x"\ndone'),
     ]
     for name, src in bad:
         p = nova(["run", prog(src, tmp)], cwd=tmp)

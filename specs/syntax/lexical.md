@@ -165,12 +165,14 @@ Values:
     true false nothing none null
 
 Built-in expression heads:
-    ask every everything item how many
+    ask every everything item how many it
 ```
 
 **Policy:** only words that would make a program *unparseable* are reserved. Words like
 `count`, `mark`, `number`, `length`, `first`, `last`, `answer` are deliberately NOT
-reserved. Using a reserved word as a name yields:
+reserved. `it` is reserved because it is the implicit subject of `check ... when it is`
+and `try ... if it fails` patterns — binding a variable named `it` would make those
+patterns ambiguous (owner decision 2026-08-23). Using a reserved word as a name yields:
 
 ```text
 Parser error — line L, column C: 'done' is a reserved word and cannot be used as a
