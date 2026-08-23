@@ -16,7 +16,7 @@ from nova_parser import parse_source, NovaParseError  # noqa: E402
 from nova_interpreter import Interp, NovaError, ExitSignal, NothingSignal  # noqa: E402
 from nova_dump import dump_program  # noqa: E402
 
-VERSION = "0.11.0-bootstrap"
+VERSION = "0.12.0-bootstrap"
 
 
 def _utf8():

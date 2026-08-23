@@ -50,7 +50,7 @@ def prog(src, cwd):
 
 def test_cli(tmp):
     p = nova(["version"])
-    check("cli/version", p.returncode == 0 and "Nova" in p.stdout and "0.11" in p.stdout,
+    check("cli/version", p.returncode == 0 and "Nova" in p.stdout and "0.12" in p.stdout,
           f"rc={p.returncode} out={p.stdout!r}")
 
     bad = os.path.join(tmp, "bad.nova")

@@ -56,14 +56,15 @@ Java (ecosystem/tooling) + C++ (performance). This matrix is audited each phase 
 | Docs & learnability | Language reference complete, tutorial, playground, error index | 🟡 specs done, tutorial missing |
 | Unique differentiators | Flow, Table, track/undo, taint, state machines, time statements… | 🟡 track/undo only |
 
-## 3. Current status dashboard (v0.11-bootstrap)
+## 3. Current status dashboard (v0.12-bootstrap — G0 CLOSED 2026-08-23)
 
-- ✅ Python bootstrap lexer/parser/tree-interpreter, Natural subset (~85% of T1 spec)
+- ✅ G0 closed: suite green (191 tests), both examples perfect, error audit done (B01)
+- ✅ Python bootstrap lexer/parser/tree-interpreter, Natural + shorthand skins
 - ✅ Contracts (`requires` eager / `ensures` deferred), track/undo/redo
-- ✅ End-to-end suite: 49 tests green (`python tests/run_tests.py`)
-- ✅ Both flagship examples run incl. JSON persistence; column-numbered errors
-- ❌ Compact shorthand skin, Result/Optional, modules/imports (fake today), real stdlib,
-  REPL, native compiler, tooling — see backlog
+- ✅ Optional/`?` whole-expression poisoning; real modules with namespaces; stdlib v0
+  (json/file/random/time/math/text/list via `use the standard X library`)
+- ✅ End-to-end suite: 191 tests green (`python tests/run_tests.py`); golden dumps 01–19
+- ❌ Result-typed errors, REPL, lambdas/pipelines, formatter/linter, native compiler — see backlog
 
 ## 4. Development workflow (do this every iteration, in order)
 
@@ -150,7 +151,7 @@ invariants that must survive, the traps, and the evidence required at review.
 
 A phase is DONE only when every exit criterion holds. Gates are cumulative.
 
-- **G0 — Bootstrap trustworthy** *(current, closes at v0.12)*: suite green; both
+- **G0 — Bootstrap trustworthy** *(✅ CLOSED 2026-08-23 at v0.12)*: suite green; both
   examples perfect; error messages audited once end-to-end.
 - **G1 — T1 language complete** (v0.13–v0.19): 100% of natural_syntax.md parseable &
   runnable; Result/Optional; real module system; stdlib-core v0; REPL; golden AST dumps
@@ -316,6 +317,7 @@ units/refinement types, actors/signals, GPU backend, grammar literals, `@increme
 
 | Date | Change |
 |---|---|
+| 2026-08-23 | **v0.12.0-bootstrap + G0 LUKKET**: versionsbump (CLI + cli/version-test), §3-dashboard opdateret, README-statuslinje fikset (var forældet: 49 tests / "shorthand ikke implementeret"). G0-kriterier: suite grøn (191), begge eksempler perfekte, fejl-audit B01 ✅. Næste gate: G1 (T1 komplet) — C04/C09/C10/C11/C12 + D01/D05/D06. |
 | 2026-08-23 | **C08 ✅**: math udvidet med abs/floor/ceil/pow + PI-konst (læses som modul-felt), time.sleep (afviser negative), random.shuffle (kopi, seedbar via --seed — determinisme-test tilføjet). 7 nye stdlib-tests. Stdlib v0-trioen (B03+C06+C07+C08) er dermed HEL. Suite: 191/191. Næste: C09 REPL → E00+E01 toolchain+CI (P0!). |
 | 2026-08-23 | **C07 ✅**: list-biblioteket (sort/reverse/min/max/keys/values) som BuiltinFunctions; sort returnerer NY liste og afviser blandede typer med sætning; reverse er kopi; keys/values kræver databog (json.parse) og returnerer nøgle-sorteret. map/filter/fold bevidst udskudt til C10/T2 (kræver lambdas). 7 nye stdlib-tests (4 ok + 3 fejl). Suite: 184/184. Næste: C08 math/time/random fyldes op → C09 REPL. |
 | 2026-08-23 | **C06 ✅**: text-biblioteket (upper/lower/trim/split/join/replace/length/contains/at/slice) som BuiltinFunctions; at/slice er 1-baserede (slice inklusiv); replace erstatter alle; join bruger nova_str pr. element; alle type-/grænse-fejl = sætning + gyldigt-interval-hint. 7 nye stdlib-tests (4 ok + 3 fejl). Suite: 177/177. Næste: C07 list → C08 math/time/random. |

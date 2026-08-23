@@ -1,8 +1,8 @@
 # Nova — Project Notes
 
-> **Status v0.12-bootstrap (i gang):** B05/B01/B02 + C01/C02/B04 + C03 + C05
-> gennemført; 159/159 end-to-end tests grønne (`python tests/run_tests.py`).
-> Se changelog i §5.
+> **Status v0.12-bootstrap:** G0-gaten LUKKET (2026-08-23). B05/B01/B02 + C01/C02/B04
+> + C03/C05 + B03+C06+C07+C08 gennemført; 191/191 end-to-end tests grønne
+> (`python tests/run_tests.py`). Se changelog i §5.
 
 ## 1. Context & Goals
 

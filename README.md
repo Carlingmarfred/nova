@@ -2,7 +2,7 @@
 
 Et general-purpose programmeringssprog: **C++ performance + Python enkelhed + Java økosystem** — bygget om én stærk kerne (compiler + typesystem + IR + runtime) med alle andre features ovenpå.
 
-> **Status: v0.11-bootstrap** — Python-fortolkeren i `bootstrap/` er grøn på hele end-to-end testsuiten (`python tests/run_tests.py`, 49 tests inkl. begge eksempler). Kompakt shorthand-skin er stadig *ikke* implementeret i bootstrap'en — kun Nova Natural. Se [project-notes.md](project-notes.md) §5.
+> **Status: v0.12-bootstrap** — Python-fortolkeren i `bootstrap/` er grøn på hele end-to-end testsuiten (`python tests/run_tests.py`, 191 tests inkl. begge eksempler). **G0-gaten er lukket.** Kompakt shorthand-skin, Optional/`?`, ægte moduler med navnerum og stdlib v0 (`use the standard X library`: json/file/random/time/math/text/list) er implementeret. Se [project-notes.md](project-notes.md) §5.
 
 ```
 # Nova Natural (primær syntax — læses som sætninger):
