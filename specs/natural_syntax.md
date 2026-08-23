@@ -1,50 +1,59 @@
 # Nova Natural Syntax ("Nova Natural")
 
-**Mål:** Man skal næsten kunne *sige* sin idé til et andet menneske, skrive den ned ord for ord — og have en app.
+**Goal:** you should almost be able to *say* your idea to another human, write it down
+word for word — and have an app.
 
 ```text
-Idé sagt højt:
-    "Hvis spillerens liv er under 10, sig advarsel. Ellers sig alt er godt."
+Idea spoken aloud:
+    "If the player's health is under 10, say a warning. Otherwise say all is good."
 
 Nova Natural:
     if the health of the player is less than 10 then
-        say "Advarsel!"
+        say "Warning!"
     otherwise
-        say "Alt er godt."
+        say "All is good."
     done
 ```
 
-## 1. Principper
+## 1. Principles
 
-1. **Kontrolleret engelsk — ikke fri NLP.** Sproget er stadig en formel grammatik med faste fraser. Det der ligner "engelsk" er et fast ordforråd på ~120 ord i faste mønstre. Parseren er deterministisk; ingen AI-tolkning.
-2. **Én AST, to skins.** Nova Natural er den primære overflade. Den kompakte symbolsyntax (`{}`, `=>`, `+`, `>`, `print`) forbliver gyldig som ekspert-stenografi. Begge former kompilerer til **identisk AST** — man kan blande frit.
-3. **Blokke lukkes med `done`.** Ikke indentation-følsomt (formatteren anbefaler indrykning, parseren kræver det ikke). Éntydigt og copy-paste-sikkert. Enkeltlinjes-former bruger `then`/`:` uden `done`.
-4. **Støjord tilladt:** `the a an of it that value are is` kan bruges hvor de lyder naturligt: `the length of xs` ≡ `length of xs`. Parseren ignorerer dem.
-5. **Fejlmeddelelser foreslår:** skriver man `display x`, svarer compileren *"Did you mean `say x`?"* (Levenshtein over frase-ordbogen).
+1. **Controlled English — not free-form NLP.** The language is still a formal grammar
+   with fixed phrases. What looks like "English" is a fixed vocabulary of ~120 words in
+   fixed patterns. The parser is deterministic; no AI interpretation.
+2. **One AST, two skins.** Nova Natural is the primary surface. The compact symbol
+   syntax (`{}`, `=>`, `+`, `>`, `print`) remains valid as expert stenography. Both forms
+   compile to **identical AST** — mix freely.
+3. **Blocks close with `done`.** Not indentation-sensitive (the formatter recommends
+   indentation; the parser does not require it). Unambiguous and copy-paste safe.
+   Single-line forms use `then`/`:` without `done`.
+4. **Noise words allowed:** `the a an of it that value are is` can be used where they
+   sound natural: `the length of xs` ≡ `length of xs`. The parser ignores them.
+5. **Errors suggest:** typing `display x` makes the compiler reply *"Did you mean
+   `say x`?"* (Levenshtein over the phrase vocabulary).
 
-## 2. Kommando-ordbogen (fuld tabel)
+## 2. Command vocabulary (full table)
 
-### Output og input
+### Output and input
 
-| Naturlig | Kompakt | Betydning |
+| Natural | Compact | Meaning |
 |---|---|---|
-| `say "hej"` | `print("hej")` | udskriv + linjeskift |
-| `write "hej"` | `print(..., newline = false)` | udskriv uden linjeskift |
-| `ask "Navn?" and remember it as name` | `name = stdin.line("Navn?")` | spørg og gem svaret |
-| `say x and y` | `print(x, y)` | flere værdier |
+| `say "hi"` | `print("hi")` | print + newline |
+| `write "hi"` | `print(..., newline = false)` | print without newline |
+| `ask "Name?" and remember it as name` | `name = stdin.line("Name?")` | ask and store the answer |
+| `say x and y` | `print(x, y)` | multiple values |
 
-### Variabler
+### Variables
 
-| Naturlig | Kompakt |
+| Natural | Compact |
 |---|---|
-| `x is 10` | `x = 10` (opret) |
-| `set x to 20` | `x = 20` (tildel) |
+| `x is 10` | `x = 10` (create) |
+| `set x to 20` | `x = 20` (assign) |
 | `the total is a plus b` | `total = a + b` |
 | `change x by 5` | `x += 5` |
 
-### Regnestykke (ord-former af operatorerne)
+### Arithmetic (word forms of the operators)
 
-| Ord | Symbol |
+| Word | Symbol |
 |---|---|
 | `plus` | `+` |
 | `minus` | `-` |
@@ -61,53 +70,53 @@ Nova Natural:
 | `and` / `or` / `not` | `&&` `\|\|` `!` |
 | `contains` / `is in` / `is not in` | membership |
 
-### Betingelser
+### Conditionals
 
 ```text
-if alder is at least 18 then say "Voksen" otherwise say "Barn"     # én linje
+if age is at least 18 then say "Adult" otherwise say "Child"       # one line
 
 if health is less than 10 then
-    say "Advarsel!"
+    say "Warning!"
 otherwise if health is less than 50 then
-    say "Lav på liv"
+    say "Low on health"
 otherwise
-    say "Alt er godt"
+    say "All is good"
 done
 ```
 
 `otherwise if` = else if. `unless C then ... done` = `if not C`.
 
-### Gentagelser
+### Repetition
 
-| Naturlig | Betydning |
+| Natural | Meaning |
 |---|---|
-| `repeat 10 times ... done` | fast antal |
-| `repeat with i from 1 to 10 ... done` | tæller (`i` = 1..10) |
-| `repeat forever ... done` | uendelig |
-| `repeat until the guess is correct ... done` | betinget slut |
+| `repeat 10 times ... done` | fixed count |
+| `repeat with i from 1 to 10 ... done` | counting (`i` = 1..10) |
+| `repeat forever ... done` | infinite |
+| `repeat until the guess is correct ... done` | conditional end |
 | `repeat while there are items left ... done` | while |
-| `repeat for each fruit in fruits ... done` | gennem løbe collection |
+| `repeat for each fruit in fruits ... done` | iterate a collection |
 | `stop the loop` | break |
 | `skip this one` / `go to next turn` | continue |
 
-### Funktioner
+### Functions
 
 ```text
 to greet with name
-    say "Hej {name}!"
+    say "Hello {name}!"
 done
 
-greet with "Carl"                       # kald
-the message is greet result with "Carl" # fang returværdi
+greet with "Carl"                       # call
+the message is greet result with "Carl" # capture the return value
 
 to double with n
     give back n times 2                 # give back = return
 done
 ```
 
-Flere parametre: `to add with a and b` — kald: `add with 2 and 3`.
+Multiple parameters: `to add with a and b` — call: `add with 2 and 3`.
 
-### Programstart og moduler
+### Program start and modules
 
 ```text
 when the program starts            # ≡ fn main()
@@ -119,7 +128,10 @@ use math from the standard library # ≡ from std.math import *
 use json as j                      # alias
 ```
 
-Scripts behøver ikke `when the program starts` — top-level kode kører top-down.
+Scripts do not need `when the program starts` — top-level code runs top-down.
+
+Bootstrap note (C05): file-based modules are `the tools-module in "tools.nova"`
+(see module_system §0); the `use the X library` form binds stdlib namespaces (B03).
 
 ### Collections
 
@@ -134,7 +146,7 @@ say item 2 of fruits                          # ≡ fruits[1]
 does fruits contain "apple"? → if fruits contains "apple" then ...
 sort fruits
 shuffle fruits
-create a list of the numbers from 1 to 100    # ≡ 1..100 som Array
+create a list of the numbers from 1 to 100    # ≡ 1..100 as Array
 ```
 
 Map:
@@ -145,18 +157,18 @@ set the age of "Carl" in ages to 30           # ages["Carl"] = 30
 say the age of "Carl" in ages
 ```
 
-### Tekst
+### Text
 
 ```text
 say the name in capital letters                # upper()
 say the first letter of the word
 join parts with ", "
 split the line by ","
-if the text starts with "Hej" then ...
+if the text starts with "Hello" then ...
 replace every space in s with "_"
 ```
 
-### Objekter
+### Objects
 
 ```text
 a Player is a thing with
@@ -169,20 +181,22 @@ a Player is a thing with
 done
 
 the hero is a new Player with name set to "Rex"
-damage the hero with 20                        # metodekald som sætning
-say the health of the hero                     # feltaflæsning
-take 10 from the health of the hero            # felttilskrivning
+damage the hero with 20                        # method call as a sentence
+say the health of the hero                     # field read
+take 10 from the health of the hero            # field assignment
 ```
 
-`my` = self inde i definitionen, `its` = ejers refereret udefra (`its name`). Arv: `a Dog is a kind of Animal with ...`. Traits/interfaces udskydes til kompakt form i v1.
+`my` = self inside the definition, `its` = the owner referenced outside (`its name`).
+Inheritance: `a Dog is a kind of Animal with ...`. Traits/interfaces deferred to the
+compact form in v1.
 
-### Fejlhåndtering
+### Error handling
 
 ```text
 try
     open the file at path
-if it fails as problem                         # catch, problem = fejl-objektet
-    say "Det virkede ikke: {problem}"
+if it fails as problem                         # catch, problem = the error object
+    say "It did not work: {problem}"
 done
 
 the data is the file contents or nothing       # Result/Optional coalescing
@@ -192,13 +206,13 @@ the data is the file contents or nothing       # Result/Optional coalescing
 
 ```text
 check the status
-    when it is "ok"       say "Alt godt"
-    when it is "warning"  say "Pas på"
-    otherwise             say "Ukendt"
+    when it is "ok"       say "All good"
+    when it is "warning"  say "Careful"
+    otherwise             say "Unknown"
 done
 ```
 
-### Tid, venten, samtidighed
+### Time, waiting, concurrency
 
 ```text
 wait 2 seconds
@@ -209,11 +223,13 @@ done
 at the same time do task-a and do task-b       # ≡ parallel
 ```
 
-### Sandhed
+### Truth
 
-`true false nothing` (= true/false/none). Tomheds-test skal være eksplicit: `if xs has no items then ...` ≡ `xs.len() == 0` — samme regel som kernesproget (ingen implicit truthiness).
+`true false nothing` (= true/false/none). Emptiness tests must be explicit:
+`if xs has no items then ...` ≡ `xs.len() == 0` — same rule as the kernel language
+(no implicit truthiness).
 
-## 3. Frase-grammatik (skitse)
+## 3. Phrase grammar (sketch)
 
 ```ebnf
 sentence    = command , "."? ;
@@ -225,26 +241,34 @@ call_sentence = verb , [ "with" , arg , { "and" , arg } ] ;
 arg         = expression ;
 expression  = term , { arith_word , term } ;
 arith_word  = "plus" | "minus" | "times" | "divided by"
-            | "to the power of" | symbol_op ;          (* symboler tilladt *)
+            | "to the power of" | symbol_op ;          (* symbols allowed *)
 comparison  = [ expr ] , "is" , ["not"] , (
                 "greater than" | "less than" | "at least" | "at most"
               | "equal to" | "the same as" | "a number" | "nothing"
               | literal ) ;
 block       = NEWLINE , { sentence } , "done"
-            | ":" , sentence ;                          (* én-linjes *)
-noise_word  = "the" | "a" | "an" | "of" | "value" ;     (* ignoreres *)
+            | ":" , sentence ;                          (* one-line *)
+noise_word  = "the" | "a" | "an" | "of" | "value" ;     (* ignored *)
 ```
 
-Regler mod tvetydighed:
+Rules against ambiguity:
 
-1. **Fast verbum først:** hver sætning starter med et reserveret verbum (`say ask set add take if unless repeat to check try use create wait when in at stop skip go return give`). Variabel-navne må derfor ikke kollidere med verbene (compiler-fejl med forslag).
-2. **`is` har to roller**, adskilt af kontekst: `X is <udtryk>` = sammenligning/deklaration; `set X to V` = tildeling. Deklaration med regnestykke: `the total is a plus b`.
-3. **Ejeforhold altid med `of`:** `the health of the hero` — aldrig bare to navne ved siden af hinanden.
-4. Symbol-operatorer (`+ > ==`) accepteres overalt som stenografi for ord-formerne.
+1. **Fixed verb first:** every sentence starts with a reserved verb (`say ask set add
+   take if unless repeat to check try use create wait when in at stop skip go return
+   give`). Variable names must therefore not collide with the verbs (compiler error
+   with suggestion).
+2. **`is` has two roles**, separated by context: `X is <expression>` =
+   comparison/declaration; `set X to V` = assignment. Declaration with arithmetic:
+   `the total is a plus b`.
+3. **Ownership always with `of`:** `the health of the hero` — never just two names side
+   by side.
+4. Symbol operators (`+ > ==`) accepted everywhere as stenography for the word forms.
 
-## 4. Desugaring (Natural → kerne-AST)
+## 4. Desugaring (Natural → kernel AST)
 
-Natural-laget er en ren syntaktisk transformation **før** parsing-slut: tokens → frase-match → de normale AST-noder. Derfor får man automatisk: type-inference, ARC, alle stdlib-API'er, LSP, formatter — intet duplikeres.
+The Natural layer is a pure syntactic transformation **before** parsing finishes:
+tokens → phrase match → the ordinary AST nodes. You therefore get automatically:
+type inference, ARC, every stdlib API, LSP, formatter — nothing duplicated.
 
 ```text
 say X                    →  print(X)
@@ -263,39 +287,39 @@ my X / its X             →  self.X
 nothing                  →  none
 how many items are in X  →  X.len()
 the first item of X      →  X[0]        the last item of X → X[^1]
-X is a number            →  X.to_int().ok (String-kontekst) / X is Numeric
+X is a number            →  X.to_int().ok (String context) / X is Numeric
 in the background        →  spawn { }
 wait N seconds           →  async.sleep(seconds(N))
 ```
 
-## 5. Eksempler
+## 5. Examples
 
 ### Hello, world
 
 ```text
 when the program starts
-    say "Hej, verden!"
+    say "Hello, world!"
 done
 ```
 
-### Lommeregner
+### Calculator
 
 ```text
 when the program starts
-    a is ask "Første tal: "
-    b is ask "Andet tal: "
+    a is ask "First number: "
+    b is ask "Second number: "
 
     if a is a number and b is a number then
-        say "Summen er [the number value of a plus the number value of b]"
+        say "The sum is [the number value of a plus the number value of b]"
     otherwise
-        say "Skriv venligst tal."
+        say "Please enter numbers."
     done
 done
 ```
 
-(`[...]` = interpolation-alternativ til `{...}` i natural-mode; begge gyldige.)
+(`[...]` = interpolation alternative to `{...}` in natural mode; both valid.)
 
-### Gøreliste
+### Todo list
 
 ```text
 use the standard library
@@ -303,27 +327,27 @@ use the standard library
 things is an empty list
 
 repeat forever
-    command is ask "(tilføj/vis/færdig) > "
+    command is ask "(add/show/done) > "
 
     check the command
-        when it starts with "tilføj"
-            add everything after "tilføj " in command to things
-            say "Der er nu {how many items are in things} ting på listen."
-        when it is "vis"
+        when it starts with "add"
+            add everything after "add " in command to things
+            say "There are now {how many items are in things} things on the list."
+        when it is "show"
             repeat for each thing in things
                 say "- {thing}"
             done
-        when it is "færdig"
+        when it is "done"
             stop the loop
         otherwise
-            say "Prøv: tilføj / vis / færdig"
+            say "Try: add / show / done"
     done
 done
 
-say "Farvel!"
+say "Bye!"
 ```
 
-### Samtidighed
+### Concurrency
 
 ```text
 when the program starts
@@ -332,13 +356,17 @@ when the program starts
 to count-sheep
     repeat with i from 1 to 3
         wait 1 second
-        say "{i} får..."
+        say "{i} sheep..."
     done
 done
 ```
 
-## 6. Tooling-integration
+## 6. Tooling integration
 
-- **Autocomplete skriver sætningerne færdige**: efter `rep` → `repeat 10 times … done` / `repeat for each … in … done`.
-- **"Oversæt"-kommando:** `nova speak fil.nova` viser den kompakte form; `nova natural fil.nova` viser natural-formen. Formatteren kan konvertere mellem de to (samme AST).
-- **Undervisnings-profil:** `project.nova: syntax = "natural-only"` slår shorthand fra (skoler/beginners).
+- **Autocomplete completes the sentences**: after `rep` → `repeat 10 times … done` /
+  `repeat for each … in … done`.
+- **A "translate" command:** `nova speak file.nova` shows the compact form;
+  `nova natural file.nova` shows the natural form. The formatter can convert between
+  them (same AST).
+- **Teaching profile:** `project.nova: syntax = "natural-only"` disables shorthand
+  (schools/beginners).
