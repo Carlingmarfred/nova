@@ -20,7 +20,7 @@ when the program starts
     done
 done
 
-# Kompakt shorthand (samme AST — ekspert-stenografi; planlagt, ikke i bootstrap endnu):
+# Kompakt shorthand (samme AST — ekspert-stenografi; implementeret i C01):
 x = 10                          # inference → i32, mutable binding
 nums = [1, 2, 3].map(x => x * 2).filter(x => x > 4)
 fn read(path: String) -> Result<String, IoError> { Ok(File.read(path)?) }

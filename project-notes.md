@@ -22,7 +22,7 @@ Repo layout (working dir `oxtest/`):
   unique_features, syntax/grammar.md, syntax/lexical.md
 - `examples/` — tour.nova, guessing_game.nova, todo.nova, lab.nova, unique.nova
 - `bootstrap/` — Python interpreter: nova_lexer.py, nova_parser.py, nova_interpreter.py,
-  nova_cli.py (v0.11: tested end-to-end, 49/49 green via tests/run_tests.py)
+  nova_cli.py (v0.12: tested end-to-end, 191/191 green via tests/run_tests.py)
 - `tests/` — run_tests.py end-to-end suite (subprocess-based)
 
 ## 2. Key Decisions
@@ -181,7 +181,7 @@ done
    `requires` eager ved kald; `ensures` udskydes til funktionsafslutning og evalueres i
    funktions-lokalt scope (post-betingelser ser sluttilstanden). Dokumenteret i README.
 
-## 5. v0.11 changelog
+## 5. Changelog (v0.11 →)
 
 **2026-08-23 — C05 moduler (v0.12, 159/159):**
 - Parser: `UseModule` + `ModuleCall` noder; `p_usemodule()`; postfix DOT+LPAREN
@@ -244,10 +244,15 @@ done
 **Eksempler:** guessing_game.nova (balanceret done-struktur) og todo.nova (fuldt
 omskrevet) kører begge end-to-end inkl. JSON-persistens på tværs af kørsler.
 
-**Kendte huller i v0.11 (uændret fra v0.1-scope):** kompakt shorthand-skin er ikke
-implementeret (lexer afviser `. / { } = >`); tour/lab/unique.nova er udenfor bootstrap-
-scope; ingen unary minus; indbyggede fraser (contents/first/last/length/number value)
-reserverer de ord som feltnavne efter `the`; spans kun i frontend-fejl (ikke AST).
+**Kendte huller i v0.12 (opdateret 2026-08-23 — gamle huller lukket):** kompakt
+shorthand-skin ✓ (C01), unary minus ✓ (B04), Optional/`?` ✓ (C03), moduler ✓ (C05),
+stdlib v0 ✓ (B03+C06+C07+C08). TILBAGE: Result-typede fejl (C04), lambdas/pipelines
+(C10/T2), check-exhaustiveness-lint (C11), REPL (C09 — i gang), formatter/linter
+(D02/D03), tour/lab/unique.nova er STADIG udenfor bootstrap-scope (fejl pænt med
+sætninger — verificeret 2026-08-23); spans kun i frontend-fejl (ikke AST);
+`.metode(` på ikke-modul-værdier fejler bevidst pænt indtil C10; indbyggede
+fraser (`the contents/first/last/length/number value of ...`) vinder over
+samme-namnede felt-navne i `the ... of ...`-form — brug prik-adgang (`x.length`).
 
 ## 6. Original Next Steps (historisk)
 
