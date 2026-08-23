@@ -62,6 +62,21 @@ Precise rules (C03 contract, ITERATION_PLAN §4.5):
 6. Results are tested with the existing checks from rule 4; `say "{...}"` shows `nothing`
    as text. Applies to both skins and to string interpolation `{...}`.
 
+### 2.2 The absence-vs-error rule (decided 2026-08-23, owner Q7)
+
+Every built-in falls into exactly one of two families — no exceptions, no judgment calls:
+
+| Family | Behavior on "nothing here" | Members |
+|---|---|---|
+| **Ask** — asks a question about a value | returns `nothing` | `the first item of []`, `the last item of []`, `the number value of "abc"` |
+| **Act** — acts on an expectation | raises a friendly NovaError | `item N of` out of bounds · unknown variable/field-on-real-thing/function · file missing · invalid json · non-sized `length`/`how many` · wrong-type `contains` · arithmetic or field read on `nothing` without `?` |
+
+Corollaries:
+1. `?` exists for Ask-family values flowing through Act-family operations: it turns
+   those specific absences into `nothing` instead of a raise (C03).
+2. Adding a new builtin requires declaring its family in this table (test-enforced:
+   `tests/run_tests.py::test_nothing_rule` pins every member).
+
 ## 3. Result<T,E>
 
 ```text

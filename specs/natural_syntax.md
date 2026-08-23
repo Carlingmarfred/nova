@@ -186,6 +186,8 @@ say the health of the hero                     # field read
 take 10 from the health of the hero            # field assignment
 ```
 
+Verb-first sentences like `damage the hero with 20` are the OFFICIAL method form (owner decision 2026-08-23); dotted `.name(...)` calls remain reserved for module functions.
+
 `my` = self inside the definition, `its` = the owner referenced outside (`its name`).
 Inheritance: `a Dog is a kind of Animal with ...`. Traits/interfaces deferred to the
 compact form in v1.

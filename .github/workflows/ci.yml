@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  bootstrap-suite:
+    name: Bootstrap suite (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Force UTF-8 (Windows console)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          echo "PYTHONUTF8=1" >> $env:GITHUB_ENV
+          echo "PYTHONIOENCODING=utf-8" >> $env:GITHUB_ENV
+
+      - name: Run full test suite
+        run: python tests/run_tests.py
+
+      - name: Run flagship example (seeded)
+        run: python bootstrap/nova_cli.py run examples/guessing_game.nova --seed 7 < /dev/null || true
+        if: runner.os == 'Linux'
+
+  # Placeholder for the native pipeline (E02+): enable once crates/ exists.
+  # rust-check:
+  #   name: Rust check (${{ matrix.os }})
+  #   runs-on: ${{ matrix.os }}
+  #   strategy:
+  #     matrix:
+  #       os: [windows-latest, ubuntu-latest]
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: dtolnay/rust-toolchain@stable
+  #     - run: cargo fmt --check
+  #     - run: cargo clippy -- -D warnings
+  #     - run: cargo test --workspace

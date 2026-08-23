@@ -286,10 +286,10 @@ CSV reading (blocks A4), date/formatting in time-lib, string-interpolation-as-AS
 | Q2 | Equality semantics unspecified (`true == 1`) | differential tester trap | ✅ RESOLVED 2026-08-23: pinned by tests + README log |
 | Q3 | `divided` always returns float | native i32 divergence | ✅ DOCUMENTED 2026-08-23: real division now; int-div arrives with types |
 | Q4 | Integer model: Python bigint now, promised i32 later | bootstrap/native divergence | ◐ documented in README; revisit at E02 |
-| Q5 | Two ways to say "length" (`the length of` AND `text.length`) | violates design-law #2 | ☐ OPEN |
-| Q6 | `.name(...)` occupied by module calls — what about methods? | methods cannot be designed until resolved | ☐ OPEN |
-| Q7 | Silent-nothing vs loud-error split is accidental across builtins | unpredictability | ☐ OPEN |
-| Q8 | No LICENSE file | hard blocker for public release | ☐ OPEN — owner must pick a license |
+| Q5 | Two ways to say "length" (`the length of` AND `text.length`) | violates design-law #2 | ✅ RESOLVED: phrases are primary, stdlib mirrors them (README log) |
+| Q6 | `.name(...)` occupied by module calls — what about methods? | methods cannot be designed until resolved | ✅ RESOLVED: verb-first sentences (`finish t with ...`); dot stays module-only |
+| Q7 | Silent-nothing vs loud-error split is accidental across builtins | unpredictability | ✅ RESOLVED: Ask/Act rule written + pinned by tests (error_handling §2.2) |
+| Q8 | No LICENSE file | hard blocker for public release | ✅ RESOLVED: Apache-2.0 |
 | Q9 | String interpolation re-lexed at runtime; invisible to goldens | E02 landmine | ◐ parked (interpolation-as-AST) |
 | Q10 | No test-runner/formatter yet (D01/D02) | gates G2 | ☐ tracked as D-items |
 
@@ -297,6 +297,7 @@ CSV reading (blocks A4), date/formatting in time-lib, string-interpolation-as-AS
 
 | Date | Change |
 |---|---|
+| 2026-08-23 | **Decisions landed (v0.15.1)**: Apache-2.0 LICENSE added; E01 CI workflow created (.github/workflows/ci.yml, windows+ubuntu); Q5 phrases-primary, Q6 verb-first methods, Q7 Ask/Act rule (+11 pin tests), Q8 license — all resolved in README log + §12. Suite: 234/234.
 | 2026-08-23 | **v0.15.0-bootstrap**: full English documentation sweep completed (12 specs + ARCHITECTURE/ROADMAP/EXTENSIONS/README/AGENTS/notes — zero Danish lines remain anywhere); version bump; E00 Rust recorded.
 | 2026-08-23 | **fix commit dd853ca**: modulo-by-zero guard (was raw traceback); equality semantics pinned via `nova_eq` (bools≠numbers, structural lists/dicts, identity things) applied to eq/ne/check/take/contains; first/last/length/count operands bind at factor level. +12 tests. Suite: 223/223. |
 | 2026-08-23 | **i18n commit 70b0464**: ALL runtime diagnostics translated to English (lexer/parser/interpreter/cli/repl), reserved-word `what=` args included; every Danish test assertion updated; `nova_messages.py` kept as reference catalog. Suite: 211/211. |

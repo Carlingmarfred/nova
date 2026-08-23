@@ -851,6 +851,42 @@ def test_memory(tmp):
           f"kort={ps.stdout[:80]!r} naturlig={pn.stdout[:80]!r}")
 
 
+def test_nothing_rule(tmp):
+    """Q7 pin (error_handling.md §2.2): Ask-builtins return nothing;
+    Act-builtins raise. Every builtin must declare its family here."""
+    asks = [
+        ("first-of-empty", 'xs = an empty list\nsay "{the first item of xs}"', "nothing"),
+        ("last-of-empty", 'xs = an empty list\nsay "{the last item of xs}"', "nothing"),
+        ("numval-nonnumeric", 'say "{the number value of \\"abc\\"}"', "nothing"),
+    ]
+    for name, src_, expect in asks:
+        p = nova(["run", prog(src_, tmp)], cwd=tmp)
+        check(f"rule/ask-{name}",
+              p.returncode == 0 and expect in p.stdout,
+              f"rc={p.returncode} out={p.stdout!r} err={p.stderr[:160]!r}")
+
+    acts = [
+        ("item-bounds", 'xs = [1]\nsay "{item 9 of xs}"', ["does not exist"]),
+        ("unknown-field",
+         'a T is a thing with\n    a text\ndone\nx is a new T\nsay "{the nope of x}"',
+         ["has no field"]),
+        ("unknown-func", "bake with 1", ["does not exist"]),
+        ("missing-file", 'say "{the contents of \\"nope.txt\\"}"', ["does not exist"]),
+        ("bad-json",
+         'use the standard json library\nv is json.parse("{oops")', ["invalid json"]),
+        ("length-non-sized", 'say "{the length of 5}"', ["requires a list or text"]),
+        ("arith-on-nothing", 'x is nothing\nsay "{x + 1}"', ["cannot do arithmetic on 'nothing'"]),
+        ("field-of-nothing", 'maybe is nothing\nsay "{the text of maybe}"', ["of nothing"]),
+    ]
+    for name, src_, fragments in acts:
+        p = nova(["run", prog(src_, tmp)], cwd=tmp)
+        ok = (p.returncode == 1
+              and all(fr in p.stderr for fr in fragments)
+              and "Traceback" not in p.stderr)
+        check(f"rule/act-{name}", ok,
+              f"rc={p.returncode} err={p.stderr[:180]!r}")
+
+
 def test_semantics(tmp):
     """Q2/Q3/Q7 semantic pins: strict bool/number equality, structural
     lists/dicts, identity things; phrase operands bind at factor level."""
@@ -951,6 +987,7 @@ def main():
         test_repl(tmp)
         test_memory(tmp)
         test_semantics(tmp)
+        test_nothing_rule(tmp)
         test_guessing_game()
         test_todo_app()
     finally:
