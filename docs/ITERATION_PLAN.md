@@ -189,7 +189,7 @@ Statuses: ☐ Not started · ◐ In progress · ✅ Done (date) · ⏸ Blocked (
 | ID | Item | P | Size | Depends | Status |
 |---|---|---|---|---|---|
 | E00 | Native toolchain installed & verified; record decision in README log | P0 | S | — | ✅ 2026-08-23 (**Rust**: rustup 1.29, rustc/cargo 1.98.0; hello-world build+link+run verified) |
-| E01 | GitHub Actions CI: Python suite on windows+ubuntu (fast feedback forever) | P0 | S | — | ☐ |
+| E01 | GitHub Actions CI: Python suite on windows+ubuntu (fast feedback forever) | P0 | S | — | ✅ 2026-08-23 (.github/workflows/ci.yml; first run green in 39s) |
 | E02 | Native lexer+parser (**Rust**), golden-dump byte-compatible with Python output | P1 | L | E00,B05 | ☐ |
 | E03 | Nova IR (SSA) + verifier + text form `nova ir dump` | P1 | L | E02 | ☐ |
 | E04 | LLVM backend via `inkwell`: enough integers/strings/lists to run guessing_game natively | P1 | XL | E03 | ☐ |
@@ -297,6 +297,7 @@ CSV reading (blocks A4), date/formatting in time-lib, string-interpolation-as-AS
 
 | Date | Change |
 |---|---|
+| 2026-08-23 | **E01 ✅ + repo LIVE**: github.com/Carlingmarfred/nova public (Apache-2.0); CI green first run (windows+ubuntu, 39s). Q5/Q6/Q7/Q8 decisions resolved. v0.15.1 tagged. Suite: 234/234. Next: D01/D05/D06 → C04/C10.
 | 2026-08-23 | **Decisions landed (v0.15.1)**: Apache-2.0 LICENSE added; E01 CI workflow created (.github/workflows/ci.yml, windows+ubuntu); Q5 phrases-primary, Q6 verb-first methods, Q7 Ask/Act rule (+11 pin tests), Q8 license — all resolved in README log + §12. Suite: 234/234.
 | 2026-08-23 | **v0.15.0-bootstrap**: full English documentation sweep completed (12 specs + ARCHITECTURE/ROADMAP/EXTENSIONS/README/AGENTS/notes — zero Danish lines remain anywhere); version bump; E00 Rust recorded.
 | 2026-08-23 | **fix commit dd853ca**: modulo-by-zero guard (was raw traceback); equality semantics pinned via `nova_eq` (bools≠numbers, structural lists/dicts, identity things) applied to eq/ne/check/take/contains; first/last/length/count operands bind at factor level. +12 tests. Suite: 223/223. |
