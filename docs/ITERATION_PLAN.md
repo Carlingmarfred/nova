@@ -312,12 +312,31 @@ A-app running. If it can't be recorded, the gate isn't done.
 | Perf promises scare users away early | Bootstrap labeled reference-semantics oracle; perf marketing waits for G3 benchmarks |
 
 **Parking lot (ideas, NOT commitments):** notebook/literate mode, blocks-editor for kids,
-units/refinement types, actors/signals, GPU backend, grammar literals, `@incremental`.
+units/refinement types, actors/signals, GPU backend, grammar literals, `@incremental`,
+list-slice/negative-indeks (C07-udvidelse), `std.cli` argv+env+exit (blokerer A3),
+CSV-læsning (blokerer A4), dato/formatering i time-lib, streng-interpolation som AST
+(krævet af native E02 — i dag re-lexes `{...}` ved RUNTIME og optræder ikke i goldens).
+
+## 12. Åbne sprog-beslutninger (kræver ejer-beslutning — nyeste kritik 2026-08-23)
+
+| # | Spørgsmål | Hvorfor det presserer |
+|---|---|---|
+| Q1 | **Sprog-identitet: engelsk syntax + danske fejl?** | T1 "Natural" er engelske sætninger; fejlmeddelelser/dokumentation er dansk. Skal Nova være dansk-først, engelsk-først eller i18n'et? Fejl-strenge er hardcodede f-strings spredt i fortolkeren — jo længere vi venter med et besked-katalog, dyre bliver refaktoreringen. Blokerer også offentlig release (README er dansk). |
+| Q2 | **Lighed-semantik er uspecificeret** | `true is 1` → true (Python-lækage), `[1] is [1]` → true (struktureret). Identitet vs. struktur vs. type-stramhed skal skrives i specs/language_reference.md og pins i tests FØR native E06 differential-testing. |
+| Q3 | **`divided` returnerer altid decimaltal** (7 divided by 2 → 3.5) | Native i32/i32 vil give heltalsdivision medmindre vi pinner "division er altid reel + separat heltals-op". Ubesluttet = bootstrap/native divergens (E06-fælde). |
+| Q4 | **Heltalsmodel**: Python-bigint nu, lovede i32-wrap/panic senere | `2147483647 plus 1` opfører forskelligt i dag vs. lovede 1.0. Beslut om bootstrap simulerer i32 nu (tidlig smerte) eller udskyder (senere E06-chok). |
+| Q5 | **To måder at "length" på** (`the length of xs` OG `text.length(xs)`) | Krænker designlov #2 ("one obvious way at T1"). Enten fraser = sukker over stdlib (én kilde) eller stdlib-frasene omdøbes. |
+| Q6 | **`.navn(...)` er optaget af modulkald** — hvad med metoder? | C05 tog syntaxen som C01 havde reserveret til ".metode kommer senere". Things har ingen metoder; når de kommer, kræver det ENTEN anden syntax (`t::finish()`? `finish of t with ...`?) eller runtime-type-disambiguering modul-vs-thing. |
+| Q7 | **Stille-nothing vs. høj fejl er tilfældig fordelt** | `the first item of []` → nothing; `item 9 of xs` → fejl; `the number value of "abc"` → nothing. Der skal skrives en regel: HVILKE indbyggede returnerer nothing vs. raise? (spec-tilføjelse + audit). |
+| Q8 | **LICENSE mangler** | Repo har ingen licensfil — hård blokerer for "public release"-ambitionen (MIT/Apache-2.0/CC-valg ejers). |
+| Q9 | **Interpolation er runtime-magi** | `{...}` i strenge re-lexes ved hver evaluering; parsefejl i interpolation opdages først ved kørsel; goldens viser kun rå streng → native M2 byte-kompatibilitet (E02) kan ikke verificere interpolations-parsning. Kræver statisk parse ved kompileringstid — planlagt i parkeringspladsen. |
+| Q10 | **Ingen test-runner/formatter endnu** (D01/D02) | "Credible language"-gaten G2 står og venter; A3/A4-apps kan ikke bygges uden argv (std.cli) og CSV. |
 
 ## 11. Changelog (newest first — mandatory updates)
 
 | Date | Change |
 |---|---|
+| 2026-08-23 | **Sprog-kritik gennemført → §12 Åbne sprog-beslutninger (Q1–Q10)** oprettet: i18n/sprog-identitet, ligheds-semantik, divisions-/heltalsmodel, frase-vs-stdlib-duplikering, metode-kald-syntaks-kollision, stille-nothing-vs-høj-fejl-regel, manglende LICENSE, interpolation-til-AST (E02-forudsætning), D01/D02. Parkeringspladsen udvidet med argv/CSV/list-slice/interpolation-AST. Ingen kodeændringer — suite stadig 211/211. |
 | 2026-08-23 | **v0.14.0-bootstrap**: versionsbump efter C13 (hukommelses-model bootstrap-udsnit). Paritet Memory-rækken: 🔴 → 🟡. Næste: E00+E01 toolchain+CI (P0!) → D01/D05/D06. |
 | 2026-08-23 | **C13 ✅ (bruger-prioriteret udenfor §7-rækkefølgen)**: hukommelses-model bootstrap-udsnit (specs/memory_model.md §0). Semantikken fastlåst med pins: liste/thing/databog = REFERENCE (alias via assignment — testet), tal/tekst/bool = værdi. Ny primær-frase `a copy of X` = DYB kopi (`CopyOf`-node, `copy.deepcopy`; grådig arith-operand som `contents of`-familien; komponerer med `?` → QuestionE(CopyOf); moduler/funktioner afvises med sætning). Scope-fence: ingen aflæselige refcounts, ingen owned/move/unsafe/deinit i bootstrap — det er native E05. Golden 20 + kryds-skin-par 8. Test-notering: `add ... to item N of LISTE` er bevidst ikke-grammatik (targets er navne) — bind den indre liste først. Suite: 211/211. |
 | 2026-08-23 | **C09 ✅**: `nova repl [--seed N]` — én persistent Interp; `>>> `/`..>`-prompter; multiline ved 'done'-familie-parsefejl (buffer fortsætter); udtryks-linjer echoes som `→ værdi` (fallback når sætnings-parse fejler — fix for tal-startede linjer); meta: `:ast <linje>` (udtryk først, fald tilbage til sætninger), `:undo` (dyb kopi af globals/funcs/things, stak max 100, output/fil-I/O kan ikke rulles tilbage), `:quit/:q`, `:help`, ukendt → venlig henvisning. Fejl dræber ALDRIG sessionen. Spec: docs/ARCHITECTURE.md §10. 8 repl-tests. Suite: 199/199. Næste: E00+E01 toolchain+CI (P0!) → D01/D05/D06. |
