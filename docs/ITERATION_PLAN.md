@@ -220,6 +220,19 @@ Statuses: ☐ Not started · ◐ In progress · ✅ Done (date) · ⏸ Blocked (
 
 ## 7. Priority list (flat, always sorted — work top-down skipping blocked)
 
+> ### NEXT-UP QUEUE (agreed 2026-08-23 — owner may append items here before work begins)
+>
+> | Order | Item | Note |
+> |---|---|---|
+> | 1 | **D01** `nova test` runner | discovers *.test.nova, assert lib, diff reports |
+> | 2 | **D05** tutorial + docs site skeleton | "Describe your first app" |
+> | 3 | **D06** unique-feature design freeze | Flow/Table/history/taint APIs on paper |
+> | 4 | **C04** Result pattern | completes the error story |
+> | 5 | **C10** lambdas + pipelines | T2 ergonomics |
+> | 6 | **E02** native Rust lexer/parser | byte-compatible with golden dumps |
+>
+> *(Owner: add rows above before saying go — nothing here is started until you approve the final queue.)*
+
 1. ~~B05 golden dumps~~ ✅ · ~~B01~~ ✅ · ~~B02~~ ✅ · ~~C01+C02~~ ✅ · ~~C03~~ ✅ ·
    ~~C05~~ ✅ · ~~C06–C08~~ ✅ · ~~B03/B04~~ ✅ · ~~C09~~ ✅
 2. **E00+E01 toolchain+CI** — E00 ✅ (Rust); **E01 is next** (P0)
