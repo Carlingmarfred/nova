@@ -15,9 +15,10 @@ fn main() -> ExitCode {
         }
         Some("lex") if args.len() == 3 => run_lex(&args[2]),
         Some("parse") if args.len() == 3 => run_parse(&args[2]),
+        Some("test") => run_tests(args.get(2).map(String::as_str).unwrap_or(".")),
         Some("run") if args.len() == 3 => run_prog(&args[2]),
         _ => {
-            eprintln!("usage: nova version | nova lex <file.nova> | nova parse <file.nova> | nova run <file.nova>");
+            eprintln!("usage: nova version | nova lex <file.nova> | nova parse <file.nova> | nova run <file.nova> | nova test [path]");
             ExitCode::from(2)
         }
     }
@@ -33,6 +34,87 @@ fn read_src(path: &str) -> std::result::Result<String, ExitCode> {
 fn fail(e: &NovaError) -> ExitCode {
     eprintln!("nova: {e}");
     ExitCode::from(1)
+}
+
+fn collect_test_files(dir: &std::path::Path, out: &mut Vec<std::path::PathBuf>) {
+    let Ok(entries) = std::fs::read_dir(dir) else { return };
+    let mut entries: Vec<_> = entries.filter_map(|e| e.ok()).collect();
+    entries.sort_by_key(|e| e.file_name());
+    for e in entries {
+        let p = e.path();
+        if p.is_dir() {
+            collect_test_files(&p, out);
+        } else if p.extension().map(|x| x == "nova").unwrap_or(false)
+            && p.to_string_lossy().ends_with(".test.nova")
+        {
+            out.push(p);
+        }
+    }
+}
+
+fn run_one_test_file(f: &std::path::Path) -> std::result::Result<(), String> {
+    let src = std::fs::read_to_string(f).map_err(|e| e.to_string())?;
+    let stmts = parse_source(&src).map_err(|e| e.msg)?;
+    let program = compile_program(&stmts).map_err(|ce| {
+        format!(
+            "this feature is not available in the native preview yet ({}) \u{2014} the Python bootstrap can run it",
+            ce.kind
+        )
+    })?;
+    // Runner convenience: assertions are available without an explicit `use`.
+    program.env.borrow_mut().insert(
+        "test".to_string(),
+        {
+            let mut vm = Vm::new();
+            vm.stdlib_module("test")
+        },
+    );
+    let mut vm = Vm::new();
+    if let Some(parent) = f.parent() {
+        vm.set_base_dir(parent.to_path_buf());
+    }
+    vm.run_program(std::rc::Rc::new(program))
+        .map_err(|ve| ve.msg)?;
+    Ok(())
+}
+
+fn run_tests(path: &str) -> ExitCode {
+    let root = std::path::PathBuf::from(path);
+    let mut files = Vec::new();
+    if root.is_file() {
+        files.push(root.clone());
+    } else {
+        collect_test_files(&root, &mut files);
+    }
+    if files.is_empty() {
+        println!("{}", nova::messages::test_runner::no_test_files(path));
+        return ExitCode::SUCCESS;
+    }
+    files.sort();
+    let mut passed = 0usize;
+    let mut failed = 0usize;
+    for f in &files {
+        match run_one_test_file(f) {
+            Ok(()) => passed += 1,
+            Err(msg) => {
+                failed += 1;
+                let rel = if root.is_file() {
+                    path.to_string()
+                } else {
+                    f.strip_prefix(&root).unwrap_or(f).to_string_lossy().into_owned()
+                };
+                println!("FAIL {rel}");
+                println!("      {msg}");
+            }
+        }
+    }
+    println!();
+    println!("{passed} passed, {failed} failed");
+    if failed > 0 {
+        ExitCode::from(1)
+    } else {
+        ExitCode::SUCCESS
+    }
 }
 
 fn run_lex(path: &str) -> ExitCode {

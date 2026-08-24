@@ -217,3 +217,22 @@ Rules:
    - `:help` — the list above. Unknown `:command` = friendly error mentioning `:help`.
 5. **Errors never kill the session** — same sentence formatting as `run`.
 6. Non-interactive use (pipes/tests): same behavior; stdin lines processed until EOF.
+
+## 11. Bootstrap cut: `nova test` runner (v0.20+, item N07)
+
+`nova test [path]` runs every `*.test.nova` discovered recursively under *path* (default: current directory), sorted lexicographically. Each file executes in a fresh VM with its own directory as import base.
+
+```text
+PASS/FAIL model:
+  a file PASSES when it runs to completion without raising;
+  any NovaError fails it (first failure stops that file).
+Assertions (stdlib `test`, each raises on violation):
+  test.equal(actual, expected)   # semantic equality (nova_eq)
+  test.true(condition)           # must be exactly true
+  test.fail([message])           # unconditional failure
+Output:
+  FAIL <relative-path>
+        <error message>
+  <passed> passed, <failed> failed
+Exit codes: 0 = all passed (or no files found, with a note); 1 = any failure.
+```

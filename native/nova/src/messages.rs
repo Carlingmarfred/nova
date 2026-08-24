@@ -499,6 +499,35 @@ pub mod stdlib {
     }
 }
 
+pub mod test_runner {
+    use super::interpolate;
+
+    pub fn no_test_files(path: &str) -> String {
+        interpolate(
+            "no *.test.nova files found under '{path}'",
+            &[("path", path)],
+        )
+    }
+
+    pub fn equal_failed(expected: &str, got: &str) -> String {
+        interpolate(
+            "test.equal failed \u{2014} expected {expected}, got {got}",
+            &[("expected", expected), ("got", got)],
+        )
+    }
+
+    pub fn true_failed(got: &str) -> String {
+        interpolate(
+            "test.true failed \u{2014} expected a true condition, got {got}",
+            &[("got", got)],
+        )
+    }
+
+    pub fn explicit_fail(msg: &str) -> String {
+        interpolate("test.fail: {msg}", &[("msg", msg)])
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

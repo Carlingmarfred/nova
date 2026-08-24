@@ -21,7 +21,7 @@ fn signal_err(msg: String) -> VmError {
     VmError { msg, signal: true }
 }
 
-const STDLIBS: [&str; 7] = ["file", "json", "list", "math", "random", "text", "time"];
+const STDLIBS: [&str; 8] = ["file", "json", "list", "math", "random", "test", "text", "time"];
 
 pub fn truth(v: &Value) -> Result<bool, VmError> {
     match v {
@@ -891,6 +891,12 @@ fn py_repr(v: &Value) -> String {
 }
 
 impl Vm {
+    /// Public handle so hosts (e.g. `nova test`) can pre-bind a stdlib
+    /// namespace without requiring an explicit `use` line in user files.
+    pub fn stdlib_module(&mut self, name: &str) -> Value {
+        self.stdlib_value(name)
+    }
+
     fn stdlib_value(&mut self, name: &str) -> Value {
         if let Some(v) = self.stdlib_cache.get(name) {
             return v.clone();
@@ -1218,6 +1224,30 @@ impl Vm {
                     }
                 }
             }
+            ("test", "equal") => {
+                let a = arg(args, 0)?;
+                let b = arg(args, 1)?;
+                if nova_eq(a, b) {
+                    Ok(Value::Nothing)
+                } else {
+                    Err(err(messages::test_runner::equal_failed(&render(b), &render(a))))
+                }
+            }
+            ("test", "true") => {
+                let v = only_arg(args)?;
+                match v {
+                    Value::Bool(true) => Ok(Value::Nothing),
+                    other => Err(err(messages::test_runner::true_failed(&render(other)))),
+                }
+            }
+            ("test", "fail") => {
+                let msg = match args.first() {
+                    Some(v) => render(v),
+                    None => "explicit failure".to_string(),
+                };
+                Err(err(messages::test_runner::explicit_fail(&msg)))
+            }
+
             _ => Err(err(format!(
                 "module '{module}' has no function '{fname}' — call: {module}.{fname}(...)"
             ))),
