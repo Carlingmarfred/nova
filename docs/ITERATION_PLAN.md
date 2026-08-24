@@ -189,7 +189,7 @@ Statuses: ☐ Not started · ◐ In progress · ✅ Done (date) · ⏸ Blocked (
 | C01 | Compact-shorthand skin: lexer symbols, expression grammar; SAME AST nodes | P0 | L | B05 | ✅ 2026-08-22 |
 | C02 | Cross-skin equivalence golden tests (Natural vs shorthand pairs) | P0 | M | C01 | ✅ 2026-08-22 (8 permanent byte-identical pairs; extend per construct) |
 | C03 | `Optional<T>` values: `nothing` checks, `?` postfix propagation | P0 | M | — | ✅ 2026-08-23 |
-| C04 | `Result` pattern: `try ... if it fails as err ... done` returns typed result; `give back ok/err` | P1 | M | C03 | ⏸ deferred: typed layer lands after v0.20 (owner decision 2026-08-24); bootstrap keeps message-binding errors until then |
+| C04 | `Result` pattern: `try ... if it fails as err ... done` returns typed result; `give back ok/err` | P1 | M | C03 | ☐ |
 | C05 | Modules: `the tools-module in "tools.nova"` import; namespaces; circular-import error | P0 | M | — | ✅ 2026-08-23 |
 | C06 | String library v0 | P0 | M | — | ✅ 2026-08-23 |
 | C07 | List/dict library v0 | P1 | M | C06 | ✅ 2026-08-23 (map/filter/fold deferred to C10/T2) |
@@ -203,7 +203,7 @@ Statuses: ☐ Not started · ◐ In progress · ✅ Done (date) · ⏸ Blocked (
 ### Phase 2 — Credible language (→ G2)
 | ID | Item | P | Size | Depends | Status |
 |---|---|---|---|---|---|
-| D01 | `nova test`: discovers `*.test.nova`, asserts lib, reports diffs | P1 | M | C05 | ✅ superseded by N07 (native CLI runner - owner 2026-08-24) |
+| D01 | `nova test`: discovers `*.test.nova`, asserts lib, reports diffs | P1 | M | C05 | ☐ |
 | D02 | Formatter v0: token-stream based, idempotency property test | P1 | L | C01 | ☐ |
 | D03 | Linter v0: naming, unused var, missing otherwise, truthiness trap | P2 | M | D01 | ☐ |
 | D04 | `--sim` determinism mode | P2 | M | — | ☐ |
@@ -245,3 +245,116 @@ Statuses: ☐ Not started · ◐ In progress · ✅ Done (date) · ⏸ Blocked (
 
 ## 7. Priority list (flat, always sorted — work top-down skipping blocked)
 
+> ### NEXT-UP QUEUE (owner-approved 2026-08-24 — the v0.2 native-release track, §6 Phase 0.2)
+>
+> Work top-down: **N00 → N01 → N02 → N03 → N04 → N05** (P0 spine), then
+> **N06 → N07 → N08a → N08b → N09** (P1), then tag v0.20.0.
+>
+> *(Owner may reorder by editing this block — nothing outside it starts until it is empty or owner says go.)*
+
+1. ~~B05 golden dumps~~ ✅ · ~~B01~~ ✅ · ~~B02~~ ✅ · ~~C01+C02~~ ✅ · ~~C03~~ ✅ ·
+   ~~C05~~ ✅ · ~~C06–C08~~ ✅ · ~~B03/B04~~ ✅ · ~~C09~~ ✅ · ~~E00+E01~~ ✅
+2. **N-series 0.2 native-release track** — N00 first (see §6 Phase 0.2; supersedes the
+   former D01→D05→D06→C04→C10→E02 queue; D05/D06/C04/C10 fold in after the P0 spine)
+3. **D01/D05/D06** credibility pack (P1)
+4. **C04/C10/C11/C12** (P1/P2)
+5. **D02/D03/D04** (P1/P2)
+6. **E02→E06** native pipeline sequence (P1)
+7. **F-series** (P1/P2)
+8. **H-series** (P2/P3)
+
+> Rule: never start an H-item while any P0/P1 above it is unfinished.
+
+## 8. 1.0 freeze criteria (all must hold)
+
+1. Parity matrix §2: every row ≥ its bar except GPU/mobile (explicitly post-1.0).
+2. Native LLVM build runs all gallery apps; ≤2× C++ on fib/matmul/sort benchmarks.
+3. Differential fuzzing native↔bootstrap clean for 10k program corpus.
+4. LSP hover/goto/diagnostics + idempotent formatter + working debugger demo video.
+5. Package manager with versioned deps used by ≥3 third-party sample projects.
+6. Tutorial, language reference, error index complete; playground online.
+7. Spec frozen ("Edition 2027"); semver policy adopted; deprecation process written.
+8. Zero known P0/P1 bugs open.
+
+## 9. Crucial applications — the dogfood ladder
+
+| # | App | Proves | Gate | Status |
+|---|---|---|---|---|
+| A1 | Guessing game | teachability, I/O, loops | G0 | ✅ v0.11 |
+| A2 | Todo (JSON persist) | CRUD, things, contracts, files | G0 | ✅ v0.11 |
+| A3 | Notes CLI (args, dates, markdown files) | argv parsing, fs, time lib — **blocked on std.cli** | G1 | ☐ |
+| A4 | CSV → stats report | strings, math, formatting — **blocked on csv** | G1 | ☐ |
+| A5 | Mini web server | net/http, async | G4 | ☐ |
+| A6 | Chat client+server | channels/select, structured concurrency | G4 | ☐ |
+| A7 | Text adventure | kernel state machines (H04) showcase | G5 | ☐ |
+| A8 | Data dashboard w/ undoable edits | Table + history engine | G5 | ☐ |
+| A9 | `nova fmt` written IN Nova | self-hosting seed | G6 | ☐ |
+| A10 | GUI notes app | GUI toolkit post-1.0 direction | post-1.0 | ☐ |
+
+**Showcase rule:** every phase gate ends with a 60-second screen-recording of the newest
+A-app running. If it can't be recorded, the gate isn't done.
+
+## 10. Risks & mitigations + parking lot
+
+| Risk | Mitigation |
+|---|---|
+| Scope creep (unique features tempting while core is young) | Hard rule §7: H-items locked until their gate; ideas → parking lot below |
+| Two-skin divergence | C02 equivalence goldens run in CI forever |
+| Bootstrap/native semantic drift | E06 differential tester at G3+; semantic pins (equality, division, phrase binding) already locked by tests |
+| Solo-dev bus factor / motivation | Small items (S/M), weekly visible win, showcase recordings; **early differentiator demo recommended** (history engine) |
+| Windows-only paths/encoding bugs | E01 CI on ubuntu from day one; UTF-8 enforced everywhere |
+| Perf promises scare users away early | Bootstrap labeled reference-semantics oracle; perf marketing waits for G3 benchmarks |
+
+**Parking lot (ideas, NOT commitments):** notebook/literate mode, blocks-editor for kids,
+units/refinement types, actors/signals, GPU backend, grammar literals, `@incremental`,
+list-slice/negative indices (C07 extension), `std.cli` argv+env+exit (blocks A3),
+CSV reading (blocks A4), date/formatting in time-lib, string-interpolation-as-AST
+(required by native E02 — today `{...}` is re-lexed at RUNTIME and invisible to goldens).
+
+## 12. Open language decisions (owner must decide — from the 2026-08-23 critique)
+
+| # | Question | Pressure | Status |
+|---|---|---|---|
+| Q1 | Language identity: English syntax + Danish errors/docs? | ~50 hardcoded strings; blocks public release | ✅ RESOLVED 2026-08-23: everything English |
+| Q2 | Equality semantics unspecified (`true == 1`) | differential tester trap | ✅ RESOLVED 2026-08-23: pinned by tests + README log |
+| Q3 | `divided` always returns float | native i32 divergence | ✅ DOCUMENTED 2026-08-23: real division now; int-div arrives with types |
+| Q4 | Integer model: Python bigint now, promised i32 later | bootstrap/native divergence | ◐ documented in README; revisit at E02 |
+| Q5 | Two ways to say "length" (`the length of` AND `text.length`) | violates design-law #2 | ✅ RESOLVED: phrases are primary, stdlib mirrors them (README log) |
+| Q6 | `.name(...)` occupied by module calls — what about methods? | methods cannot be designed until resolved | ✅ RESOLVED: verb-first sentences (`finish t with ...`); dot stays module-only |
+| Q7 | Silent-nothing vs loud-error split is accidental across builtins | unpredictability | ✅ RESOLVED: Ask/Act rule written + pinned by tests (error_handling §2.2) |
+| Q8 | No LICENSE file | hard blocker for public release | ✅ RESOLVED: Apache-2.0 |
+| Q9 | String interpolation re-lexed at runtime; invisible to goldens | E02 landmine | ◐ parked (interpolation-as-AST) |
+| Q10 | No test-runner/formatter yet (D01/D02) | gates G2 | ☐ tracked as D-items |
+| Q11 | When is `X is E` a declaration vs a comparison? The context rule is implemented but never written down | T1 learnability; blocks the natural-syntax coverage audit (G1) | ☐ |
+| Q12 | No normative grammar doc for the Natural skin (`grammar.md` covers compact only; `natural_syntax.md` §3 is a sketch) | E02 native parser has no spec to build against — goldens are the de-facto spec | ✅ RESOLVED 2026-08-24: `specs/syntax/grammar_natural.md` is normative (N00); quirks pinned in its §6 |
+| Q13 | Map phrase `set the age of X in M to V` exists in natural_syntax.md but is not implemented in bootstrap | spec/impl gap misleads learners; breaks "no dead ends" trust | ☐ implement or move to parking lot |
+| Q14 | Integer model: bootstrap bigint now vs promised i32 later | E06 differential tester will diverge on big literals / overflow | ◐ revisit with corpus design at E02/E06 |
+
+## 11. Changelog (newest first — mandatory updates)
+
+| Date | Change |
+|---|---|
+| 2026-08-24 | **N04f-2 ✅ + N05 extension**: native modules (loader w/ cache + circular-chain error + isolated per-program env + mains-forbidden) and stdlib v0 (json/file/random/time/math/text/list) at oracle parity; Value gained Dict(insertion-ordered)/Module; frames carry their own Program+env (exec_until_depth); GetField reads module vars; CopyOf rejects modules; float render trims integral .0. Harness grew 18→29 incl. hermetic file-I/O runs; prefix-stripper fixed for leading newline. Validation: cargo test/clippy clean, oracle 236/236, diff 29/29.
+| 2026-08-24 | **N04a–e ✅ + N05-lite ✅ (native runtime wave)**: check-patterns; try/if-it-fails via handler-stack + manual frame unwinding (step() dispatch refactor — errors recover mid-loop, message text bound w/o line prefix per oracle); requires hoisted above body even when written last + ensures evaluated at every exit via @ret slot; ThingDef compiled as `@new:<cls>` ctor func (defaults incl. nothing), setters = call+Dup+StoreField chain, identity eq, deep copy, `dog(...)` display; track/undo/redo as state-stack history (snapshot at track, push on rebind, undo↔redo stacks, fresh change clears redo). **N05-lite:** tests/native_diff.py — 18/18 corpus programs byte-identical vs oracle. Suite: 51 Rust tests + 236 Python + clippy clean. Remaining N04f: modules/stdlib/optional/phrases. |
+| 2026-08-24 | **N03-fix**: VM dispatch made fully iterative (frames on heap, no Rust recursion) after stack-overflow at fib(10); Nova recursion now heap-bound. CLI gained `nova run`; examples/native_demo.nova added (runs natively). |
+| 2026-08-24 | **N03 ✅ — native bytecode+VM runs real programs**: statement compiler (if-chains with jump patching, all 6 loop forms incl. skip/stop, FuncDef pre-declaration, CallName for runtime func-not-found), frame-based VM (scope-chain writes: local→global→create-in-current; oracle-pinned via probes), iterators for list/text/range, `render()` display rules (lowercase bools, `nothing`, `[a, b]`), AddTo list-append/num-increase. Recursion verified (fib(10)=55). 40 Rust tests green + clippy clean. Remaining for N04: check/things/modules/contracts/track-undo/try/stdlib. |
+| 2026-08-24 | **N03a ✅ (VM expression core)**: `value.rs` — Value model with bigint via num-bigint, `nova_eq` ported exactly (bools≠numbers, int/float cross, structural lists), Python-sign modulo; `bytecode.rs` — stack Instr set incl. JumpIfFalse/JumpIfTrue/MustBeBool/MustBeList; `vm.rs` — stack machine with oracle sentence errors. Discovered: oracle CRASHES raw on ordering non-numbers (`'<' not supported`) — native emits a proper sentence; align at N05. 31 Rust tests green. |
+| 2026-08-24 | **N02 ✅ — NATIVE PARSER AT ORACLE PARITY**: full Rust port of nova_parser.py (all statements, expression chain, check/try/contracts/modules, `?` whole-expression wrap). Golden harness (`native/nova/tests/golden.rs`): all 20 dumps byte-for-byte. CLI `nova parse` stdout identical to `nova_cli.py parse` on 22 files. E02 satisfied early. |
+| 2026-08-24 | **N01 ✅**: native Rust workspace (`native/nova`) — skin-aware lexer ported 1:1 from bootstrap (hyphen policy, BOM/shebang, escapes, arbitrary-precision ints as strings, float rule, `;`-newline, symbol skins). Differential spot-check: token streams byte-identical to Python oracle on a 110-token torture file + guessing_game + todo (593 tokens). Message catalog: shared+lexer+parser groups byte-equal. CLI `nova version`/`nova lex`. CI rust job (test+clippy `-D warnings`). |
+| 2026-08-24 | **N00 ✅**: normative Natural-skin grammar written (`specs/syntax/grammar_natural.md`) — full EBNF extracted from the bootstrap parser, dump-contract node table, verified quirks pinned (comparison-tail chaining incl. `is`-reintroduction rule, `not`-vs-`!` operand asymmetry, try-body `if` limitation, optional middle `of`). Q12 closed. |
+| 2026-08-24 | **v0.2 native-release contract locked (owner)**: N-series track added (§6 Phase 0.2) — Rust bytecode+stack VM behind swappable backend, dynamic + opt-in annotations, bigint through 0.2, audience = dev scripting/CLI, stdlib pack cli/csv/datetime/regex, uniqueness bets history/undo + Flow<T>, tooling floor nova-test + LSP, grammar-doc-first (N00). Old D01→E02 queue superseded; ships as v0.20.0. |
+| 2026-08-23 | **i18n docs sweep completed (for real)**: EXTENSIONS, language_reference, unique_features, standard_library, module_system, concurrency, memory_model, grammar → 100% English (grep-audited). Owner decisions: `it` reserved (protects check/try patterns; +2 tests → suite **236/236**), open questions Q11–Q14 added to §12. |
+| 2026-08-23 | **E01 ✅ + repo LIVE**: github.com/Carlingmarfred/nova public (Apache-2.0); CI green first run (windows+ubuntu, 39s). Q5/Q6/Q7/Q8 decisions resolved. v0.15.1 tagged. Suite: 234/234. Next: D01/D05/D06 → C04/C10.
+| 2026-08-23 | **Decisions landed (v0.15.1)**: Apache-2.0 LICENSE added; E01 CI workflow created (.github/workflows/ci.yml, windows+ubuntu); Q5 phrases-primary, Q6 verb-first methods, Q7 Ask/Act rule (+11 pin tests), Q8 license — all resolved in README log + §12. Suite: 234/234.
+| 2026-08-23 | **v0.15.0-bootstrap**: full English documentation sweep completed (12 specs + ARCHITECTURE/ROADMAP/EXTENSIONS/README/AGENTS/notes — zero Danish lines remain anywhere); version bump; E00 Rust recorded.
+| 2026-08-23 | **fix commit dd853ca**: modulo-by-zero guard (was raw traceback); equality semantics pinned via `nova_eq` (bools≠numbers, structural lists/dicts, identity things) applied to eq/ne/check/take/contains; first/last/length/count operands bind at factor level. +12 tests. Suite: 223/223. |
+| 2026-08-23 | **i18n commit 70b0464**: ALL runtime diagnostics translated to English (lexer/parser/interpreter/cli/repl), reserved-word `what=` args included; every Danish test assertion updated; `nova_messages.py` kept as reference catalog. Suite: 211/211. |
+| 2026-08-23 | **E00 ✅ — Rust chosen** (owner decision): rustup 1.29 / rustc+cargo 1.98.0 installed and verified (build+link+run). ROADMAP/ARCHITECTURE updated to Rust pipeline. README decision log records the choice. |
+| 2026-08-23 | **docs-audit**: stale claims fixed (shorthand implemented, known-holes rewritten, counts). lab/unique/tour verified failing cleanly. |
+| 2026-08-23 | **C09 ✅**: `nova repl` — persistent session, expression echo, `:ast/:undo/:quit/:help`, multiline via done. Spec: ARCHITECTURE §10. 8 tests. |
+| 2026-08-23 | **C13 ✅** (owner-prioritized): memory-model bootstrap cut — value/reference semantics pinned, `a copy of X` deep copy; golden 20; pair 8. |
+| 2026-08-23 | **B03+C06+C07+C08 ✅**: stdlib v0 trio complete (json/file/random/time/math/text/list). |
+| 2026-08-23 | **C05 ✅**: modules with namespaces, paren calls, circular-import error; golden 19; pair 7. |
+| 2026-08-23 | **C03 ✅**: Optional/`?` whole-expression poisoning; golden 18; pair 6; NumVal factor-binding; plus type-mismatch sentence. |
+| 2026-08-22 | **C01+C02+B04 ✅** shorthand skin + equivalence pairs + unary minus (132/132). **B05/B01/B02 ✅** goldens, error audit, reserved words. |
+| 2026-08-22 | Plan created at v0.11-bootstrap; baseline 49/49 tests. |
