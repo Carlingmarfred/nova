@@ -10,6 +10,16 @@ pub struct VmError {
     pub msg: String,
 }
 
+#[derive(Clone)]
+pub enum ModuleValue {
+    Loaded(Rc<LoadedModule>),
+}
+
+pub struct LoadedModule {
+    pub prog: Rc<Program>,
+    pub exports: HashMap<String, Value>,
+}
+
 fn err(msg: String) -> VmError {
     VmError { msg }
 }

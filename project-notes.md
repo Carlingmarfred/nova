@@ -130,6 +130,27 @@ python bootstrap/nova_cli.py version                     # Nova 0.14.0-bootstrap
 
 ## 5. Changelog (v0.11 →)
 
+**2026-08-24 — N04a–e + N05-lite (native runtime wave):**
+- VM architecture: `exec()` loop calls `step()` per instruction; errors unwind
+  manually frame-by-frame to nearest `TryPush` handler (stack/iters truncated to
+  saved depths, error text pushed as Value). Frames are heap objects → Nova
+  recursion depth is heap-bound, not Rust-stack-bound.
+- Contracts: compiler hoists ALL requires in a func body above emitted body code
+  (oracle-verified: `requires` written last still fires before first statement);
+  ensures cloned into builder.pending_ensures and re-emitted at EVERY exit
+  (explicit Ret and implicit end) around an `@ret` hidden local.
+- Things: ThingDef → ctor func named `@new:<cls>` (pre-declared alongside funcs);
+  unknown class at compile time → UnknownThing instr → runtime "unknown thing".
+  MakeThing pairs field-name indices with values in PUSH order (rev() was a bug).
+- History: state-stack model — track snapshots current; every StoreName on a
+  tracked name pushes new value & clears redo; undo pops→redo; redo pops→push.
+- Oracle divergences (accepted, revisit at full N05): native lacks line/column
+  in runtime errors; oracle wraps parse errors as "Parser error —"; ordering on
+  non-numbers: native sentence vs oracle raw crash.
+
+**2026-08-24 — N04d commit notes:** thing display is literally `{cls}(...)` in the
+oracle regardless of fields — matched exactly.
+
 **2026-08-24 — N03 ✅ (bytecode+VM core complete):** `compiler.rs` compiles the
 statement subset to a Program of Funcs (main = funcs[0]); loops share one layout
 (IterNew → IterNext(end) → body → Jump cont → IterClose) so `skip` naturally
