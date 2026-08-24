@@ -118,6 +118,50 @@ fn list_aliasing_and_add() {
 }
 
 #[test]
+fn check_statement_matches_oracle() {
+    expect_out(
+        "check \"hi\"\nwhen it is \"hi\"\nsay \"matched\"\ndone",
+        "matched\n",
+    );
+    expect_out(
+        "check 5\nwhen it is 9\nsay \"no\"\ndone\nsay \"after\"",
+        "after\n",
+    );
+    expect_out(
+        "check \"abc\"\nwhen it is a number\nsay \"num\"\notherwise\nsay \"notnum\"\ndone",
+        "notnum\n",
+    );
+    expect_out(
+        "check 3\nwhen it is not 4\nsay \"three\"\ndone",
+        "three\n",
+    );
+    expect_out(
+        "check \"hello\"\nwhen it contains \"ell\"\nsay \"yes\"\ndone",
+        "yes\n",
+    );
+    expect_out(
+        "t = \"\"\ncheck t\nwhen it is empty\nsay \"empty!\"\ndone",
+        "empty!\n",
+    );
+    expect_out(
+        "v = 7\ncheck v\nwhen it is the same as 7\nsay \"seven\"\ndone",
+        "seven\n",
+    );
+    expect_out(
+        "check 5\nwhen it is empty\nsay \"e\"\notherwise\nsay \"ne\"\ndone",
+        "ne\n",
+    );
+    expect_out(
+        "x = nothing\ncheck x\nwhen it is nothing\nsay \"none\"\ndone",
+        "none\n",
+    );
+    expect_out(
+        "check 2\nwhen it is 1\nsay \"one\"\nwhen it is 2\nsay \"two\"\nwhen it is 3\nsay \"three\"\notherwise\nsay \"many\"\ndone",
+        "two\n",
+    );
+}
+
+#[test]
 fn errors_are_sentences() {
     let got = run("say unknownname").unwrap_err();
     assert!(got.contains("the variable 'unknownname' does not exist"), "{got}");

@@ -291,6 +291,19 @@ impl Vm {
                     };
                     self.stack.push(Value::Bool(res));
                 }
+                Instr::IsNumber => {
+                    let v = self.stack.pop().ok_or_else(|| err("stack underflow".into()))?;
+                    self.stack.push(Value::Bool(v.is_number()));
+                }
+                Instr::IsEmpty => {
+                    let v = self.stack.pop().ok_or_else(|| err("stack underflow".into()))?;
+                    let e = match &v {
+                        Value::Text(t) => t.is_empty(),
+                        Value::List(l) => l.borrow().is_empty(),
+                        _ => false,
+                    };
+                    self.stack.push(Value::Bool(e));
+                }
                 Instr::Not => {
                     let v = self.stack.pop().ok_or_else(|| err("stack underflow".into()))?;
                     let b = truth(&v)?;

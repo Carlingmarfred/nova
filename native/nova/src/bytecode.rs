@@ -23,6 +23,8 @@ pub enum Instr {
     StartsWith,
     EndsWith,
     Not,
+    IsNumber,
+    IsEmpty,
     MustBeBool,
     JumpIfFalse(u16),
     JumpIfTrue(u16),
@@ -209,5 +211,6 @@ fn variant_name(e: &EKind) -> &'static str {
         EKind::QuestionE(_) => "QuestionE",
     }
 }
+
 
 

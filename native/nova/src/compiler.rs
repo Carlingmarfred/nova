@@ -152,6 +152,74 @@ impl Compiler {
                 self.emit_in_cur(Instr::Pop);
                 Ok(())
             }
+            SKind::Check { subject, arms, otherwise } => {
+                self.expr(subject)?;
+                let subj_idx = self.b().name_index("@subject");
+                self.emit_in_cur(Instr::StoreName(subj_idx));
+                let mut end_jumps: Vec<u16> = Vec::new();
+                let mut cond_jumps: Vec<u16> = Vec::new();
+                for (i, arm) in arms.iter().enumerate() {
+                    if i > 0 {
+                        let prev = cond_jumps.pop().unwrap();
+                        let target = self.b().here();
+                        self.patch(prev, target);
+                    }
+                    let s = subj_idx;
+                    match (arm.kind, &arm.val) {
+                        ("isnum", _) => {
+                            self.emit_in_cur(Instr::LoadName(s));
+                            self.emit_in_cur(Instr::IsNumber);
+                        }
+                        ("isempty", _) => {
+                            self.emit_in_cur(Instr::LoadName(s));
+                            self.emit_in_cur(Instr::IsEmpty);
+                        }
+                        ("eq", Some(v)) => {
+                            self.emit_in_cur(Instr::LoadName(s));
+                            self.expr(v)?;
+                            self.emit_in_cur(Instr::Eq);
+                        }
+                        ("startswith", Some(v)) => {
+                            self.emit_in_cur(Instr::LoadName(s));
+                            self.expr(v)?;
+                            self.emit_in_cur(Instr::StartsWith);
+                        }
+                        ("endswith", Some(v)) => {
+                            self.emit_in_cur(Instr::LoadName(s));
+                            self.expr(v)?;
+                            self.emit_in_cur(Instr::EndsWith);
+                        }
+                        ("contains", Some(v)) => {
+                            self.emit_in_cur(Instr::LoadName(s));
+                            self.expr(v)?;
+                            self.emit_in_cur(Instr::Contains);
+                        }
+                        _ => return Err(CompileError { kind: "check-pattern" }),
+                    }
+                    if arm.neg {
+                        self.emit_in_cur(Instr::Not);
+                    }
+                    let j = self.b().here();
+                    self.emit_in_cur(Instr::JumpIfFalsePop(0));
+                    self.block(&arm.body)?;
+                    let ej = self.b().here();
+                    self.emit_in_cur(Instr::Jump(0));
+                    end_jumps.push(ej);
+                    cond_jumps.push(j);
+                }
+                if let Some(prev) = cond_jumps.pop() {
+                    let target = self.b().here();
+                    self.patch(prev, target);
+                }
+                if let Some(els) = otherwise {
+                    self.block(els)?;
+                }
+                let end = self.b().here();
+                for j in end_jumps {
+                    self.patch(j, end);
+                }
+                Ok(())
+            }
             SKind::If { branches, otherwise } => self.if_chain(branches, otherwise.as_ref()),
             SKind::RepeatTimes { count, body } => {
                 self.expr(count)?;
