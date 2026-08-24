@@ -271,6 +271,30 @@ fn thing_identity_equality_and_deep_copy() {
 }
 
 #[test]
+fn track_undo_redo_history() {
+    expect_out(
+        "xx is 1\ntrack xx\nset xx to 2\nset xx to 3\nundo the last change to xx\nsay xx",
+        "2\n",
+    );
+    expect_out(
+        "xx is 1\ntrack xx\nset xx to 2\nset xx to 3\nundo the last change to xx\nundo the last change to xx\nsay xx",
+        "1\n",
+    );
+    expect_out(
+        "xx is 1\ntrack xx\nset xx to 2\nset xx to 3\nundo the last change to xx\nredo the last change to xx\nsay xx",
+        "3\n",
+    );
+    expect_out(
+        "xx is 1\ntrack xx\nset xx to 2\nset xx to 3\nundo the last change to xx\nset xx to 9\nundo the last change to xx\nsay xx",
+        "2\n",
+    );
+    let got = run("yy is 1\nundo the last change to yy").unwrap_err();
+    assert!(got.contains("there are no changes to undo for 'yy'"), "{got}");
+    let got = run("xx is 1\ntrack xx\nundo the last change to xx").unwrap_err();
+    assert!(got.contains("there are no changes to undo for 'xx'"), "{got}");
+}
+
+#[test]
 fn errors_are_sentences() {
     let got = run("say unknownname").unwrap_err();
     assert!(got.contains("the variable 'unknownname' does not exist"), "{got}");

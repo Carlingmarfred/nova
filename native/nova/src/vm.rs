@@ -67,6 +67,8 @@ pub struct Vm {
     out: String,
     stack: Vec<Value>,
     frames: Vec<Frame>,
+    history: HashMap<String, Vec<Value>>,
+    redo: HashMap<String, Vec<Value>>,
 }
 
 impl Vm {
@@ -139,7 +141,43 @@ impl Vm {
                 Instr::StoreName(i) => {
                     let name = prog.funcs[fi].names[i as usize].clone();
                     let v = self.stack.pop().unwrap_or(Value::Nothing);
+                    if self.history.contains_key(&name) {
+                        self.history.get_mut(&name).unwrap().push(v.clone());
+                        self.redo.remove(&name);
+                    }
                     self.store_name(fi, name, v);
+                }
+                Instr::Track(i) => {
+                    let name = prog.funcs[fi].names[i as usize].clone();
+                    let cur = self.load_name_for_track(fi, &name);
+                    self.history.entry(name).or_insert_with(|| vec![cur]);
+                }
+                Instr::Undo(i) => {
+                    let name = prog.funcs[fi].names[i as usize].clone();
+                    let usable = self
+                        .history
+                        .get(&name)
+                        .map(|h| h.len() >= 2)
+                        .unwrap_or(false);
+                    if !usable {
+                        return Err(err(messages::interp::no_changes(&name, "undo")));
+                    }
+                    let h = self.history.get_mut(&name).unwrap();
+                    let cur = h.pop().unwrap();
+                    let restored = h.last().unwrap().clone();
+                    self.redo.entry(name.clone()).or_default().push(cur);
+                    self.store_name(fi, name, restored);
+                }
+                Instr::Redo(i) => {
+                    let name = prog.funcs[fi].names[i as usize].clone();
+                    let next = match self.redo.get_mut(&name) {
+                        Some(r) if !r.is_empty() => r.pop().unwrap(),
+                        _ => return Err(err(messages::interp::no_changes(&name, "redo"))),
+                    };
+                    if let Some(h) = self.history.get_mut(&name) {
+                        h.push(next.clone());
+                    }
+                    self.store_name(fi, name, next);
                 }
                 Instr::AddToName(i) => {
                     let name = prog.funcs[fi].names[i as usize].clone();
@@ -443,6 +481,10 @@ impl Vm {
                 }
             }
         }
+    }
+
+    fn load_name_for_track(&mut self, fi: usize, name: &str) -> Value {
+        self.load_name(fi, name).unwrap_or(Value::Nothing)
     }
 
     fn is_main(&self, fi: usize) -> bool {

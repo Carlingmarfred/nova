@@ -368,6 +368,16 @@ impl Compiler {
                 self.jump_to(target);
                 Ok(())
             }
+            SKind::TrackStmt { name } => {
+                let idx = self.b().name_index(name);
+                self.emit_in_cur(Instr::Track(idx));
+                Ok(())
+            }
+            SKind::UndoStmt { name, redo } => {
+                let idx = self.b().name_index(name);
+                self.emit_in_cur(if *redo { Instr::Redo(idx) } else { Instr::Undo(idx) });
+                Ok(())
+            }
             SKind::StopProgram => {
                 self.emit_in_cur(Instr::Halt);
                 Ok(())

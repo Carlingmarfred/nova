@@ -261,6 +261,10 @@ pub mod interp {
     pub fn unknown_thing(name: &str) -> String {
         format!("unknown thing '{name}'")
     }
+
+    pub fn no_changes(name: &str, op: &str) -> String {
+        format!("there are no changes to {op} for '{name}'")
+    }
 }
 
 #[cfg(test)]

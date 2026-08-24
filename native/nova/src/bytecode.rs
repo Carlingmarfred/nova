@@ -59,6 +59,9 @@ pub enum Instr {
     CopyOf,
     Dup,
     UnknownThing(u16),
+    Track(u16),
+    Undo(u16),
+    Redo(u16),
 }
 
 #[derive(Debug, Default)]
