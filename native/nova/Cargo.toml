@@ -1,9 +1,12 @@
-[package]
+﻿[package]
 name = "nova"
 version = "0.16.0-native"
 edition = "2021"
 description = "Nova native pipeline (N-series): lexer, parser, bytecode VM"
 license = "Apache-2.0"
+
+[dependencies]
+num-bigint = "0.4"
 
 [lib]
 name = "nova"
@@ -12,3 +15,4 @@ path = "src/lib.rs"
 [[bin]]
 name = "nova"
 path = "src/main.rs"
+

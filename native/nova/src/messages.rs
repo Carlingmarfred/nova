@@ -160,6 +160,45 @@ pub mod parse {
     }
 }
 
+pub mod interp {
+    use super::interpolate;
+
+    pub fn condition_not_bool() -> String {
+        "a condition must be true or false (use comparisons like 'is greater than')".to_string()
+    }
+
+    pub fn ordering_needs_numbers(found: &str) -> String {
+        interpolate(
+            "ordering needs two numbers — found {found} — use 'is' or 'is not' to compare other values",
+            &[("found", found)],
+        )
+    }
+
+    pub fn plus_type_mismatch(left: &str, right: &str) -> String {
+        interpolate(
+            "cannot add {left} and {right} — '+' requires two numbers or two texts",
+            &[("left", left), ("right", right)],
+        )
+    }
+
+    pub fn div_by_zero() -> String {
+        "division by zero — check the denominator, or use 'if x is 0' first".to_string()
+    }
+
+    pub fn mod_by_zero() -> String {
+        "modulo by zero — check the divisor, or use 'if x is 0' first".to_string()
+    }
+
+    pub fn arith_on_nothing() -> String {
+        "cannot do arithmetic on 'nothing' — add '?' if the expression may be nothing (e.g.: n = the number value of answer? + 1), or check the value with 'is nothing' first"
+            .to_string()
+    }
+
+    pub fn contains_needs_str_or_list() -> String {
+        "'contains' requires text or a list".to_string()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -208,6 +247,18 @@ mod tests {
         assert_eq!(
             parse::module_path_expected("the tools-module"),
             "expected a quoted file path after 'in' — e.g.: the the tools-module in \"tools.nova\""
+        );
+    }
+
+    #[test]
+    fn interp_messages_match_oracle() {
+        assert_eq!(
+            interp::plus_type_mismatch("true", "1"),
+            "cannot add true and 1 — '+' requires two numbers or two texts"
+        );
+        assert_eq!(
+            interp::condition_not_bool(),
+            "a condition must be true or false (use comparisons like 'is greater than')"
         );
     }
 

@@ -130,6 +130,15 @@ python bootstrap/nova_cli.py version                     # Nova 0.14.0-bootstrap
 
 ## 5. Changelog (v0.11 →)
 
+**2026-08-24 — N03a ✅ (native VM expression core):** value model (bigint via
+num-bigint; lists = Rc<RefCell<Vec>> for C13 aliasing), `nova_eq` ported 1:1,
+Python-sign modulo (`num-bigint`'s `%` is truncated — corrected via floor rule).
+Bytecode: Const/arith/cmp/Contains/StartsEndsWith/Not/JumpIfFalse/JumpIfTrue/
+MustBeBool/MakeList/Pop. and/or enforce BOOL operands exactly like oracle
+(`true and 1` → condition sentence). Known oracle gap found: ordering on
+non-numbers crashes raw Python ('<' not supported) — native gives a proper
+sentence instead; differential harness must special-case this class at N05.
+
 **2026-08-24 — N02 ✅ (native parser, oracle parity):** `native/nova/src/parser.rs`
 ports nova_parser.py 1:1 (same lookahead quirks incl. compact-assign scan, thing-def
 ahead(2)/ahead(4) trigger, inline-body single-statement rule, sorted stop-words in
