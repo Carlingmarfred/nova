@@ -35,6 +35,7 @@ fn show(v: Value) -> String {
             let inner: Vec<String> = items.iter().map(|v| show(v.clone())).collect();
             format!("[{}]", inner.join(", "))
         }
+        Value::Thing(t) => format!("{}(...)", t.borrow().cls),
     }
 }
 

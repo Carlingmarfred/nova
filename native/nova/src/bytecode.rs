@@ -50,6 +50,15 @@ pub enum Instr {
     TryPop,
     RequireCheck,
     EnsureCheck,
+    MakeThing {
+        cls: u16,
+        fields: std::rc::Rc<Vec<u16>>,
+    },
+    GetField(u16),
+    StoreField(u16),
+    CopyOf,
+    Dup,
+    UnknownThing(u16),
 }
 
 #[derive(Debug, Default)]

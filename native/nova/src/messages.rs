@@ -239,6 +239,28 @@ pub mod interp {
             "the ensures contract failed in '{func}' — the final state did not satisfy the guarantee"
         )
     }
+
+    pub fn thing_missing_field(cls: &str, name: &str, valid: &str) -> String {
+        format!("{cls} has no field '{name}' — valid fields: {valid}")
+    }
+
+    pub fn field_of_nothing(name: &str) -> String {
+        format!(
+            "cannot read the field '{name}' of nothing — add '?' if the expression may be nothing (e.g.: the {name} of x?), or check the value with 'is nothing' first"
+        )
+    }
+
+    pub fn cannot_read_field(name: &str, value: &str) -> String {
+        format!("cannot read the field '{name}' of {value}")
+    }
+
+    pub fn field_needs_thing() -> String {
+        "you can only set fields on a thing".to_string()
+    }
+
+    pub fn unknown_thing(name: &str) -> String {
+        format!("unknown thing '{name}'")
+    }
 }
 
 #[cfg(test)]

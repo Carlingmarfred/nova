@@ -295,6 +295,77 @@ impl Vm {
                     };
                     self.stack.push(Value::Bool(e));
                 }
+                Instr::MakeThing { cls, fields } => {
+                    let cls_name = prog.funcs[fi].names[cls as usize].clone();
+                    let n = fields.len();
+                    let at = self.stack.len() - n;
+                    let values: Vec<Value> = self.stack.split_off(at);
+                    let mut map = HashMap::new();
+                    for (fidx, val) in fields.iter().zip(values) {
+                        let fname = prog.funcs[fi].names[*fidx as usize].clone();
+                        map.insert(fname, val);
+                    }
+                    let thing = crate::value::Thing { cls: cls_name, fields: map };
+                    self.stack.push(Value::Thing(Rc::new(RefCell::new(thing))));
+                }
+                Instr::GetField(i) => {
+                    let name = prog.funcs[fi].names[i as usize].clone();
+                    let obj = self.stack.pop().ok_or_else(|| err("stack underflow".into()))?;
+                    match &obj {
+                        Value::Thing(t) => {
+                            let v = t.borrow().fields.get(&name).cloned();
+                            match v {
+                                Some(v) => self.stack.push(v),
+                                None => {
+                                    let (cls, mut names) = {
+                                        let t = t.borrow();
+                                        (t.cls.clone(), t.fields.keys().cloned().collect::<Vec<_>>())
+                                    };
+                                    names.sort();
+                                    return Err(err(messages::interp::thing_missing_field(
+                                        &cls,
+                                        &name,
+                                        &names.join(", "),
+                                    )));
+                                }
+                            }
+                        }
+                        Value::Nothing => {
+                            return Err(err(messages::interp::field_of_nothing(&name)));
+                        }
+                        other => {
+                            return Err(err(messages::interp::cannot_read_field(
+                                &name,
+                                &render(other),
+                            )));
+                        }
+                    }
+                }
+                Instr::StoreField(i) => {
+                    let name = prog.funcs[fi].names[i as usize].clone();
+                    let value = self.stack.pop().ok_or_else(|| err("stack underflow".into()))?;
+                    let obj = self.stack.pop().ok_or_else(|| err("stack underflow".into()))?;
+                    match &obj {
+                        Value::Thing(t) => {
+                            t.borrow_mut().fields.insert(name, value);
+                        }
+                        _ => {
+                            return Err(err(messages::interp::field_needs_thing()));
+                        }
+                    }
+                }
+                Instr::CopyOf => {
+                    let v = self.stack.pop().ok_or_else(|| err("stack underflow".into()))?;
+                    self.stack.push(v.deep_copy());
+                }
+                Instr::Dup => {
+                    let v = self.stack.last().ok_or_else(|| err("stack underflow".into()))?.clone();
+                    self.stack.push(v);
+                }
+                Instr::UnknownThing(i) => {
+                    let name = prog.funcs[fi].names[i as usize].clone();
+                    return Err(err(messages::interp::unknown_thing(&name)));
+                }
                 Instr::Not => {
                     let v = self.stack.pop().ok_or_else(|| err("stack underflow".into()))?;
                     let b = truth(&v)?;
@@ -480,6 +551,7 @@ pub fn render(v: &Value) -> String {
             let inner: Vec<String> = items.borrow().iter().map(render).collect();
             format!("[{}]", inner.join(", "))
         }
+        Value::Thing(t) => format!("{}(...)", t.borrow().cls),
     }
 }
 
@@ -508,6 +580,7 @@ fn arith_msg(_op: &str, _a: &Value, _b: &Value, e: ArithError) -> String {
         ArithError::OnNothing => messages::interp::arith_on_nothing(),
     }
 }
+
 
 
 

@@ -1,7 +1,14 @@
 use num_bigint::{BigInt, Sign};
 use std::cell::RefCell;
 use std::cmp::Ordering;
+use std::collections::HashMap;
 use std::rc::Rc;
+
+#[derive(Debug, Clone)]
+pub struct Thing {
+    pub cls: String,
+    pub fields: HashMap<String, Value>,
+}
 
 #[derive(Debug, Clone)]
 pub enum Value {
@@ -11,6 +18,7 @@ pub enum Value {
     Bool(bool),
     Nothing,
     List(Rc<RefCell<Vec<Value>>>),
+    Thing(Rc<RefCell<Thing>>),
 }
 
 impl Value {
@@ -36,6 +44,22 @@ impl Value {
             Value::Bool(_) => "bool",
             Value::Nothing => "nothing",
             Value::List(_) => "list",
+            Value::Thing(_) => "thing",
+        }
+    }
+
+    pub fn deep_copy(&self) -> Value {
+        match self {
+            Value::List(items) => Value::List(Rc::new(RefCell::new(
+                items.borrow().iter().map(|v| v.deep_copy()).collect(),
+            ))),
+            Value::Thing(t) => {
+                let t = t.borrow();
+                let fields =
+                    t.fields.iter().map(|(k, v)| (k.clone(), v.deep_copy())).collect();
+                Value::Thing(Rc::new(RefCell::new(Thing { cls: t.cls.clone(), fields })))
+            }
+            other => other.clone(),
         }
     }
 
@@ -64,6 +88,7 @@ pub fn nova_eq(a: &Value, b: &Value) -> bool {
             let y = y.borrow();
             x.len() == y.len() && x.iter().zip(y.iter()).all(|(u, v)| nova_eq(u, v))
         }
+        (Value::Thing(x), Value::Thing(y)) => Rc::ptr_eq(x, y),
         (Value::Nothing, _) | (_, Value::Nothing) => false,
         _ => {
             if a.is_number() && b.is_number() {

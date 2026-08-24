@@ -56,8 +56,24 @@ pub fn compile_program(stmts: &[SNode]) -> Result<Program, CompileError> {
         cur: 0,
     };
 
-    for def in stmts.iter().filter(|s| matches!(s.kind, SKind::FuncDef { .. })) {
-        if let SKind::FuncDef { name, .. } = &def.kind {
+    for def in stmts.iter().filter(|s| matches!(s.kind, SKind::FuncDef { .. } | SKind::ThingDef { .. })) {
+        let (ctor_name, is_thing) = match &def.kind {
+            SKind::FuncDef { name, .. } => (name.clone(), false),
+            SKind::ThingDef { name, .. } => (format!("@new:{name}"), true),
+            _ => unreachable!(),
+        };
+        if is_thing {
+            c.builders.push(Builder {
+                func: Func {
+                    name: ctor_name,
+                    params: vec![],
+                    names: vec![],
+                    chunk: Chunk::default(),
+                },
+                loops: vec![],
+                pending_ensures: vec![],
+            });
+        } else if let SKind::FuncDef { name, .. } = &def.kind {
             c.builders.push(Builder {
                 func: Func {
                     name: name.clone(),
@@ -140,7 +156,13 @@ impl Compiler {
                     self.emit_in_cur(Instr::StoreName(idx));
                     Ok(())
                 }
-                EKind::Field { .. } => Err(CompileError { kind: "field-assign (N04)" }),
+                EKind::Field { obj, name } => {
+                    self.expr(obj)?;
+                    self.expr(expr)?;
+                    let idx = self.b().name_index(name);
+                    self.emit_in_cur(Instr::StoreField(idx));
+                    Ok(())
+                }
                 _ => unreachable!("parser lvalues"),
             },
             SKind::AddTo { name, expr } => {
@@ -181,7 +203,7 @@ impl Compiler {
                         let idx = self.b().name_index(n);
                         self.emit_in_cur(Instr::StoreName(idx));
                     }
-                    self.block(&hb)?;
+                    self.block(hb)?;
                     let end = self.b().here();
                     self.patch(skip, end);
                     Ok(())
@@ -348,6 +370,25 @@ impl Compiler {
             }
             SKind::StopProgram => {
                 self.emit_in_cur(Instr::Halt);
+                Ok(())
+            }
+            SKind::ThingDef { name, fields } => {
+                let saved = self.switch_to_func(&format!("@new:{name}"));
+                for (_fname, default) in fields {
+                    match default {
+                        Some(e) => self.expr(e)?,
+                        None => self.push_nothing(self.cur),
+                    }
+                }
+                let cls_idx = self.b().name_index(name);
+                let field_idxs: Vec<u16> =
+                    fields.iter().map(|(n, _)| self.b().name_index(n)).collect();
+                self.emit_in_cur(Instr::MakeThing {
+                    cls: cls_idx,
+                    fields: std::rc::Rc::new(field_idxs),
+                });
+                self.emit_func_exit()?;
+                self.restore(saved);
                 Ok(())
             }
             SKind::ReturnStmt { expr } => {
@@ -552,6 +593,34 @@ impl Compiler {
                 self.emit_in_cur(Instr::Not);
                 Ok(())
             }
+            EKind::NewThing { cls, setters } => {
+                let ctor = format!("@new:{cls}");
+                if !self.builders.iter().any(|b| b.func.name == ctor) {
+                    let idx = self.b().name_index(cls);
+                    self.emit_in_cur(Instr::UnknownThing(idx));
+                    return Ok(());
+                }
+                let ctor_idx = self.b().name_index(&ctor);
+                self.emit_in_cur(Instr::CallName(ctor_idx, 0));
+                for (n, v) in setters {
+                    self.emit_in_cur(Instr::Dup);
+                    self.expr(v)?;
+                    let fidx = self.b().name_index(n);
+                    self.emit_in_cur(Instr::StoreField(fidx));
+                }
+                Ok(())
+            }
+            EKind::Field { obj, name } => {
+                self.expr(obj)?;
+                let idx = self.b().name_index(name);
+                self.emit_in_cur(Instr::GetField(idx));
+                Ok(())
+            }
+            EKind::CopyOf(inner) => {
+                self.expr(inner)?;
+                self.emit_in_cur(Instr::CopyOf);
+                Ok(())
+            }
             other => Err(CompileError { kind: ekind_name(other) }),
         }
     }
@@ -651,5 +720,6 @@ fn skind_name(k: &SKind) -> &'static str {
         SKind::WhenProgramStarts { .. } => "WhenProgramStarts",
     }
 }
+
 
 

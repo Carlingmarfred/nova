@@ -225,6 +225,52 @@ fn ensures_sees_final_state() {
 }
 
 #[test]
+fn things_definition_fields_identity() {
+    expect_out(
+        "a dog is a thing with\nname\nage set to 3\ndone\nd is a new dog with name set to \"rex\"\nsay the age of d",
+        "3\n",
+    );
+    expect_out(
+        "a dog is a thing with\nname\ndone\nd is a new dog\nsay the name of d",
+        "nothing\n",
+    );
+    expect_out(
+        "a dog is a thing with\nname set to \"x\"\ndone\nd is a new dog\nsay d.name",
+        "x\n",
+    );
+    expect_out(
+        "a dog is a thing with\nname\ndone\nd is a new dog\nset the name of d to \"max\"\nsay the name of d",
+        "max\n",
+    );
+    expect_out(
+        "a dog is a thing with\nname set to \"r\"\ndone\nd is a new dog\nsay d",
+        "dog(...)\n",
+    );
+}
+
+#[test]
+fn thing_identity_equality_and_deep_copy() {
+    expect_out(
+        "a dog is a thing with\nname\ndone\nxx is a new dog\nyy is xx\nsay xx is yy",
+        "true\n",
+    );
+    expect_out(
+        "a dog is a thing with\nname\ndone\nxx is a new dog\nzz is a new dog\nsay xx is zz",
+        "false\n",
+    );
+    expect_out(
+        "a dog is a thing with\nname\ndone\nxx is a new dog\nset the name of xx to \"a\"\nyy is a copy of xx\nset the name of yy to \"b\"\nsay the name of xx",
+        "a\n",
+    );
+    let got = run(
+        "a dog is a thing with\nname\ndone\ndd is a new dog\nsay the age of dd",
+    )
+    .unwrap_err();
+    assert!(got.contains("dog has no field 'age'"), "{got}");
+    assert!(got.contains("valid fields: name"), "{got}");
+}
+
+#[test]
 fn errors_are_sentences() {
     let got = run("say unknownname").unwrap_err();
     assert!(got.contains("the variable 'unknownname' does not exist"), "{got}");
