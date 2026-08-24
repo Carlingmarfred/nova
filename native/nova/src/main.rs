@@ -10,7 +10,7 @@ fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().collect();
     match args.get(1).map(String::as_str) {
         Some("version") => {
-            println!("Nova 0.16.0-native");
+            println!("Nova 0.20.0");
             ExitCode::SUCCESS
         }
         Some("lex") if args.len() == 3 => run_lex(&args[2]),

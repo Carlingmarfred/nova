@@ -1009,8 +1009,7 @@ impl Vm {
                 };
                 let list: Vec<Value> = self
                     .history
-                    .get(&name)
-                    .map(|h| h.clone())
+                    .get(&name).cloned()
                     .unwrap_or_default();
                 Ok(Value::List(Rc::new(RefCell::new(list))))
             }

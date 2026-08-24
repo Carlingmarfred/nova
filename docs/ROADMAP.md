@@ -1,65 +1,44 @@
 # Nova Roadmap
 
-Principle: every milestone must run real programs and be useful on its own. No
-milestone blocks on "all features".
+Principle: every milestone ships something real. The native pipeline is written in
+**Rust** (owner decision 2026-08-23); the Python bootstrap is the differential oracle.
 
-**Native implementation language: Rust** (owner decision 2026-08-23 — replaces the
-original C++ assumption; recorded in README decision log).
+## Current state (2026-08-24)
 
-## M0 — Bootstrap (week 1-4)
-- Lexer + lossless tokens/trivia, Pratt parser, AST + printer (**Rust** workspace)
-- Golden tests from day 1 (`dump` format) — must match the Python bootstrap's
-  `tests/golden/*.ast.txt` byte-for-byte
-- CLI skeleton: `nova parse`, `nova ast`
+| Track | Version | What exists |
+|---|---|---|
+| Python bootstrap (oracle) | v0.15.1-bootstrap | Natural + shorthand skins, Optional/`?`, modules, stdlib v0, REPL, memory semantics; 236/236 end-to-end tests |
+| Native (Rust) — **Phase 0.2** | v0.16.0-native → ships **v0.20.0** | Lexer/parser at golden parity, bytecode compiler + stack VM, runtime wave (check/try/contracts/things/track-undo/phrase builtins/`?`/interpolation), modules + stdlib v0, `nova test`, field pack, history & Flow v0 |
 
-## M1 — Can compute (month 1-3)
-- Name resolution, type inference (HM-local), unions, Optional/Result
-- Nova IR + verifier; LLVM backend via **`inkwell`** (x86-64 + ARM64)
-- ARC pass + escape analysis
-- stdlib-core: ints/floats/String/Array/Map/Set/tuple/range/iterator/comprehensions
-- `nova build` / `nova run` native
-- **Goal:** benchmarks vs C++/Python on fib/matmul/sort
+Live board: [ITERATION_PLAN §6 Phase 0.2](ITERATION_PLAN.md).
 
-## M2 — Pleasant to use (month 3-6)
-- Match exhaustiveness, traits+generics+monomorphization, lambdas/closures
-- Complete error handling (`?`, flow typing), defer/use, @test-runner
-- VM backend (bytecode + interpreter) → REPL, scripting, shebang
-- async/await + scheduler + channels/select; the `parallel` block
-- LSP v1 (hover, goto-def, diagnostics, inlay hints); formatter; linter v1
-- stdlib: fs/process/env/io/time/log/cli/iter/func/random/stats
-- FFI: import c "header.h" (libclang-style importer)
+## Phase 0.2 — native release (v0.20.0)
 
-## M3 — The ecosystem opens (month 6-10)
-- Package manager + registry + lockfile + workspaces
-- Incremental compilation + shared cache
-- std.regex, std.formats (csv/toml/yaml/xml), std.database (sqlite),
-  std.net (tcp/udp/http client+server/websocket), std.serialization
-- WASM backend (wasi)
-- Debugger integration (DAP over GDB/LLDB + VM protocol)
+Bytecode compiler + stack VM behind a swappable-backend boundary (LLVM/JIT can slot in
+later). Dynamic core + opt-in annotations; arbitrary-precision integers through 0.2;
+stdlib order cli/csv/datetime/regex. Uniqueness bets: history engine + Flow<T>.
+Tooling floor: `nova test` + LSP.
 
-## M4 — Enterprise features (month 10-14)
-- `dynamic` complete with inline caches (+ first specialization pass)
-- Reflection runtime (full profile) + derive macros + comptime evaluation
-- std.crypto, TLS, compression/archives, mmap
-- GC cycle collector (full profile), stable runtime profiles (minimal/core/full)
-- Cross-compilation matrix CI
+Done: N00 grammar freeze · N01 Rust lexer · N02 parser (golden byte-equal) ·
+N03 compiler+VM core · N04 full runtime wave incl. modules+stdlib · N05 differential
+harness 29/29 · **N07 `nova test`** · **N06 cli/csv/datetime/regex** ·
+**N08a history freeze+queries** · **N08b Flow freeze+list ops**.
+Deferred by owner decision: **N09 LSP → v0.21**.
 
-## M5 — Graphics/GUI/science (month 14-18)
-- nova-gui (declarative widgets, async event loop)
-- GPU backend: @gpu kernels → CUDA + SPIR-V/Vulkan + Metal
-- nova-array (ndarray + BLAS/LAPACK + fft), SIMD vectorizer stable
-- nova-plot
+## M-milestones (updated)
 
-## M6 — Mature platform (18+ months)
-- nova-ml (autograd), ORM layer, i18n
-- Java/JVM bridge (JNI interface), Python interop beyond embedding
-- PGO/LTO workflows, compiler plugin API (macro SDK)
-- Spec freeze: edition 2026, formalized semver for the language itself
+- **M0-M2 (pulled early, mostly done via Phase 0.2):** lexer/parser/AST ✅ · name
+  resolution + Optional ✅ · try/catch + contracts ✅ · VM backend ✅ · stdlib core ✅ ·
+  test runner ✅ · LSP v1 → v0.21
+- **M1 remainder:** Nova IR (SSA) + verifier; LLVM backend via inkwell; ARC pass +
+  escape analysis; benchmarks vs C++/Python on fib/matmul/sort
+- **M3+:** package manager + registry + lockfile; incremental compilation;
+  regex/formats/databases beyond the field pack; debugger (DAP); WASM backend
+- **M4+:** dynamic specialization, reflection, crypto/TLS/compression, cross-compile matrix
+- **M5+:** nova-gui, GPU backend, nova-array/plot, time statements at scale
+- **M6+:** self-hosting tooling (nova fmt in Nova), plugin API, edition-2026 spec freeze
 
-See [EXTENSIONS.md](EXTENSIONS.md) for 16 worked-through extension proposals (units,
-signals, actors, contracts, capability sandbox, time-travel debugger, notebook mode,
-teaching pack) with per-feature milestone placement.
-
-See also [../specs/unique_features.md](../specs/unique_features.md) for the 13 DECIDED
-unique features (Flow, Table, undo/history, taint, state machines, exact blocks,
-sim-test, @incremental, nova why, grammar literals, pure-Nova stack) with milestones.
+See [EXTENSIONS.md](EXTENSIONS.md) for the 16 extension proposals and
+[specs/unique_features.md](../specs/unique_features.md) for the 13 unique features.
+History engine: [specs/history_engine.md](../specs/history_engine.md) (frozen).
+Flow: [specs/flow.md](../specs/flow.md) (frozen).

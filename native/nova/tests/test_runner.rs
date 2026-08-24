@@ -14,7 +14,7 @@ fn uniq(tag: &str) -> PathBuf {
     d
 }
 
-fn write(dir: &PathBuf, name: &str, content: &str) {
+fn write(dir: &std::path::Path, name: &str, content: &str) {
     std::fs::write(dir.join(name), content).unwrap();
 }
 

@@ -128,6 +128,8 @@ python bootstrap/nova_cli.py version                     # Nova 0.14.0-bootstrap
    promise); dynamic core + opt-in annotations; audience = dev scripting/CLI.
 4. After the P0 spine: D05/D06/C04/C10 fold back into the queue.
 
+> **2026-08-24 (Phase 0.2 completion):** std.cli/csv/datetime/regex landed as native builtins (`cli.exit` unwinds past try via `VmError.exit_code`); `nova test` runner (discovery/fresh-VM/test.* asserts); history queries (`snapshots/count`) and Flow list ops per frozen specs. Integration tests use a shared `tests/common/mod.rs` helper.
+
 ## 5. Changelog (v0.11 →)
 
 **2026-08-24 — N04a–e + N05-lite (native runtime wave):**

@@ -6,7 +6,7 @@ runtime) with every other feature layered on top.
 
 > **Status: v0.15-bootstrap** — the Python interpreter in `bootstrap/` is green on
 > the full end-to-end suite (`python tests/run_tests.py`, 223 tests incl. both
-> examples). **Gate G0 is closed; G1 (T1 complete) is in progress.** Implemented:
+> examples). **Native Phase 0.2 is code-complete (v0.20.0): bytecode VM runs modules + stdlib + nova test; LSP lands in v0.21. Bootstrap remains the differential oracle.** Implemented:
 > compact shorthand skin, Optional/`?`, real modules with namespaces, stdlib v0
 > (`use the standard X library`: json/file/random/time/math/text/list), an
 > interactive REPL (`python bootstrap/nova_cli.py repl`), and the memory model's

@@ -1,6 +1,6 @@
 ﻿[package]
 name = "nova"
-version = "0.16.0-native"
+version = "0.20.0"
 edition = "2021"
 description = "Nova native pipeline (N-series): lexer, parser, bytecode VM"
 license = "Apache-2.0"
