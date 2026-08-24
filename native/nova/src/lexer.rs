@@ -1,4 +1,4 @@
-use crate::errors::{NovaError, Result};
+﻿use crate::errors::{NovaError, Result};
 use crate::messages;
 use std::fmt;
 
@@ -69,6 +69,24 @@ impl Token {
             _ => None,
         }
     }
+
+    pub fn found(&self) -> String {
+        match &self.value {
+            TokValue::Empty => String::new(),
+            TokValue::Word(w) | TokValue::Text(w) => w.clone(),
+            TokValue::Num(NumLit::Int(i)) => i.clone(),
+            TokValue::Num(NumLit::Float(f)) => fmt_float(*f),
+            TokValue::Sym(s) => (*s).to_string(),
+        }
+    }
+}
+
+pub fn fmt_float(v: f64) -> String {
+    if v.fract() == 0.0 && v.is_finite() && v.abs() < 1e16 {
+        format!("{v:.1}")
+    } else {
+        format!("{v}")
+    }
 }
 
 impl fmt::Display for Token {
@@ -109,13 +127,7 @@ impl fmt::Display for Token {
             TokValue::Word(w) => write!(f, "{kind}('{}')", py_repr(w)),
             TokValue::Text(t) => write!(f, "{kind}('{}')", py_repr(t)),
             TokValue::Num(NumLit::Int(s)) => write!(f, "{kind}({s})"),
-            TokValue::Num(NumLit::Float(v)) => {
-                if v.fract() == 0.0 && v.is_finite() && v.abs() < 1e16 {
-                    write!(f, "{kind}({:.1})", v)
-                } else {
-                    write!(f, "{kind}({})", v)
-                }
-            }
+            TokValue::Num(NumLit::Float(v)) => write!(f, "{kind}({})", fmt_float(*v)),
             TokValue::Sym(s) => write!(f, "{kind}('{s}')"),
         }
     }
@@ -227,7 +239,7 @@ pub fn lex(src: &str) -> Result<Vec<Token>> {
 
     while let Some(c) = lx.peek() {
         if c == '\n' {
-            toks.push(Token::sym(TokKind::Newline, "\n", lx.line, lx.col()));
+            lx.push_symbol(TokKind::Newline, "\\n", &mut toks);
             lx.line += 1;
             lx.pos += 1;
             lx.bol = lx.pos;
@@ -397,7 +409,7 @@ pub fn lex(src: &str) -> Result<Vec<Token>> {
         }
         return Err(lx.err(messages::lex::bad_char(&c.to_string())));
     }
-    toks.push(Token::sym(TokKind::Newline, "\n", lx.line, lx.col()));
+    lx.push_symbol(TokKind::Newline, "\\n", &mut toks);
     toks.push(Token::sym(TokKind::Eof, "", lx.line, lx.col()));
     Ok(toks)
 }
@@ -406,17 +418,17 @@ pub fn lex(src: &str) -> Result<Vec<Token>> {
 mod tests {
     use super::*;
 
-    fn kinds(src: &str) -> Vec<(TokKind, String)> {
+    fn non_symbols(src: &str) -> Vec<(TokKind, String)> {
         lex(src)
             .unwrap()
             .into_iter()
-            .filter(|t| t.kind != TokKind::Eof)
+            .filter(|t| !matches!(t.kind, TokKind::Eof | TokKind::Newline))
             .map(|t| {
                 let v = match t.value {
                     TokValue::Word(w) => w,
                     TokValue::Text(s) => s,
                     TokValue::Num(NumLit::Int(i)) => i,
-                    TokValue::Num(NumLit::Float(f)) => format!("{f}"),
+                    TokValue::Num(NumLit::Float(f)) => fmt_float(f),
                     TokValue::Sym(s) => s.to_string(),
                     TokValue::Empty => String::new(),
                 };
@@ -427,7 +439,7 @@ mod tests {
 
     #[test]
     fn words_numbers_symbols_basic_sentence() {
-        let ks = kinds("say \"hi\" plus 42");
+        let ks = non_symbols("say \"hi\" plus 42");
         assert_eq!(
             ks,
             vec![
@@ -435,14 +447,13 @@ mod tests {
                 (TokKind::Str, "hi".into()),
                 (TokKind::Word, "plus".into()),
                 (TokKind::Number, "42".into()),
-                (TokKind::Newline, "\n".into()),
             ]
         );
     }
 
     #[test]
     fn hyphen_policy_word_vs_minus() {
-        let ks = kinds("guess-count x-1 end-");
+        let ks = non_symbols("guess-count x-1 end-");
         assert_eq!(ks[0], (TokKind::Word, "guess-count".into()));
         assert_eq!(ks[1], (TokKind::Word, "x".into()));
         assert_eq!(ks[2], (TokKind::Minus, "-".into()));
@@ -452,50 +463,55 @@ mod tests {
 
     #[test]
     fn numbers_underscores_float_and_trailing_dot() {
-        let ks = kinds("1_000 3.5 1.");
+        let ks = non_symbols("1_000 3.5 1.");
         assert_eq!(ks[0], (TokKind::Number, "1000".into()));
-        assert_eq!(ks[1].0, TokKind::Number);
-        assert!(matches!(kinds("3.5")[0], _));
+        assert_eq!(ks[1], (TokKind::Number, "3.5".into()));
         assert_eq!(ks[2], (TokKind::Number, "1".into()));
         assert_eq!(ks[3], (TokKind::Dot, ".".into()));
     }
 
     #[test]
     fn leading_zero_integers_canonicalize_like_python() {
-        assert_eq!(kinds("007")[0], (TokKind::Number, "7".into()));
-        assert_eq!(kinds("000")[0], (TokKind::Number, "0".into()));
+        assert_eq!(non_symbols("007")[0], (TokKind::Number, "7".into()));
+        assert_eq!(non_symbols("000")[0], (TokKind::Number, "0".into()));
     }
 
     #[test]
     fn string_escapes_including_braces() {
-        let ks = kinds(r#""a\nb" 'it\'s \{ \}'"#);
+        let ks = non_symbols(r#""a\nb" 'it\'s \{ \}'"#);
         assert_eq!(ks[0], (TokKind::Str, "a\nb".into()));
         assert_eq!(ks[1], (TokKind::Str, "it's { }".into()));
     }
 
     #[test]
     fn skin_doubles_before_singles() {
-        let ks = kinds("a == b != c <= d >= e && f || g = h");
+        let ks = non_symbols("== != <= >= && || =");
         let kinds_only: Vec<TokKind> = ks.iter().map(|(k, _)| *k).collect();
-        assert!(kinds_only.contains(&TokKind::EqualEqual));
-        assert!(kinds_only.contains(&TokKind::BangEqual));
-        assert!(kinds_only.contains(&TokKind::Lte));
-        assert!(kinds_only.contains(&TokKind::Gte));
-        assert!(kinds_only.contains(&TokKind::AmpAmp));
-        assert!(kinds_only.contains(&TokKind::PipePipe));
-        assert!(kinds_only.contains(&TokKind::Equals));
+        assert_eq!(
+            kinds_only,
+            vec![
+                TokKind::EqualEqual,
+                TokKind::BangEqual,
+                TokKind::Lte,
+                TokKind::Gte,
+                TokKind::AmpAmp,
+                TokKind::PipePipe,
+                TokKind::Equals,
+            ]
+        );
     }
 
     #[test]
     fn semicolon_is_a_newline_token() {
-        let ks = kinds("say 1; say 2");
-        assert_eq!(ks[2], (TokKind::Newline, ";".into()));
+        let toks = lex("say 1; say 2").unwrap();
+        assert_eq!(toks[2].kind, TokKind::Newline);
+        assert_eq!(toks[2].found(), ";");
     }
 
     #[test]
     fn shebang_bom_and_comments_skipped() {
         let src = "\u{feff}#!/usr/bin/env nova\n# comment\nsay 1 // trailing\n";
-        let ks: Vec<_> = kinds(src).into_iter().filter(|(k, _)| *k != TokKind::Newline).collect();
+        let ks = non_symbols(src);
         assert_eq!(
             ks,
             vec![
@@ -507,12 +523,12 @@ mod tests {
 
     #[test]
     fn unicode_words_survive() {
-        assert_eq!(kinds("héllo")[0], (TokKind::Word, "héllo".into()));
+        assert_eq!(non_symbols("héllo")[0], (TokKind::Word, "héllo".into()));
     }
 
     #[test]
     fn structural_punct() {
-        let ks = kinds("[1, (2)] ?");
+        let ks = non_symbols("[1, (2)] ?");
         let kinds_only: Vec<TokKind> = ks.iter().map(|(k, _)| *k).collect();
         assert_eq!(
             kinds_only,
@@ -525,7 +541,6 @@ mod tests {
                 TokKind::RParen,
                 TokKind::RBracket,
                 TokKind::Question,
-                TokKind::Newline,
             ]
         );
     }
@@ -566,5 +581,12 @@ mod tests {
         let bye = toks.iter().find(|t| t.word_str() == Some("bye")).unwrap();
         assert_eq!(bye.col, 3);
         assert_eq!(bye.line, 2);
+    }
+
+    #[test]
+    fn newline_token_displays_as_two_char_escape_like_oracle() {
+        let toks = lex("say 1\n").unwrap();
+        let nl = toks.iter().find(|t| t.kind == TokKind::Newline).unwrap();
+        assert_eq!(format!("{nl}"), "NEWLINE('\\n')");
     }
 }

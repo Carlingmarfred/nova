@@ -130,12 +130,21 @@ python bootstrap/nova_cli.py version                     # Nova 0.14.0-bootstrap
 
 ## 5. Changelog (v0.11 →)
 
+**2026-08-24 — N02 ✅ (native parser, oracle parity):** `native/nova/src/parser.rs`
+ports nova_parser.py 1:1 (same lookahead quirks incl. compact-assign scan, thing-def
+ahead(2)/ahead(4) trigger, inline-body single-statement rule, sorted stop-words in
+block_unclosed message). dump.rs replicates nova_dump.py exactly: `{N} keys` dicts,
+`[i] tuple(N)` items, Block line = stop/next-token line (NOT first-stmt line),
+Python repr scalars. Golden test compares splitlines-normalized output vs
+tests/golden/*.ast.txt. Known float-repr edge: exponent-format floats (>1e16) may
+differ from Python repr — no golden contains one; revisit if corpus grows.
+
 **2026-08-24 — N01 ✅:** native Rust lexer at oracle parity (byte-identical token
 streams vs Python on torture corpus + both examples). Lexer invariants mirrored from
 nova_lexer.py: char-index columns, `-`+digit breaks words, trailing `-` stripped,
 `007`→`7` canonical ints (stored as strings — bigint later), floats need digit after
-dot, `;`=NEWLINE, skin doubles before singles. Parity harness lives in temp scripts
-for now; permanent differential runner is N05.
+dot, `;`=NEWLINE, skin doubles before singles, newline token displays `\n` two-char.
+Permanent differential runner is N05.
 
 **2026-08-24 — N00 ✅:** normative Natural-skin EBNF grammar at
 `specs/syntax/grammar_natural.md` (extracted from nova_lexer/nova_parser; audit
