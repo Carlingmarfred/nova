@@ -331,6 +331,7 @@ CSV reading (blocks A4), date/formatting in time-lib, string-interpolation-as-AS
 | Q12 | No normative grammar doc for the Natural skin (`grammar.md` covers compact only; `natural_syntax.md` §3 is a sketch) | E02 native parser has no spec to build against — goldens are the de-facto spec | ✅ RESOLVED 2026-08-24: `specs/syntax/grammar_natural.md` is normative (N00); quirks pinned in its §6 |
 | Q13 | Map phrase `set the age of X in M to V` exists in natural_syntax.md but is not implemented in bootstrap | spec/impl gap misleads learners; breaks "no dead ends" trust | ⏸ parked 2026-08-24: map phrase documented as future surface in natural_syntax.md; native dicts expose json-style access first |
 | Q14 | Integer model: bootstrap bigint now vs promised i32 later | E06 differential tester will diverge on big literals / overflow | ◐ duplicate of Q4 - revisit with corpus design as N05 grows |
+| Q15 | Fully-inline `if C then S1 otherwise S2` documented in natural_syntax §Conditionals but rejected by BOTH engines | spec/impl mismatch misleads learners | ☐ OPEN — implement the documented form or fix the spec (owner) |
 
 ## 11. Changelog (newest first — mandatory updates)
 

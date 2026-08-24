@@ -11,17 +11,29 @@ use std::rc::Rc;
 pub struct VmError {
     pub msg: String,
     pub signal: bool,
+    /// When set, the program requested a process exit with this code.
+    /// Unwinds past every handler (cannot be caught by `try`).
+    pub exit_code: Option<i32>,
+}
+
+impl VmError {
+    fn hard_exit(code: i32) -> VmError {
+        VmError { msg: String::new(), signal: false, exit_code: Some(code) }
+    }
 }
 
 fn err(msg: String) -> VmError {
-    VmError { msg, signal: false }
+    VmError { msg, signal: false, exit_code: None }
 }
 
 fn signal_err(msg: String) -> VmError {
-    VmError { msg, signal: true }
+    VmError { msg, signal: true, exit_code: None }
 }
 
-const STDLIBS: [&str; 8] = ["file", "json", "list", "math", "random", "test", "text", "time"];
+const STDLIBS: [&str; 12] = [
+    "cli", "csv", "datetime", "file", "json", "list", "math", "random", "regex",
+    "test", "text", "time",
+];
 
 pub fn truth(v: &Value) -> Result<bool, VmError> {
     match v {
@@ -87,6 +99,8 @@ pub struct Vm {
     cur_dir: Option<PathBuf>,
     /// Cached native stdlib module values.
     stdlib_cache: HashMap<String, Value>,
+    /// Command-line arguments passed to the running script (std.cli).
+    user_args: Vec<String>,
 }
 
 impl Vm {
@@ -96,6 +110,10 @@ impl Vm {
 
     pub fn set_base_dir(&mut self, dir: PathBuf) {
         self.cur_dir = Some(dir);
+    }
+
+    pub fn set_user_args(&mut self, args: Vec<String>) {
+        self.user_args = args;
     }
 
     pub fn take_output(&mut self) -> String {
@@ -683,6 +701,11 @@ impl Vm {
             let instr = prog.funcs[fi].chunk.code[ip].clone();
             self.frames.last_mut().unwrap().ip += 1;
             if let Err(e) = self.step(&prog, instr) {
+                if e.exit_code.is_some() {
+                    // cli.exit(): unwind unconditionally - try cannot catch it
+                    self.frames.truncate(depth);
+                    return Err(e);
+                }
                 let msg = e.msg;
                 let is_signal = e.signal;
                 let mut handled = false;
@@ -720,7 +743,7 @@ impl Vm {
                 if !handled {
                     // No handler above `depth` — surface to the outer driver.
                     self.frames.truncate(depth);
-                    return Err(VmError { msg, signal: false });
+                    return Err(VmError { msg, signal: false, exit_code: None });
                 }
             }
         }
@@ -974,6 +997,81 @@ impl Vm {
 
     fn call_native(&mut self, module: &str, fname: &str, args: &[Value]) -> Result<Value, VmError> {
         match (module, fname) {
+            ("cli", "args") => Ok(Value::List(Rc::new(RefCell::new(
+                self.user_args.iter().cloned().map(Value::Text).collect(),
+            )))),
+            ("cli", "env") => {
+                let key = as_text("env", only_arg(args)?)?;
+                Ok(match std::env::var(&key) {
+                    Ok(v) => Value::Text(v),
+                    Err(_) => Value::Nothing,
+                })
+            }
+            ("cli", "exit") => {
+                let v = only_arg(args)?;
+                let code = as_i64(v)
+                    .ok_or_else(|| err("cli.exit requires an integer exit code".to_string()))?;
+                Err(VmError::hard_exit((code.clamp(0, 255)) as i32))
+            }
+            ("csv", "parse") => {
+                let s = as_text("parse", only_arg(args)?)?;
+                match crate::csv::parse(&s) {
+                    Ok(rows) => Ok(Value::List(Rc::new(RefCell::new(
+                        rows.into_iter()
+                            .map(|row| {
+                                Value::List(Rc::new(RefCell::new(
+                                    row.into_iter().map(Value::Text).collect(),
+                                )))
+                            })
+                            .collect(),
+                    )))),
+                    Err(e) => Err(err(format!("csv.parse failed - {e}"))),
+                }
+            }
+            ("csv", "stringify") => {
+                let v = only_arg(args)?.clone();
+                let rows = as_list("stringify", &v)?.clone();
+                let out_rows: Vec<Vec<String>> = rows
+                    .iter()
+                    .map(|row| {
+                        as_list("stringify", row)
+                            .map(|fields| fields.iter().map(render).collect())
+                    })
+                    .collect::<Result<Vec<_>, _>>()?;
+                Ok(Value::Text(crate::csv::stringify(&out_rows)))
+            }
+            ("datetime", "now_text") => Ok(Value::Text(crate::datetime::now_text())),
+            ("datetime", "epoch") => Ok(Value::Float(crate::datetime::epoch())),
+            ("regex", "matches") => {
+                let pat = as_text("matches", arg(args, 0)?)?;
+                let s = as_text("matches", arg(args, 1)?)?;
+                match regex::Regex::new(&pat) {
+                    Ok(re) => Ok(Value::Bool(re.is_match(&s))),
+                    Err(e) => Err(err(format!("invalid regex '{pat}' - {e}"))),
+                }
+            }
+            ("regex", "find") => {
+                let pat = as_text("find", arg(args, 0)?)?;
+                let s = as_text("find", arg(args, 1)?)?;
+                match regex::Regex::new(&pat) {
+                    Ok(re) => Ok(match re.find(&s) {
+                        Some(m) => Value::Text(m.as_str().to_string()),
+                        None => Value::Nothing,
+                    }),
+                    Err(e) => Err(err(format!("invalid regex '{pat}' - {e}"))),
+                }
+            }
+            ("regex", "replace") => {
+                let s = as_text("replace", arg(args, 0)?)?;
+                let pat = as_text("replace", arg(args, 1)?)?;
+                let repl = as_text("replace", arg(args, 2)?)?;
+                match regex::Regex::new(&pat) {
+                    Ok(re) => Ok(Value::Text(
+                        re.replace_all(&s, repl.as_str()).into_owned(),
+                    )),
+                    Err(e) => Err(err(format!("invalid regex '{pat}' - {e}"))),
+                }
+            }
             ("json", "parse") => {
                 let v = only_arg(args)?;
                 let s = as_text("parse", v)?;
@@ -1439,7 +1537,7 @@ fn arith_err(_op: &str, _a: &Value, _b: &Value, e: ArithError) -> VmError {
         ArithError::ModByZero => messages::interp::mod_by_zero(),
         ArithError::OnNothing => messages::interp::arith_on_nothing(),
     };
-    VmError { msg, signal: matches!(e, ArithError::OnNothing) }
+    VmError { msg, signal: matches!(e, ArithError::OnNothing), exit_code: None }
 }
 
 

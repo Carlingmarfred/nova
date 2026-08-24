@@ -16,7 +16,7 @@ fn main() -> ExitCode {
         Some("lex") if args.len() == 3 => run_lex(&args[2]),
         Some("parse") if args.len() == 3 => run_parse(&args[2]),
         Some("test") => run_tests(args.get(2).map(String::as_str).unwrap_or(".")),
-        Some("run") if args.len() == 3 => run_prog(&args[2]),
+        Some("run") if args.len() >= 3 => run_prog(&args[2], &args[3..]),
         _ => {
             eprintln!("usage: nova version | nova lex <file.nova> | nova parse <file.nova> | nova run <file.nova> | nova test [path]");
             ExitCode::from(2)
@@ -147,7 +147,7 @@ fn run_parse(path: &str) -> ExitCode {
     }
 }
 
-fn run_prog(path: &str) -> ExitCode {
+fn run_prog(path: &str, user_args: &[String]) -> ExitCode {
     let src = match read_src(path) {
         Ok(s) => s,
         Err(code) => return code,
@@ -167,6 +167,7 @@ fn run_prog(path: &str) -> ExitCode {
         }
     };
     let mut vm = Vm::new();
+    vm.set_user_args(user_args.to_vec());
     if let Some(parent) = std::path::Path::new(path).parent() {
         vm.set_base_dir(parent.to_path_buf());
     }
@@ -176,6 +177,11 @@ fn run_prog(path: &str) -> ExitCode {
             ExitCode::SUCCESS
         }
         Err(ve) => {
+            if let Some(code) = ve.exit_code {
+                // cli.exit(): output so far goes to stdout, then the requested code.
+                print!("{}", vm.take_output());
+                return ExitCode::from((code & 0xFF) as u8);
+            }
             eprint!("{}", vm.take_output());
             eprintln!("nova: {}", ve.msg);
             ExitCode::from(1)

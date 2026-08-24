@@ -9,6 +9,7 @@ license = "Apache-2.0"
 num-bigint = "0.4"
 serde_json = { version = "1", features = ["preserve_order"] }
 indexmap = "2"
+regex = "1"
 
 [lib]
 name = "nova"

@@ -18,7 +18,7 @@ fn write(dir: &PathBuf, name: &str, content: &str) {
     std::fs::write(dir.join(name), content).unwrap();
 }
 
-fn run(root: &PathBuf, args: &[&str]) -> (i32, String, String) {
+fn run(root: &std::path::Path, args: &[&str]) -> (i32, String, String) {
     let out = Command::new(bin()).args(args).current_dir(root).output().expect("spawn nova");
     (
         out.status.code().unwrap_or(-1),
