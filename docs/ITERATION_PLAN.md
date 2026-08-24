@@ -189,7 +189,7 @@ Statuses: ☐ Not started · ◐ In progress · ✅ Done (date) · ⏸ Blocked (
 | C01 | Compact-shorthand skin: lexer symbols, expression grammar; SAME AST nodes | P0 | L | B05 | ✅ 2026-08-22 |
 | C02 | Cross-skin equivalence golden tests (Natural vs shorthand pairs) | P0 | M | C01 | ✅ 2026-08-22 (8 permanent byte-identical pairs; extend per construct) |
 | C03 | `Optional<T>` values: `nothing` checks, `?` postfix propagation | P0 | M | — | ✅ 2026-08-23 |
-| C04 | `Result` pattern: `try ... if it fails as err ... done` returns typed result; `give back ok/err` | P1 | M | C03 | ☐ |
+| C04 | `Result` pattern: `try ... if it fails as err ... done` returns typed result; `give back ok/err` | P1 | M | C03 | ☐ folds in after the P0 spine (owner); target = post-v0.20 typed layer |
 | C05 | Modules: `the tools-module in "tools.nova"` import; namespaces; circular-import error | P0 | M | — | ✅ 2026-08-23 |
 | C06 | String library v0 | P0 | M | — | ✅ 2026-08-23 |
 | C07 | List/dict library v0 | P1 | M | C06 | ✅ 2026-08-23 (map/filter/fold deferred to C10/T2) |
@@ -203,7 +203,7 @@ Statuses: ☐ Not started · ◐ In progress · ✅ Done (date) · ⏸ Blocked (
 ### Phase 2 — Credible language (→ G2)
 | ID | Item | P | Size | Depends | Status |
 |---|---|---|---|---|---|
-| D01 | `nova test`: discovers `*.test.nova`, asserts lib, reports diffs | P1 | M | C05 | ☐ |
+| D01 | `nova test`: discovers `*.test.nova`, asserts lib, reports diffs | P1 | M | C05 | ✅ superseded by N07 (native CLI runner) |
 | D02 | Formatter v0: token-stream based, idempotency property test | P1 | L | C01 | ☐ |
 | D03 | Linter v0: naming, unused var, missing otherwise, truthiness trap | P2 | M | D01 | ☐ |
 | D04 | `--sim` determinism mode | P2 | M | — | ☐ |
@@ -251,6 +251,8 @@ Statuses: ☐ Not started · ◐ In progress · ✅ Done (date) · ⏸ Blocked (
 > **N06 → N07 → N08a → N08b → N09** (P1), then tag v0.20.0.
 >
 > *(Owner may reorder by editing this block — nothing outside it starts until it is empty or owner says go.)*
+>
+> **Status 2026-08-24:** N00–N05 ✅ complete — native modules + stdlib v0 at differential parity (29/29). Next: **N07** → **N06** (cli/csv/datetime/regex) → **N08a/b**; **N09 LSP moved to v0.21** (owner-approved).
 
 1. ~~B05 golden dumps~~ ✅ · ~~B01~~ ✅ · ~~B02~~ ✅ · ~~C01+C02~~ ✅ · ~~C03~~ ✅ ·
    ~~C05~~ ✅ · ~~C06–C08~~ ✅ · ~~B03/B04~~ ✅ · ~~C09~~ ✅ · ~~E00+E01~~ ✅
@@ -327,8 +329,8 @@ CSV reading (blocks A4), date/formatting in time-lib, string-interpolation-as-AS
 | Q10 | No test-runner/formatter yet (D01/D02) | gates G2 | ☐ tracked as D-items |
 | Q11 | When is `X is E` a declaration vs a comparison? The context rule is implemented but never written down | T1 learnability; blocks the natural-syntax coverage audit (G1) | ☐ |
 | Q12 | No normative grammar doc for the Natural skin (`grammar.md` covers compact only; `natural_syntax.md` §3 is a sketch) | E02 native parser has no spec to build against — goldens are the de-facto spec | ✅ RESOLVED 2026-08-24: `specs/syntax/grammar_natural.md` is normative (N00); quirks pinned in its §6 |
-| Q13 | Map phrase `set the age of X in M to V` exists in natural_syntax.md but is not implemented in bootstrap | spec/impl gap misleads learners; breaks "no dead ends" trust | ☐ implement or move to parking lot |
-| Q14 | Integer model: bootstrap bigint now vs promised i32 later | E06 differential tester will diverge on big literals / overflow | ◐ revisit with corpus design at E02/E06 |
+| Q13 | Map phrase `set the age of X in M to V` exists in natural_syntax.md but is not implemented in bootstrap | spec/impl gap misleads learners; breaks "no dead ends" trust | ⏸ parked 2026-08-24: map phrase documented as future surface in natural_syntax.md; native dicts expose json-style access first |
+| Q14 | Integer model: bootstrap bigint now vs promised i32 later | E06 differential tester will diverge on big literals / overflow | ◐ duplicate of Q4 - revisit with corpus design as N05 grows |
 
 ## 11. Changelog (newest first — mandatory updates)
 
