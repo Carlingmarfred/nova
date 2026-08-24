@@ -1,4 +1,5 @@
 ﻿pub mod ast;
+pub mod compiler;
 pub mod bytecode;
 pub mod value;
 pub mod vm;
@@ -7,4 +8,5 @@ pub mod errors;
 pub mod lexer;
 pub mod messages;
 pub mod parser;
+
 

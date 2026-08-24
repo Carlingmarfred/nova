@@ -197,6 +197,38 @@ pub mod interp {
     pub fn contains_needs_str_or_list() -> String {
         "'contains' requires text or a list".to_string()
     }
+
+    pub fn var_not_found(name: &str) -> String {
+        format!(
+            "the variable '{name}' does not exist — check the spelling or declare it with 'x is ...'"
+        )
+    }
+
+    pub fn each_needs_seq(_found: &str) -> String {
+        "'repeat for each' requires a list or text".to_string()
+    }
+
+    pub fn times_needs_num(_found: &str) -> String {
+        "'repeat N times' requires a number".to_string()
+    }
+
+    pub fn counting_needs_num(_found: &str) -> String {
+        "'repeat with i from A to B' requires numbers".to_string()
+    }
+
+    pub fn add_needs_list_or_num(name: &str) -> String {
+        format!("'add ... to {name}' requires a list or a number")
+    }
+
+    pub fn func_not_found(name: &str) -> String {
+        format!(
+            "the function '{name}' does not exist — define it with 'to <name> ... done'"
+        )
+    }
+
+    pub fn func_arity(name: &str, wanted: usize, got: usize, call_hint: &str) -> String {
+        format!("'{name}' expects {wanted} argument(s), got {got} — call: {call_hint}")
+    }
 }
 
 #[cfg(test)]

@@ -130,6 +130,17 @@ python bootstrap/nova_cli.py version                     # Nova 0.14.0-bootstrap
 
 ## 5. Changelog (v0.11 →)
 
+**2026-08-24 — N03 ✅ (bytecode+VM core complete):** `compiler.rs` compiles the
+statement subset to a Program of Funcs (main = funcs[0]); loops share one layout
+(IterNew → IterNext(end) → body → Jump cont → IterClose) so `skip` naturally
+advances iterators. VM scope rule probed from oracle: **StoreName writes where the
+name is already bound (local→global), else defines in current scope** — this is why
+`set g` inside a function mutates the global but `set zz` for an unknown name stays
+local and later top-level reads fail. Display rules: bools lowercase, nothing,
+lists `[a, b]` with strings unquoted, floats Python-style via fmt_float.
+Known-native-only improvement: ordering on non-numbers gives a sentence, oracle
+crashes raw (align at N05).
+
 **2026-08-24 — N03a ✅ (native VM expression core):** value model (bigint via
 num-bigint; lists = Rc<RefCell<Vec>> for C13 aliasing), `nova_eq` ported 1:1,
 Python-sign modulo (`num-bigint`'s `%` is truncated — corrected via floor rule).

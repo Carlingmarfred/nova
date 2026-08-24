@@ -1,5 +1,9 @@
-use crate::ast::{EKind, ENode, PyLit};
+﻿use crate::ast::{EKind, ENode, PyLit};
 use crate::value::Value;
+
+pub fn compile_expr(e: &ENode, chunk: &mut Chunk) -> Result<(), CompileError> {
+    compile_expr_into(e, chunk)
+}
 
 #[derive(Debug, Clone)]
 pub enum Instr {
@@ -24,9 +28,48 @@ pub enum Instr {
     JumpIfTrue(u16),
     MakeList(u16),
     Pop,
+    LoadName(u16),
+    StoreName(u16),
+    AddToName(u16),
+    Jump(u16),
+    JumpIfFalsePop(u16),
+    JumpIfTruePop(u16),
+    IterNew,
+    IterTimesNew,
+    IterCountNew,
+    IterNext(u16),
+    IterClose,
+    Call(u16, u8),
+    CallName(u16, u8),
+    Ret,
+    Halt,
+    Print(u8, bool),
 }
 
 #[derive(Debug, Default)]
+pub struct Func {
+    pub name: String,
+    pub params: Vec<String>,
+    pub names: Vec<String>,
+    pub chunk: Chunk,
+}
+
+impl Func {
+    pub fn name_index(&mut self, name: &str) -> u16 {
+        if let Some(i) = self.names.iter().position(|n| n == name) {
+            return i as u16;
+        }
+        self.names.push(name.to_string());
+        (self.names.len() - 1) as u16
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct Program {
+    pub funcs: Vec<Func>,
+}
+
+#[derive(Debug, Clone, Default)]
 pub struct Chunk {
     pub code: Vec<Instr>,
     pub consts: Vec<Value>,
@@ -65,7 +108,7 @@ pub struct CompileError {
     pub kind: &'static str,
 }
 
-pub fn compile_expr(e: &ENode, chunk: &mut Chunk) -> Result<(), CompileError> {
+pub fn compile_expr_into(e: &ENode, chunk: &mut Chunk) -> Result<(), CompileError> {
     match &e.kind {
         EKind::Lit(l) => {
             let c = chunk.constant(lit_value(l));
@@ -166,3 +209,5 @@ fn variant_name(e: &EKind) -> &'static str {
         EKind::QuestionE(_) => "QuestionE",
     }
 }
+
+

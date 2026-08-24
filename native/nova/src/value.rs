@@ -18,6 +18,17 @@ impl Value {
         Value::Int(BigInt::from(n))
     }
 
+    pub fn from_lit(l: &crate::ast::PyLit) -> Value {
+        match l {
+            crate::ast::PyLit::Int(s) => {
+                Value::Int(s.parse().expect("lexer guarantees bigint-parsable ints"))
+            }
+            crate::ast::PyLit::Float(f) => Value::Float(*f),
+            crate::ast::PyLit::Bool(b) => Value::Bool(*b),
+            crate::ast::PyLit::Nothing => Value::Nothing,
+        }
+    }
+
     pub fn type_name(&self) -> &'static str {
         match self {
             Value::Int(_) | Value::Float(_) => "number",
