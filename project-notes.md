@@ -127,6 +127,12 @@ python bootstrap/nova_cli.py version                     # Nova 0.14.0-bootstrap
 
 ## 5. Changelog (v0.11 →)
 
+**2026-08-24 — N00 ✅:** normative Natural-skin EBNF grammar at
+`specs/syntax/grammar_natural.md` (extracted from nova_lexer/nova_parser; audit
+verified against live parser: symbol+`is`-reintroduced comparison chaining, `not`
+binds comparison / `!` binds factor, try-body cannot host bare-`if` statements,
+`the length x` middle-`of` optional). Native N02 builds against this doc.
+
 **2026-08-24 — v0.2 contract locked:** N-series native-release track added to plan;
 README decision log rows (release definition/engine, integer-model amendment);
 AGENTS.md queue updated to N-series. No code changes.

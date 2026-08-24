@@ -159,7 +159,7 @@ Statuses: ☐ Not started · ◐ In progress · ✅ Done (date) · ⏸ Blocked (
 
 | ID | Item | P | Size | Depends | Status |
 |---|---|---|---|---|---|
-| N00 | Normative Natural-skin EBNF grammar (`specs/syntax/grammar_natural.md`); gap-audit vs goldens; closes Q12 | P0 | L | — | ☐ |
+| N00 | Normative Natural-skin EBNF grammar (`specs/syntax/grammar_natural.md`); gap-audit vs goldens; closes Q12 | P0 | L | — | ✅ 2026-08-24 (chaining/`not`-asymmetry/try-body quirks pinned §6) |
 | N01 | Rust workspace scaffold + skin-aware lexer; English messages ported from `nova_messages.py` | P0 | M | — | ☐ |
 | N02 | Rust parser → AST **byte-compatible with Python golden dumps** (= E02) | P0 | XL | N00, N01 | ☐ |
 | N03 | Bytecode compiler + stack VM core: numbers/text/lists, control flow, functions (= E07 front half, pulled early) | P0 | L | N02 | ☐ |
@@ -326,7 +326,7 @@ CSV reading (blocks A4), date/formatting in time-lib, string-interpolation-as-AS
 | Q9 | String interpolation re-lexed at runtime; invisible to goldens | E02 landmine | ◐ parked (interpolation-as-AST) |
 | Q10 | No test-runner/formatter yet (D01/D02) | gates G2 | ☐ tracked as D-items |
 | Q11 | When is `X is E` a declaration vs a comparison? The context rule is implemented but never written down | T1 learnability; blocks the natural-syntax coverage audit (G1) | ☐ |
-| Q12 | No normative grammar doc for the Natural skin (`grammar.md` covers compact only; `natural_syntax.md` §3 is a sketch) | E02 native parser has no spec to build against — goldens are the de-facto spec | ◐ **N00 in progress (2026-08-24)**: grammar doc first, per owner |
+| Q12 | No normative grammar doc for the Natural skin (`grammar.md` covers compact only; `natural_syntax.md` §3 is a sketch) | E02 native parser has no spec to build against — goldens are the de-facto spec | ✅ RESOLVED 2026-08-24: `specs/syntax/grammar_natural.md` is normative (N00); quirks pinned in its §6 |
 | Q13 | Map phrase `set the age of X in M to V` exists in natural_syntax.md but is not implemented in bootstrap | spec/impl gap misleads learners; breaks "no dead ends" trust | ☐ implement or move to parking lot |
 | Q14 | Integer model: bootstrap bigint now vs promised i32 later | E06 differential tester will diverge on big literals / overflow | ◐ revisit with corpus design at E02/E06 |
 
@@ -334,6 +334,7 @@ CSV reading (blocks A4), date/formatting in time-lib, string-interpolation-as-AS
 
 | Date | Change |
 |---|---|
+| 2026-08-24 | **N00 ✅**: normative Natural-skin grammar written (`specs/syntax/grammar_natural.md`) — full EBNF extracted from the bootstrap parser, dump-contract node table, verified quirks pinned (comparison-tail chaining incl. `is`-reintroduction rule, `not`-vs-`!` operand asymmetry, try-body `if` limitation, optional middle `of`). Q12 closed. |
 | 2026-08-24 | **v0.2 native-release contract locked (owner)**: N-series track added (§6 Phase 0.2) — Rust bytecode+stack VM behind swappable backend, dynamic + opt-in annotations, bigint through 0.2, audience = dev scripting/CLI, stdlib pack cli/csv/datetime/regex, uniqueness bets history/undo + Flow<T>, tooling floor nova-test + LSP, grammar-doc-first (N00). Old D01→E02 queue superseded; ships as v0.20.0. |
 | 2026-08-23 | **i18n docs sweep completed (for real)**: EXTENSIONS, language_reference, unique_features, standard_library, module_system, concurrency, memory_model, grammar → 100% English (grep-audited). Owner decisions: `it` reserved (protects check/try patterns; +2 tests → suite **236/236**), open questions Q11–Q14 added to §12. |
 | 2026-08-23 | **E01 ✅ + repo LIVE**: github.com/Carlingmarfred/nova public (Apache-2.0); CI green first run (windows+ubuntu, 39s). Q5/Q6/Q7/Q8 decisions resolved. v0.15.1 tagged. Suite: 234/234. Next: D01/D05/D06 → C04/C10.
