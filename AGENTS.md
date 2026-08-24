@@ -58,9 +58,10 @@ python bootstrap/nova_cli.py repl                           # interactive REPL
   C09 REPL · C13 memory-model cut · docs-audit · i18n-to-English · semantic-equality
   pinning · mod-zero guard · factor-level phrase binding.
 - E00 ✅ + E01 ✅ (CI green). **Active track (owner-approved 2026-08-24): v0.2 native
-  release — N-series queue in plan §6 Phase 0.2: N00 → N01 → N02 → N03 → N04 → N05
-  (P0 spine), then N06 → N07 → N08a → N08b → N09 → tag v0.20.0.** Engine: bytecode+stack
-  VM behind swappable backend; integers arbitrary-precision through 0.2; grammar doc
-  before parser (N00).
+  release — N-series queue in plan §6 Phase 0.2. Done: N00 (normative grammar doc,
+  Q12 closed) + N01 (Rust lexer at oracle parity, CI rust job). Next: N02 parser →
+  N03 bytecode+VM → N04 runtime → N05 differential harness, then N06–N09 → tag
+  v0.20.0.** Engine: bytecode+stack VM behind swappable backend; integers
+  arbitrary-precision through 0.2.
 - Golden dumps: after BEVIDSTE grammar/format changes run
   `python tests/run_tests.py --update-goldens` and review the diff.

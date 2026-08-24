@@ -1,4 +1,4 @@
-name: CI
+﻿name: CI
 
 on:
   push:
@@ -36,16 +36,20 @@ jobs:
         run: python bootstrap/nova_cli.py run examples/guessing_game.nova --seed 7 < /dev/null || true
         if: runner.os == 'Linux'
 
-  # Placeholder for the native pipeline (E02+): enable once crates/ exists.
-  # rust-check:
-  #   name: Rust check (${{ matrix.os }})
-  #   runs-on: ${{ matrix.os }}
-  #   strategy:
-  #     matrix:
-  #       os: [windows-latest, ubuntu-latest]
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - uses: dtolnay/rust-toolchain@stable
-  #     - run: cargo fmt --check
-  #     - run: cargo clippy -- -D warnings
-  #     - run: cargo test --workspace
+  rust-check:
+    name: Rust check (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    defaults:
+      run:
+        working-directory: native
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - run: cargo test --workspace
+      - run: cargo clippy --workspace -- -D warnings

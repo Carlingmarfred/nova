@@ -160,7 +160,7 @@ Statuses: ☐ Not started · ◐ In progress · ✅ Done (date) · ⏸ Blocked (
 | ID | Item | P | Size | Depends | Status |
 |---|---|---|---|---|---|
 | N00 | Normative Natural-skin EBNF grammar (`specs/syntax/grammar_natural.md`); gap-audit vs goldens; closes Q12 | P0 | L | — | ✅ 2026-08-24 (chaining/`not`-asymmetry/try-body quirks pinned §6) |
-| N01 | Rust workspace scaffold + skin-aware lexer; English messages ported from `nova_messages.py` | P0 | M | — | ☐ |
+| N01 | Rust workspace scaffold + skin-aware lexer; English messages ported from `nova_messages.py` | P0 | M | — | ✅ 2026-08-24 (token streams byte-identical to oracle on lexparity corpus + both examples; 19 unit tests; clippy-clean CI job added) |
 | N02 | Rust parser → AST **byte-compatible with Python golden dumps** (= E02) | P0 | XL | N00, N01 | ☐ |
 | N03 | Bytecode compiler + stack VM core: numbers/text/lists, control flow, functions (= E07 front half, pulled early) | P0 | L | N02 | ☐ |
 | N04 | Runtime completeness: bigint, dicts/things, `nova_eq` pinning, Optional/`?`, contracts, modules, stdlib v0 parity | P0 | L | N03 | ☐ |
@@ -334,6 +334,7 @@ CSV reading (blocks A4), date/formatting in time-lib, string-interpolation-as-AS
 
 | Date | Change |
 |---|---|
+| 2026-08-24 | **N01 ✅**: native Rust workspace (`native/nova`) — skin-aware lexer ported 1:1 from bootstrap (hyphen policy, BOM/shebang, escapes, arbitrary-precision ints as strings, float rule, `;`-newline, symbol skins). Differential spot-check: token streams byte-identical to Python oracle on a 110-token torture file + guessing_game + todo (593 tokens). Message catalog: shared+lexer+parser groups byte-equal. CLI `nova version`/`nova lex`. CI rust job (test+clippy `-D warnings`). |
 | 2026-08-24 | **N00 ✅**: normative Natural-skin grammar written (`specs/syntax/grammar_natural.md`) — full EBNF extracted from the bootstrap parser, dump-contract node table, verified quirks pinned (comparison-tail chaining incl. `is`-reintroduction rule, `not`-vs-`!` operand asymmetry, try-body `if` limitation, optional middle `of`). Q12 closed. |
 | 2026-08-24 | **v0.2 native-release contract locked (owner)**: N-series track added (§6 Phase 0.2) — Rust bytecode+stack VM behind swappable backend, dynamic + opt-in annotations, bigint through 0.2, audience = dev scripting/CLI, stdlib pack cli/csv/datetime/regex, uniqueness bets history/undo + Flow<T>, tooling floor nova-test + LSP, grammar-doc-first (N00). Old D01→E02 queue superseded; ships as v0.20.0. |
 | 2026-08-23 | **i18n docs sweep completed (for real)**: EXTENSIONS, language_reference, unique_features, standard_library, module_system, concurrency, memory_model, grammar → 100% English (grep-audited). Owner decisions: `it` reserved (protects check/try patterns; +2 tests → suite **236/236**), open questions Q11–Q14 added to §12. |

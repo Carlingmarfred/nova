@@ -28,6 +28,9 @@ Repo layout (working dir `oxtest/`):
   nova_interpreter.py, nova_messages.py (reference catalog), nova_cli.py,
   nova_dump.py (v0.15: 223/223 green via tests/run_tests.py)
 - `tests/` — run_tests.py end-to-end suite (subprocess-based)
+- `native/` — Rust workspace (N-series): `native/nova` crate with src/lexer.rs
+  (oracle-parity lexer), src/messages.rs (byte-equal diagnostics), src/errors.rs,
+  src/main.rs (`nova version | lex <file>`); 19 unit tests + clippy-clean in CI
 
 ## 2. Key Decisions
 
@@ -126,6 +129,13 @@ python bootstrap/nova_cli.py version                     # Nova 0.14.0-bootstrap
 4. After the P0 spine: D05/D06/C04/C10 fold back into the queue.
 
 ## 5. Changelog (v0.11 →)
+
+**2026-08-24 — N01 ✅:** native Rust lexer at oracle parity (byte-identical token
+streams vs Python on torture corpus + both examples). Lexer invariants mirrored from
+nova_lexer.py: char-index columns, `-`+digit breaks words, trailing `-` stripped,
+`007`→`7` canonical ints (stored as strings — bigint later), floats need digit after
+dot, `;`=NEWLINE, skin doubles before singles. Parity harness lives in temp scripts
+for now; permanent differential runner is N05.
 
 **2026-08-24 — N00 ✅:** normative Natural-skin EBNF grammar at
 `specs/syntax/grammar_natural.md` (extracted from nova_lexer/nova_parser; audit
