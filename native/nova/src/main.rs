@@ -1,7 +1,9 @@
+use nova::compiler::compile_program;
 use nova::dump::dump_program;
 use nova::errors::NovaError;
 use nova::lexer::lex;
 use nova::parser::parse_source;
+use nova::vm::Vm;
 use std::process::ExitCode;
 
 fn main() -> ExitCode {
@@ -13,8 +15,9 @@ fn main() -> ExitCode {
         }
         Some("lex") if args.len() == 3 => run_lex(&args[2]),
         Some("parse") if args.len() == 3 => run_parse(&args[2]),
+        Some("run") if args.len() == 3 => run_prog(&args[2]),
         _ => {
-            eprintln!("usage: nova version | nova lex <file.nova> | nova parse <file.nova>");
+            eprintln!("usage: nova version | nova lex <file.nova> | nova parse <file.nova> | nova run <file.nova>");
             ExitCode::from(2)
         }
     }
@@ -59,5 +62,38 @@ fn run_parse(path: &str) -> ExitCode {
             ExitCode::SUCCESS
         }
         Err(e) => fail(&e),
+    }
+}
+
+fn run_prog(path: &str) -> ExitCode {
+    let src = match read_src(path) {
+        Ok(s) => s,
+        Err(code) => return code,
+    };
+    let stmts = match parse_source(&src) {
+        Ok(s) => s,
+        Err(e) => return fail(&e),
+    };
+    let program = match compile_program(&stmts) {
+        Ok(p) => p,
+        Err(ce) => {
+            eprintln!(
+                "nova: this feature is not available in the native preview yet ({}) — the Python bootstrap can run it",
+                ce.kind
+            );
+            return ExitCode::from(1);
+        }
+    };
+    let mut vm = Vm::new();
+    match vm.run_program(&program) {
+        Ok(()) => {
+            print!("{}", vm.take_output());
+            ExitCode::SUCCESS
+        }
+        Err(ve) => {
+            eprint!("{}", vm.take_output());
+            eprintln!("nova: {}", ve.msg);
+            ExitCode::from(1)
+        }
     }
 }

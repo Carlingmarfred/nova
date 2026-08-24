@@ -1,4 +1,4 @@
-use crate::bytecode::{Chunk, Func, Instr, Program};
+﻿use crate::bytecode::{Chunk, Func, Instr, Program};
 use crate::messages;
 use crate::value::{arith, nova_eq, num_cmp, ArithError, Value};
 use std::cell::RefCell;
@@ -119,7 +119,7 @@ impl Vm {
                 Instr::Call(fidx, argc) => {
                     let at = self.stack.len() - argc as usize;
                     let args: Vec<Value> = self.stack.split_off(at);
-                    self.call_func(prog, fidx as usize, args)?;
+                    self.enter_func(prog, fidx as usize, args)?;
                 }
                 Instr::CallName(nidx, argc) => {
                     let at = self.stack.len() - argc as usize;
@@ -130,7 +130,7 @@ impl Vm {
                         .iter()
                         .position(|f| f.name == name)
                         .ok_or_else(|| err(messages::interp::func_not_found(&name)))?;
-                    self.call_func(prog, fidx, args)?;
+                    self.enter_func(prog, fidx, args)?;
                 }
                 Instr::Print(count, newline) => {
                     let at = self.stack.len() - count as usize;
@@ -355,7 +355,7 @@ impl Vm {
         Err(err(messages::interp::var_not_found(name)))
     }
 
-    fn call_func(&mut self, prog: &Program, fidx: usize, args: Vec<Value>) -> Result<(), VmError> {
+    fn enter_func(&mut self, prog: &Program, fidx: usize, args: Vec<Value>) -> Result<(), VmError> {
         let params = &prog.funcs[fidx].params;
         if params.len() != args.len() {
             let name = prog.funcs[fidx].name.clone();
@@ -367,7 +367,7 @@ impl Vm {
             locals.insert(p, v);
         }
         self.frames.push(Frame { func_idx: fidx, ip: 0, locals: Some(locals), iters: vec![] });
-        self.exec(prog)
+        Ok(())
     }
 
     fn pop2(&mut self) -> Result<(Value, Value), VmError> {
@@ -434,3 +434,5 @@ fn arith_msg(_op: &str, _a: &Value, _b: &Value, e: ArithError) -> String {
         ArithError::OnNothing => messages::interp::arith_on_nothing(),
     }
 }
+
+

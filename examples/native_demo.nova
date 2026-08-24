@@ -1,0 +1,23 @@
+to square with nnn
+give back nnn times nnn
+done
+
+to fib with nnn
+if nnn is less than 2 then give back nnn
+give back fib(nnn minus 1) plus fib(nnn minus 2)
+done
+
+total is 0
+repeat with i from 1 to 10
+add square(i) to total
+done
+
+write "sum of squares 1..10 = "
+say total
+write "fib(15) = "
+say fib(15)
+repeat for each w in ["native", "vm", "works"]
+write w
+write " "
+done
+say ""
