@@ -15,6 +15,7 @@ struct LoopCtx {
 struct Builder {
     func: Func,
     loops: Vec<LoopCtx>,
+    pending_ensures: Vec<ENode>,
 }
 
 impl Builder {
@@ -50,6 +51,7 @@ pub fn compile_program(stmts: &[SNode]) -> Result<Program, CompileError> {
         builders: vec![Builder {
             func: Func { name: "<main>".into(), params: vec![], names: vec![], chunk: Chunk::default() },
             loops: vec![],
+            pending_ensures: vec![],
         }],
         cur: 0,
     };
@@ -64,6 +66,7 @@ pub fn compile_program(stmts: &[SNode]) -> Result<Program, CompileError> {
                     chunk: Chunk::default(),
                 },
                 loops: vec![],
+                pending_ensures: vec![],
             });
         }
     }
@@ -147,11 +150,52 @@ impl Compiler {
                 Ok(())
             }
             SKind::TakeFrom { .. } => Err(CompileError { kind: "TakeFrom (N04)" }),
-            SKind::ExprStmt { expr } | SKind::Contract { expr, .. } => {
+            SKind::ExprStmt { expr } => {
                 self.expr(expr)?;
                 self.emit_in_cur(Instr::Pop);
                 Ok(())
             }
+            SKind::Contract { kind, expr } => {
+                if *kind == "requires" {
+                    self.expr(expr)?;
+                    self.emit_in_cur(Instr::RequireCheck);
+                } else {
+                    if self.cur == 0 {
+                        return Err(CompileError { kind: "ensures outside function" });
+                    }
+                    self.b().pending_ensures.push(expr.clone());
+                }
+                Ok(())
+            }
+            SKind::TryStmt { body, errname, handler } => match handler {
+                Some(hb) => {
+                    let tp = self.b().here();
+                    self.emit_in_cur(Instr::TryPush(0, true));
+                    self.block(body)?;
+                    self.emit_in_cur(Instr::TryPop);
+                    let skip = self.b().here();
+                    self.emit_in_cur(Instr::Jump(0));
+                    let catch_ip = self.b().here();
+                    self.patch(tp, catch_ip);
+                    if let Some(n) = errname {
+                        let idx = self.b().name_index(n);
+                        self.emit_in_cur(Instr::StoreName(idx));
+                    }
+                    self.block(&hb)?;
+                    let end = self.b().here();
+                    self.patch(skip, end);
+                    Ok(())
+                }
+                None => {
+                    let tp = self.b().here();
+                    self.emit_in_cur(Instr::TryPush(0, false));
+                    self.block(body)?;
+                    self.emit_in_cur(Instr::TryPop);
+                    let catch_ip = self.b().here();
+                    self.patch(tp, catch_ip);
+                    Ok(())
+                }
+            },
             SKind::Check { subject, arms, otherwise } => {
                 self.expr(subject)?;
                 let subj_idx = self.b().name_index("@subject");
@@ -311,20 +355,44 @@ impl Compiler {
                     Some(e) => self.expr(e)?,
                     None => self.push_nothing(self.cur),
                 }
-                self.emit_in_cur(Instr::Ret);
+                self.emit_func_exit()?;
                 Ok(())
             }
             SKind::FuncDef { name, params, body } => {
                 let saved = self.switch_to_func(name);
                 self.builders[self.cur].func.params = params.clone();
-                self.block(body)?;
+                for st in &body.stmts {
+                    if let SKind::Contract { kind: "requires", expr } = &st.kind {
+                        self.expr(expr)?;
+                        self.emit_in_cur(Instr::RequireCheck);
+                    }
+                }
+                for st in &body.stmts {
+                    if matches!(&st.kind, SKind::Contract { kind: "requires", .. }) {
+                        continue;
+                    }
+                    self.stmt(st)?;
+                }
                 self.push_nothing(self.cur);
-                self.emit_in_cur(Instr::Ret);
+                self.emit_func_exit()?;
                 self.restore(saved);
                 Ok(())
             }
             other => Err(CompileError { kind: skind_name(other) }),
         }
+    }
+
+    fn emit_func_exit(&mut self) -> R {
+        let ret_idx = self.b().name_index("@ret");
+        self.emit_in_cur(Instr::StoreName(ret_idx));
+        let ensures = self.builders[self.cur].pending_ensures.clone();
+        for e in &ensures {
+            self.expr(e)?;
+            self.emit_in_cur(Instr::EnsureCheck);
+        }
+        self.emit_in_cur(Instr::LoadName(ret_idx));
+        self.emit_in_cur(Instr::Ret);
+        Ok(())
     }
 
     fn if_chain(&mut self, branches: &[(ENode, SBlock)], otherwise: Option<&SBlock>) -> R {
@@ -395,6 +463,7 @@ impl Compiler {
             | Instr::JumpIfFalsePop(t)
             | Instr::JumpIfTruePop(t)
             | Instr::IterNext(t) => *t = target,
+            Instr::TryPush(t, _) => *t = target,
             _ => unreachable!("patch target not a jump"),
         }
     }
@@ -582,4 +651,5 @@ fn skind_name(k: &SKind) -> &'static str {
         SKind::WhenProgramStarts { .. } => "WhenProgramStarts",
     }
 }
+
 

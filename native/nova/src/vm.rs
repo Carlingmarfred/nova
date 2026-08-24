@@ -58,6 +58,7 @@ struct Frame {
     ip: usize,
     locals: Option<HashMap<String, Value>>,
     iters: Vec<Iter>,
+    handlers: Vec<(u16, usize, usize, bool)>,
 }
 
 #[derive(Default)]
@@ -78,7 +79,7 @@ impl Vm {
     }
 
     pub fn run_program(&mut self, prog: &Program) -> Result<(), VmError> {
-        self.frames.push(Frame { func_idx: 0, ip: 0, locals: None, iters: vec![] });
+        self.frames.push(Frame { func_idx: 0, ip: 0, locals: None, iters: vec![], handlers: vec![] });
         self.exec(prog)
     }
 
@@ -94,19 +95,9 @@ impl Vm {
         Ok(self.stack.pop().unwrap_or(Value::Nothing))
     }
 
-    fn exec(&mut self, prog: &Program) -> Result<(), VmError> {
-        loop {
-            let (fi, ip) = {
-                let f = self.frames.last().ok_or_else(|| err("no frame".into()))?;
-                (f.func_idx, f.ip)
-            };
-            let code_len = prog.funcs[fi].chunk.code.len();
-            if ip >= code_len {
-                return Ok(());
-            }
-            let instr = prog.funcs[fi].chunk.code[ip].clone();
-            self.frames.last_mut().unwrap().ip += 1;
-            match instr {
+    fn step(&mut self, prog: &Program, instr: Instr) -> Result<(), VmError> {
+        let fi = self.frames.last().ok_or_else(|| err("no frame".into()))?.func_idx;
+        match instr {
                 Instr::Halt => return Ok(()),
                 Instr::Ret => {
                     let v = self.stack.pop().unwrap_or(Value::Nothing);
@@ -309,6 +300,76 @@ impl Vm {
                     let b = truth(&v)?;
                     self.stack.push(Value::Bool(!b));
                 }
+                Instr::TryPush(catch_ip, push_err) => {
+                    let iters_len = self.frames.last().unwrap().iters.len();
+                    self.frames
+                        .last_mut()
+                        .unwrap()
+                        .handlers
+                        .push((catch_ip, self.stack.len(), iters_len, push_err));
+                }
+                Instr::TryPop => {
+                    self.frames.last_mut().unwrap().handlers.pop();
+                }
+                Instr::RequireCheck => {
+                    let v = self.stack.pop().ok_or_else(|| err("stack underflow".into()))?;
+                    if !truth(&v)? {
+                        return Err(err(messages::interp::contract_failed("requires")));
+                    }
+                }
+                Instr::EnsureCheck => {
+                    let v = self.stack.pop().ok_or_else(|| err("stack underflow".into()))?;
+                    if !truth(&v)? {
+                        let fname = prog.funcs[self.frames.last().unwrap().func_idx].name.clone();
+                        return Err(err(messages::interp::ensure_failed(&fname)));
+                    }
+                }
+            }
+        Ok(())
+    }
+
+    fn exec(&mut self, prog: &Program) -> Result<(), VmError> {
+        loop {
+            let Some(frame) = self.frames.last() else {
+                return Ok(());
+            };
+            let (fi, ip) = (frame.func_idx, frame.ip);
+            let code_len = prog.funcs[fi].chunk.code.len();
+            if ip >= code_len {
+                return Ok(());
+            }
+            let instr = prog.funcs[fi].chunk.code[ip].clone();
+            self.frames.last_mut().unwrap().ip += 1;
+            if let Err(e) = self.step(prog, instr) {
+                let msg = e.msg;
+                let mut handled = false;
+                loop {
+                    let handler = self.frames.last().and_then(|f| f.handlers.last().copied());
+                    match handler {
+                        Some((catch_ip, stack_len, iters_len, push_err)) => {
+                            self.frames.last_mut().unwrap().handlers.pop();
+                            self.stack.truncate(stack_len);
+                            let fr = self.frames.last_mut().unwrap();
+                            fr.iters.truncate(iters_len);
+                            fr.ip = catch_ip as usize;
+                            if push_err {
+                                self.stack.push(Value::Text(msg.clone()));
+                            }
+                            handled = true;
+                        }
+                        None => {
+                            if self.frames.pop().is_none() {
+                                break;
+                            }
+                        }
+                    }
+                    if handled {
+                        break;
+                    }
+                }
+                if !handled {
+                    return Err(VmError { msg });
+                }
             }
         }
     }
@@ -379,7 +440,7 @@ impl Vm {
         for (p, v) in params.iter().cloned().zip(args) {
             locals.insert(p, v);
         }
-        self.frames.push(Frame { func_idx: fidx, ip: 0, locals: Some(locals), iters: vec![] });
+        self.frames.push(Frame { func_idx: fidx, ip: 0, locals: Some(locals), iters: vec![], handlers: vec![] });
         Ok(())
     }
 
@@ -447,5 +508,7 @@ fn arith_msg(_op: &str, _a: &Value, _b: &Value, e: ArithError) -> String {
         ArithError::OnNothing => messages::interp::arith_on_nothing(),
     }
 }
+
+
 
 

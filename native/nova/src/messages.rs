@@ -229,6 +229,16 @@ pub mod interp {
     pub fn func_arity(name: &str, wanted: usize, got: usize, call_hint: &str) -> String {
         format!("'{name}' expects {wanted} argument(s), got {got} — call: {call_hint}")
     }
+
+    pub fn contract_failed(kind: &str) -> String {
+        format!("the {kind} contract failed — the condition on this line was not true")
+    }
+
+    pub fn ensure_failed(func: &str) -> String {
+        format!(
+            "the ensures contract failed in '{func}' — the final state did not satisfy the guarantee"
+        )
+    }
 }
 
 #[cfg(test)]

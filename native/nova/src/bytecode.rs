@@ -46,6 +46,10 @@ pub enum Instr {
     Ret,
     Halt,
     Print(u8, bool),
+    TryPush(u16, bool),
+    TryPop,
+    RequireCheck,
+    EnsureCheck,
 }
 
 #[derive(Debug, Default)]

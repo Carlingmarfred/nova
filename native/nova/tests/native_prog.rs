@@ -162,6 +162,69 @@ fn check_statement_matches_oracle() {
 }
 
 #[test]
+fn try_catches_and_binds_message() {
+    expect_out(
+        "try\nsay 1 divided by 0\nif it fails as eee\nsay eee\ndone",
+        "division by zero — check the denominator, or use 'if x is 0' first\n",
+    );
+    expect_out("say \"start\"\ntry\nsay 1 mod 0\nif it fails as eee\nsay \"caught\"\ndone\nsay \"end\"", "start\ncaught\nend\n");
+}
+
+#[test]
+fn try_without_handler_swallows() {
+    expect_out("say \"a\"\ntry\nsay 1 divided by 0\ndone\nsay \"b\"", "a\nb\n");
+}
+
+#[test]
+fn nested_try_inner_wins() {
+    expect_out(
+        "try\ntry\nsay 1 mod 0\nif it fails\nsay \"inner\"\ndone\nif it fails\nsay \"outer\"\ndone",
+        "inner\n",
+    );
+}
+
+#[test]
+fn error_in_called_function_is_caught_by_caller() {
+    expect_out(
+        "to boom\nsay 1 divided by 0\ndone\nsay \"start\"\ntry\nboom()\nif it fails as eee\nsay \"caught\"\ndone\nsay \"end\"",
+        "start\ncaught\nend\n",
+    );
+}
+
+#[test]
+fn uncaught_error_stops_program_with_sentence() {
+    let got = run("say \"a\"\nsay 1 divided by 0\nsay \"b\"").unwrap_err();
+    assert!(got.contains("division by zero"), "{got}");
+}
+
+#[test]
+fn requires_hoists_above_body_and_is_catchable() {
+    let out = run(
+        "to fff with nnn\nsay \"body ran\"\nrequires nnn is less than 10\ndone\ntry\nfff(99)\nif it fails as eee\nsay \"req-caught\"\ndone",
+    )
+    .unwrap();
+    assert_eq!(out, "req-caught\n");
+    expect_out(
+        "to fff with nnn\nrequires nnn is less than 10\ngive back nnn times 2\ndone\nsay fff(4)",
+        "8\n",
+    );
+}
+
+#[test]
+fn ensures_sees_final_state() {
+    expect_out(
+        "to fff with nnn\nset nnn to nnn times 2\nensures nnn is greater than 5\ndone\nfff(4)\nsay \"ok\"",
+        "ok\n",
+    );
+    let out = run(
+        "to fff with nnn\nset nnn to nnn times 2\nensures nnn is less than 5\ndone\nsay \"go\"\ntry\nfff(10)\nif it fails as eee\nsay eee\ndone",
+    )
+    .unwrap();
+    assert!(out.starts_with("go\n"), "{out}");
+    assert!(out.contains("ensures contract failed in 'fff'"), "{out}");
+}
+
+#[test]
 fn errors_are_sentences() {
     let got = run("say unknownname").unwrap_err();
     assert!(got.contains("the variable 'unknownname' does not exist"), "{got}");
