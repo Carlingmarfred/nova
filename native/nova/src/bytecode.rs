@@ -46,7 +46,7 @@ pub enum Instr {
     Ret,
     Halt,
     Print(u8, bool),
-    TryPush(u16, bool),
+    TryPush(u16, u8),
     TryPop,
     RequireCheck,
     EnsureCheck,
@@ -62,6 +62,14 @@ pub enum Instr {
     Track(u16),
     Undo(u16),
     Redo(u16),
+    ItemAt,
+    FirstItem,
+    LastItem,
+    CountOf,
+    NumVal,
+    RandomBetween,
+    ToText,
+    PushNothing,
 }
 
 #[derive(Debug, Default)]
@@ -227,6 +235,7 @@ fn variant_name(e: &EKind) -> &'static str {
         EKind::QuestionE(_) => "QuestionE",
     }
 }
+
 
 
 

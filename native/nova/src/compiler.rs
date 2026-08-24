@@ -192,7 +192,7 @@ impl Compiler {
             SKind::TryStmt { body, errname, handler } => match handler {
                 Some(hb) => {
                     let tp = self.b().here();
-                    self.emit_in_cur(Instr::TryPush(0, true));
+                    self.emit_in_cur(Instr::TryPush(0, 0));
                     self.block(body)?;
                     self.emit_in_cur(Instr::TryPop);
                     let skip = self.b().here();
@@ -210,7 +210,7 @@ impl Compiler {
                 }
                 None => {
                     let tp = self.b().here();
-                    self.emit_in_cur(Instr::TryPush(0, false));
+                    self.emit_in_cur(Instr::TryPush(0, 1));
                     self.block(body)?;
                     self.emit_in_cur(Instr::TryPop);
                     let catch_ip = self.b().here();
@@ -526,11 +526,6 @@ impl Compiler {
                 self.emit_in_cur(Instr::Const(idx));
                 Ok(())
             }
-            EKind::StrLit(s) => {
-                let idx = self.const_index(crate::value::Value::Text(s.clone()));
-                self.emit_in_cur(Instr::Const(idx));
-                Ok(())
-            }
             EKind::ListLit(items) => {
                 for it in items {
                     self.expr(it)?;
@@ -631,6 +626,82 @@ impl Compiler {
                 self.emit_in_cur(Instr::CopyOf);
                 Ok(())
             }
+            EKind::NumVal(inner) => {
+                self.expr(inner)?;
+                self.emit_in_cur(Instr::NumVal);
+                Ok(())
+            }
+            EKind::CountOf(inner) => {
+                self.expr(inner)?;
+                self.emit_in_cur(Instr::CountOf);
+                Ok(())
+            }
+            EKind::FirstItem(inner) => {
+                self.expr(inner)?;
+                self.emit_in_cur(Instr::FirstItem);
+                Ok(())
+            }
+            EKind::LastItem(inner) => {
+                self.expr(inner)?;
+                self.emit_in_cur(Instr::LastItem);
+                Ok(())
+            }
+            EKind::ItemAt { idx, e } => {
+                self.expr(idx)?;
+                self.expr(e)?;
+                self.emit_in_cur(Instr::ItemAt);
+                Ok(())
+            }
+            EKind::RandomBetween { a, b } => {
+                self.expr(a)?;
+                self.expr(b)?;
+                self.emit_in_cur(Instr::RandomBetween);
+                Ok(())
+            }
+            EKind::HasNoItems(inner) => {
+                self.expr(inner)?;
+                self.emit_in_cur(Instr::MakeList(0));
+                self.emit_in_cur(Instr::Eq);
+                Ok(())
+            }
+            EKind::IsEmptyE(inner) => {
+                self.expr(inner)?;
+                self.emit_in_cur(Instr::IsEmpty);
+                Ok(())
+            }
+            EKind::IsNumberTest { e: inner, negate } => {
+                self.expr(inner)?;
+                self.emit_in_cur(Instr::IsNumber);
+                if *negate {
+                    self.emit_in_cur(Instr::Not);
+                }
+                Ok(())
+            }
+            EKind::ExistsE { e: inner, flag } => {
+                self.expr(inner)?;
+                let nc = self.nothing_const()?;
+                self.emit_in_cur(Instr::Const(nc));
+                self.emit_in_cur(Instr::Eq);
+                if *flag {
+                    self.emit_in_cur(Instr::Not);
+                }
+                Ok(())
+            }
+            EKind::QuestionE(inner) => {
+                let tp = self.b().here();
+                self.emit_in_cur(Instr::TryPush(0, 2));
+                self.expr(inner)?;
+                self.emit_in_cur(Instr::TryPop);
+                let skip = self.b().here();
+                self.emit_in_cur(Instr::Jump(0));
+                let catch_ip = self.b().here();
+                self.patch(tp, catch_ip);
+                self.emit_in_cur(Instr::PushNothing);
+                let end = self.b().here();
+                self.patch(skip, end);
+                Ok(())
+            }
+            EKind::StrLit(raw) => self.compile_string(raw),
             other => Err(CompileError { kind: ekind_name(other) }),
         }
     }
@@ -643,10 +714,95 @@ impl Compiler {
         chunk.consts.push(v);
         (chunk.consts.len() - 1) as u16
     }
+
+    fn nothing_const(&mut self) -> Result<u16, CompileError> {
+        Ok(self.const_index(crate::value::Value::Nothing))
+    }
+
+    fn compile_string(&mut self, raw: &str) -> R {
+        let segments = split_interp(raw);
+        if segments.len() == 1 {
+            if let Seg::Lit(s) = &segments[0] {
+                let idx = self.const_index(crate::value::Value::Text(s.clone()));
+                self.emit_in_cur(Instr::Const(idx));
+                return Ok(());
+            }
+        }
+        let mut first = true;
+        for seg in segments {
+            match seg {
+                Seg::Lit(s) => {
+                    let idx = self.const_index(crate::value::Value::Text(s));
+                    self.emit_in_cur(Instr::Const(idx));
+                }
+                Seg::Hole(h) => {
+                    let wrapped = format!("x = {h}");
+                    let prog = crate::parser::parse_source(&wrapped)
+                        .map_err(|_| CompileError { kind: "interpolation-hole" })?;
+                    let mut hole_expr = None;
+                    for st in &prog {
+                        if let SKind::Assign { expr, .. } = &st.kind {
+                            hole_expr = Some(expr.clone());
+                            break;
+                        }
+                    }
+                    let e = hole_expr.ok_or(CompileError { kind: "interpolation-hole" })?;
+                    self.expr(&e)?;
+                    self.emit_in_cur(Instr::ToText);
+                }
+            }
+            if !first {
+                self.emit_in_cur(Instr::Add);
+            }
+            first = false;
+        }
+        Ok(())
+    }
 }
 
-fn const_same(a: &crate::value::Value, b: &crate::value::Value) -> bool {
-    use crate::value::Value;
+enum Seg {
+    Lit(String),
+    Hole(String),
+}
+
+fn split_interp(raw: &str) -> Vec<Seg> {
+    let mut segs = Vec::new();
+    let mut lit = String::new();
+    let mut chars = raw.chars().peekable();
+    while let Some(c) = chars.next() {
+        if c == '{' {
+            let mut hole = String::new();
+            let mut closed = false;
+            for hc in chars.by_ref() {
+                if hc == '}' {
+                    closed = true;
+                    break;
+                }
+                hole.push(hc);
+            }
+            if !closed {
+                lit.push('{');
+                lit.push_str(&hole);
+                continue;
+            }
+            if !lit.is_empty() {
+                segs.push(Seg::Lit(std::mem::take(&mut lit)));
+            }
+            segs.push(Seg::Hole(hole));
+        } else {
+            lit.push(c);
+        }
+    }
+    if !lit.is_empty() {
+        segs.push(Seg::Lit(lit));
+    }
+    if segs.is_empty() {
+        segs.push(Seg::Lit(String::new()));
+    }
+    segs
+}
+
+fn const_same(a: &crate::value::Value, b: &crate::value::Value) -> bool {    use crate::value::Value;
     match (a, b) {
         (Value::Int(x), Value::Int(y)) => x == y,
         (Value::Float(x), Value::Float(y)) => x == y,
@@ -730,6 +886,8 @@ fn skind_name(k: &SKind) -> &'static str {
         SKind::WhenProgramStarts { .. } => "WhenProgramStarts",
     }
 }
+
+
 
 
 

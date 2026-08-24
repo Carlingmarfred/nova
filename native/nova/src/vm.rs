@@ -8,6 +8,7 @@ use std::rc::Rc;
 
 pub struct VmError {
     pub msg: String,
+    pub signal: bool,
 }
 
 #[derive(Clone)]
@@ -21,7 +22,11 @@ pub struct LoadedModule {
 }
 
 fn err(msg: String) -> VmError {
-    VmError { msg }
+    VmError { msg, signal: false }
+}
+
+fn signal_err(msg: String) -> VmError {
+    VmError { msg, signal: true }
 }
 
 pub fn truth(v: &Value) -> Result<bool, VmError> {
@@ -68,7 +73,7 @@ struct Frame {
     ip: usize,
     locals: Option<HashMap<String, Value>>,
     iters: Vec<Iter>,
-    handlers: Vec<(u16, usize, usize, bool)>,
+    handlers: Vec<(u16, usize, usize, u8)>,
 }
 
 #[derive(Default)]
@@ -79,6 +84,7 @@ pub struct Vm {
     frames: Vec<Frame>,
     history: HashMap<String, Vec<Value>>,
     redo: HashMap<String, Vec<Value>>,
+    rng_state: u64,
 }
 
 impl Vm {
@@ -199,7 +205,7 @@ impl Vm {
                         }
                         Value::Int(_) | Value::Float(_) => {
                             let newv = arith("plus", &cur, &delta).map_err(|e| {
-                                err(arith_msg("plus", &cur, &delta, e))
+                                arith_err("plus", &cur, &delta, e)
                             })?;
                             self.store_existing(fi, &name, newv)?;
                         }
@@ -379,7 +385,7 @@ impl Vm {
                             }
                         }
                         Value::Nothing => {
-                            return Err(err(messages::interp::field_of_nothing(&name)));
+                            return Err(signal_err(messages::interp::field_of_nothing(&name)));
                         }
                         other => {
                             return Err(err(messages::interp::cannot_read_field(
@@ -419,13 +425,13 @@ impl Vm {
                     let b = truth(&v)?;
                     self.stack.push(Value::Bool(!b));
                 }
-                Instr::TryPush(catch_ip, push_err) => {
+                Instr::TryPush(catch_ip, mode) => {
                     let iters_len = self.frames.last().unwrap().iters.len();
                     self.frames
                         .last_mut()
                         .unwrap()
                         .handlers
-                        .push((catch_ip, self.stack.len(), iters_len, push_err));
+                        .push((catch_ip, self.stack.len(), iters_len, mode));
                 }
                 Instr::TryPop => {
                     self.frames.last_mut().unwrap().handlers.pop();
@@ -435,6 +441,101 @@ impl Vm {
                     if !truth(&v)? {
                         return Err(err(messages::interp::contract_failed("requires")));
                     }
+                }
+                Instr::ItemAt => {
+                    let hay = self.stack.pop().ok_or_else(|| err("stack underflow".into()))?;
+                    let needle_idx = self.stack.pop().ok_or_else(|| err("stack underflow".into()))?;
+                    let idx = as_i64(&needle_idx).ok_or_else(|| {
+                        err(messages::interp::item_needs_num_index())
+                    })?;
+                    match &hay {
+                        Value::List(items) => {
+                            let len = items.borrow().len() as i64;
+                            if idx < 1 || idx > len {
+                                return Err(err(messages::interp::item_out_of_bounds(idx, len)));
+                            }
+                            let v = items.borrow()[idx as usize - 1].clone();
+                            self.stack.push(v);
+                        }
+                        Value::Text(t) => {
+                            let chars: Vec<char> = t.chars().collect();
+                            let len = chars.len() as i64;
+                            if idx < 1 || idx > len {
+                                return Err(err(messages::interp::text_at_oob(idx, len)));
+                            }
+                            self.stack.push(Value::Text(chars[idx as usize - 1].to_string()));
+                        }
+                        _ => return Err(err(messages::interp::item_needs_list())),
+                    }
+                }
+                Instr::FirstItem | Instr::LastItem => {
+                    let v = self.stack.pop().ok_or_else(|| err("stack underflow".into()))?;
+                    let out = match &v {
+                        Value::List(items) => {
+                            let items = items.borrow();
+                            if items.is_empty() {
+                                Value::Nothing
+                            } else if matches!(instr, Instr::FirstItem) {
+                                items[0].clone()
+                            } else {
+                                items[items.len() - 1].clone()
+                            }
+                        }
+                        _ => Value::Nothing,
+                    };
+                    self.stack.push(out);
+                }
+                Instr::CountOf => {
+                    let v = self.stack.pop().ok_or_else(|| err("stack underflow".into()))?;
+                    let n = match &v {
+                        Value::List(items) => items.borrow().len(),
+                        Value::Text(t) => t.chars().count(),
+                        _ => return Err(err(messages::interp::count_needs_sized())),
+                    };
+                    self.stack.push(Value::Int(n.into()));
+                }
+                Instr::NumVal => {
+                    let v = self.stack.pop().ok_or_else(|| err("stack underflow".into()))?;
+                    let out = match &v {
+                        Value::Int(_) | Value::Float(_) => v.clone(),
+                        Value::Text(t) => {
+                            let s = t.trim();
+                            if let Ok(i) = s.parse::<num_bigint::BigInt>() {
+                                Value::Int(i)
+                            } else if let Ok(f) = s.parse::<f64>() {
+                                Value::Float(f)
+                            } else {
+                                Value::Nothing
+                            }
+                        }
+                        _ => Value::Nothing,
+                    };
+                    self.stack.push(out);
+                }
+                Instr::RandomBetween => {
+                    let b = self.stack.pop().ok_or_else(|| err("stack underflow".into()))?;
+                    let a = self.stack.pop().ok_or_else(|| err("stack underflow".into()))?;
+                    let (ai, bi) = match (&a, &b) {
+                        (Value::Int(x), Value::Int(y)) => (as_i64(&Value::Int(x.clone())), as_i64(&Value::Int(y.clone()))),
+                        _ => (None, None),
+                    };
+                    let (Some(ai), Some(bi)) = (ai, bi) else {
+                        return Err(err(messages::interp::random_needs_nums()));
+                    };
+                    let (lo, hi) = if ai <= bi { (ai, bi) } else { (bi, ai) };
+                    let span = (hi - lo + 1).max(1) as u64;
+                    self.rng_state ^= self.rng_state << 13;
+                    self.rng_state ^= self.rng_state >> 7;
+                    self.rng_state ^= self.rng_state << 17;
+                    let roll = (self.rng_state >> 11) % span;
+                    self.stack.push(Value::Int((lo as u64 + roll).into()));
+                }
+                Instr::ToText => {
+                    let v = self.stack.pop().ok_or_else(|| err("stack underflow".into()))?;
+                    self.stack.push(Value::Text(render(&v)));
+                }
+                Instr::PushNothing => {
+                    self.stack.push(Value::Nothing);
                 }
                 Instr::EnsureCheck => {
                     let v = self.stack.pop().ok_or_else(|| err("stack underflow".into()))?;
@@ -461,18 +562,25 @@ impl Vm {
             self.frames.last_mut().unwrap().ip += 1;
             if let Err(e) = self.step(prog, instr) {
                 let msg = e.msg;
+                let is_signal = e.signal;
                 let mut handled = false;
                 loop {
                     let handler = self.frames.last().and_then(|f| f.handlers.last().copied());
                     match handler {
-                        Some((catch_ip, stack_len, iters_len, push_err)) => {
+                        Some((catch_ip, stack_len, iters_len, mode)) => {
+                            if mode == 2 && !is_signal {
+                                self.frames.last_mut().unwrap().handlers.pop();
+                                continue;
+                            }
                             self.frames.last_mut().unwrap().handlers.pop();
                             self.stack.truncate(stack_len);
                             let fr = self.frames.last_mut().unwrap();
                             fr.iters.truncate(iters_len);
                             fr.ip = catch_ip as usize;
-                            if push_err {
+                            if mode == 0 {
                                 self.stack.push(Value::Text(msg.clone()));
+                            } else if mode == 2 {
+                                self.stack.push(Value::Nothing);
                             }
                             handled = true;
                         }
@@ -487,7 +595,7 @@ impl Vm {
                     }
                 }
                 if !handled {
-                    return Err(VmError { msg });
+                    return Err(VmError { msg, signal: false });
                 }
             }
         }
@@ -580,7 +688,7 @@ impl Vm {
                 self.stack.push(v);
                 Ok(())
             }
-            Err(e) => Err(err(arith_msg(op, &a, &b, e))),
+            Err(e) => Err(arith_err(op, &a, &b, e)),
         }
     }
 }
@@ -622,16 +730,21 @@ fn ordering(a: &Value, b: &Value) -> Result<Ordering, VmError> {
     num_cmp(a, b).ok_or_else(|| err(messages::interp::ordering_needs_numbers(a.type_name())))
 }
 
-fn arith_msg(_op: &str, _a: &Value, _b: &Value, e: ArithError) -> String {
-    match e {
+fn arith_err(_op: &str, _a: &Value, _b: &Value, e: ArithError) -> VmError {
+    let msg = match &e {
         ArithError::TypeMismatch { left, right } => {
             messages::interp::plus_type_mismatch(left, right)
         }
         ArithError::DivByZero => messages::interp::div_by_zero(),
         ArithError::ModByZero => messages::interp::mod_by_zero(),
         ArithError::OnNothing => messages::interp::arith_on_nothing(),
-    }
+    };
+    VmError { msg, signal: matches!(e, ArithError::OnNothing) }
 }
+
+
+
+
 
 
 

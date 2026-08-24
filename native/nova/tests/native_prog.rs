@@ -295,6 +295,52 @@ fn track_undo_redo_history() {
 }
 
 #[test]
+fn phrase_builtins_match_oracle() {
+    expect_out("say item 1 of [10, 20]", "10\n");
+    expect_out("say item 2 of \"abc\"", "b\n");
+    let got = run("say item 9 of [10, 20]").unwrap_err();
+    assert!(
+        got.contains("item 9 does not exist (there are 2 items)"),
+        "{got}"
+    );
+    assert!(got.contains("valid numbers are 1 to 2"), "{got}");
+    expect_out("say the first item of [7, 8]\nsay the last item of [7, 8]", "7\n8\n");
+    expect_out("say the first item of []", "nothing\n");
+    expect_out("say the first item of \"abc\"", "nothing\n");
+    expect_out(
+        "say the length of [1, 2, 3]\nsay the length of \"abcd\"\nsay how many items are in [1]",
+        "3\n4\n1\n",
+    );
+    expect_out("answer = \"42\"\nsay the number value of answer plus 1", "43\n");
+    expect_out("say the number value of \"abc\"", "nothing\n");
+    expect_out("say the number value of \"3.5\"", "3.5\n");
+    expect_out("say the number value of 42", "42\n");
+    expect_out("say [] has no items\nsay [1] has no items", "true\nfalse\n");
+    let got = run("say the length of 5").unwrap_err();
+    assert!(got.contains("'how many items are in' requires a list or text"), "{got}");
+}
+
+#[test]
+fn optional_poisoning_matches_oracle() {
+    expect_out("t = nothing\nsay the name of t?", "nothing\n");
+    expect_out("answer = nothing\nn = the number value of answer? plus 1\nsay n is nothing", "true\n");
+    let got = run("xs = nothing\nsay the length of xs?").unwrap_err();
+    assert!(
+        got.contains("'how many items are in' requires a list or text"),
+        "{got}"
+    );
+}
+
+#[test]
+fn string_interpolation() {
+    expect_out("n = 5\nsay \"n={n} doubled={n times 2}\"", "n=5 doubled=10\n");
+    expect_out("say \"[{1 plus 1}]\"", "[2]\n");
+    expect_out("say \"a{1 plus 1}b{2}\"", "a2b2\n");
+    expect_out("say \"oops {unclosed\"", "oops {unclosed\n");
+    expect_out("say \"no holes\"", "no holes\n");
+}
+
+#[test]
 fn errors_are_sentences() {
     let got = run("say unknownname").unwrap_err();
     assert!(got.contains("the variable 'unknownname' does not exist"), "{got}");

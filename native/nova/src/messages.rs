@@ -265,6 +265,30 @@ pub mod interp {
     pub fn no_changes(name: &str, op: &str) -> String {
         format!("there are no changes to {op} for '{name}'")
     }
+
+    pub fn item_out_of_bounds(idx: i64, size: i64) -> String {
+        format!("item {idx} does not exist (there are {size} items) — valid numbers are 1 to {size}")
+    }
+
+    pub fn item_needs_list() -> String {
+        "'item N of' requires a list".to_string()
+    }
+
+    pub fn item_needs_num_index() -> String {
+        "'item N of' requires a number as the index".to_string()
+    }
+
+    pub fn text_at_oob(idx: i64, size: i64) -> String {
+        format!("position {idx} does not exist (the text has only {size} characters) — valid positions are 1 to {size}")
+    }
+
+    pub fn count_needs_sized() -> String {
+        "'how many items are in' requires a list or text".to_string()
+    }
+
+    pub fn random_needs_nums() -> String {
+        "'a random number between A and B' requires numbers".to_string()
+    }
 }
 
 #[cfg(test)]
