@@ -30,9 +30,9 @@ fn signal_err(msg: String) -> VmError {
     VmError { msg, signal: true, exit_code: None }
 }
 
-const STDLIBS: [&str; 12] = [
-    "cli", "csv", "datetime", "file", "json", "list", "math", "random", "regex",
-    "test", "text", "time",
+const STDLIBS: [&str; 14] = [
+    "cli", "csv", "datetime", "file", "flow", "history", "json", "list", "math",
+    "random", "regex", "test", "text", "time",
 ];
 
 pub fn truth(v: &Value) -> Result<bool, VmError> {
@@ -997,6 +997,93 @@ impl Vm {
 
     fn call_native(&mut self, module: &str, fname: &str, args: &[Value]) -> Result<Value, VmError> {
         match (module, fname) {
+            ("history", "snapshots") => {
+                let name = match only_arg(args)? {
+                    Value::Text(s) => s.clone(),
+                    other => {
+                        return Err(err(format!(
+                            "'history.snapshots' requires text - found {}",
+                            render(other)
+                        )))
+                    }
+                };
+                let list: Vec<Value> = self
+                    .history
+                    .get(&name)
+                    .map(|h| h.clone())
+                    .unwrap_or_default();
+                Ok(Value::List(Rc::new(RefCell::new(list))))
+            }
+            ("history", "count") => {
+                let name = match only_arg(args)? {
+                    Value::Text(s) => s.clone(),
+                    other => {
+                        return Err(err(format!(
+                            "'history.count' requires text - found {}",
+                            render(other)
+                        )))
+                    }
+                };
+                let n = self.history.get(&name).map(|h| h.len()).unwrap_or(0);
+                Ok(Value::Int(n.into()))
+            }
+            ("flow", "take") | ("flow", "skip") => {
+                let v = arg(args, 1)?.clone();
+                let xs = as_list(fname, &v)?.clone();
+                let n = as_i64(arg(args, 0)?).unwrap_or(0).max(0) as usize;
+                let out = if fname == "take" { xs.into_iter().take(n).collect::<Vec<_>>() }
+                          else { xs.into_iter().skip(n).collect::<Vec<_>>() };
+                Ok(Value::List(Rc::new(RefCell::new(out))))
+            }
+            ("flow", "concat") => {
+                let a = as_list("concat", arg(args, 0)?)?.clone();
+                let b = as_list("concat", arg(args, 1)?)?.clone();
+                let mut out = a;
+                out.extend(b);
+                Ok(Value::List(Rc::new(RefCell::new(out))))
+            }
+            ("flow", "flatten") => {
+                let v = only_arg(args)?.clone();
+                let xss = as_list("flatten", &v)?.clone();
+                let mut out: Vec<Value> = Vec::new();
+                for inner in xss {
+                    match &inner {
+                        Value::List(items) => out.extend(items.borrow().iter().cloned()),
+                        other => {
+                            return Err(err(format!(
+                                "flow.flatten requires a list of lists - found {} inside",
+                                render(other)
+                            )))
+                        }
+                    }
+                }
+                Ok(Value::List(Rc::new(RefCell::new(out))))
+            }
+            ("flow", "unique") => {
+                let v = only_arg(args)?.clone();
+                let xs = as_list("unique", &v)?.clone();
+                let mut out: Vec<Value> = Vec::new();
+                for item in xs {
+                    if !out.iter().any(|seen| nova_eq(seen, &item)) {
+                        out.push(item);
+                    }
+                }
+                Ok(Value::List(Rc::new(RefCell::new(out))))
+            }
+            ("flow", "chunk") => {
+                let v = arg(args, 0)?.clone();
+                let n_v = arg(args, 1)?.clone();
+                let n = as_i64(&n_v).ok_or_else(|| err("flow.chunk requires a whole number chunk size".to_string()))?;
+                if n < 1 {
+                    return Err(err("flow.chunk requires a chunk size of at least 1".to_string()));
+                }
+                let xs = as_list("chunk", &v)?.clone();
+                let mut out: Vec<Value> = Vec::new();
+                for piece in xs.chunks(n as usize) {
+                    out.push(Value::List(Rc::new(RefCell::new(piece.to_vec()))));
+                }
+                Ok(Value::List(Rc::new(RefCell::new(out))))
+            }
             ("cli", "args") => Ok(Value::List(Rc::new(RefCell::new(
                 self.user_args.iter().cloned().map(Value::Text).collect(),
             )))),
