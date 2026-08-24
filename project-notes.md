@@ -114,13 +114,22 @@ python bootstrap/nova_cli.py version                     # Nova 0.14.0-bootstrap
 
 ## 4. Next Steps
 
-1. ✅ v0.11 next-steps complete (see §5 changelog history)
-2. **E01**: GitHub Actions CI (windows+ubuntu) — P0, next up
-3. D01/D05/D06 credibility pack
-4. C04 Result pattern; C10 lambdas/pipelines
-5. E02+: native Rust lexer/parser matching golden dumps byte-for-byte
+1. ✅ v0.11 next-steps complete; E00+E01 done
+2. **v0.2 NATIVE-RELEASE TRACK (owner-approved 2026-08-24)** — N-series in ITERATION_PLAN
+   §6 Phase 0.2: N00 grammar doc → N01 Rust scaffold+lexer → N02 parser (goldens) →
+   N03 bytecode+VM → N04 runtime completeness → N05 differential harness → N06 stdlib
+   field pack (cli/csv/datetime/regex) → N07 nova test → N08a/b history-engine + Flow<T>
+   v0 cuts → N09 LSP → tag **v0.20.0**.
+3. Key owner decisions recorded in README log: engine = bytecode+stack VM behind a
+   swappable backend boundary; integers = arbitrary precision through 0.2 (amends i32
+   promise); dynamic core + opt-in annotations; audience = dev scripting/CLI.
+4. After the P0 spine: D05/D06/C04/C10 fold back into the queue.
 
 ## 5. Changelog (v0.11 →)
+
+**2026-08-24 — v0.2 contract locked:** N-series native-release track added to plan;
+README decision log rows (release definition/engine, integer-model amendment);
+AGENTS.md queue updated to N-series. No code changes.
 
 **2026-08-23 — fixes (dd853ca, 223/223):** modulo-by-zero guard; `nova_eq` semantic
 pinning applied everywhere (bool≠number leak fixed incl. `take`/`contains` membership);

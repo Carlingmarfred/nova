@@ -57,6 +57,10 @@ python bootstrap/nova_cli.py repl                           # interactive REPL
 - Done 2026-08-23: C03 Optional (`?`) · C05 modules · B03+C06+C07+C08 stdlib v0 ·
   C09 REPL · C13 memory-model cut · docs-audit · i18n-to-English · semantic-equality
   pinning · mod-zero guard · factor-level phrase binding.
-- E00 ✅ + E01 ✅ (CI green). Agreed next-up queue (owner-editable): **D01 → D05 → D06 → C04 → C10 → E02** — see NEXT-UP QUEUE in plan §7.
+- E00 ✅ + E01 ✅ (CI green). **Active track (owner-approved 2026-08-24): v0.2 native
+  release — N-series queue in plan §6 Phase 0.2: N00 → N01 → N02 → N03 → N04 → N05
+  (P0 spine), then N06 → N07 → N08a → N08b → N09 → tag v0.20.0.** Engine: bytecode+stack
+  VM behind swappable backend; integers arbitrary-precision through 0.2; grammar doc
+  before parser (N00).
 - Golden dumps: after BEVIDSTE grammar/format changes run
   `python tests/run_tests.py --update-goldens` and review the diff.

@@ -149,6 +149,31 @@ A phase is DONE only when every exit criterion holds. Gates are cumulative.
 
 Statuses: ☐ Not started · ◐ In progress · ✅ Done (date) · ⏸ Blocked (by ID)
 
+### Phase 0.2 — Native release track (owner-approved 2026-08-24; supersedes the old NEXT-UP QUEUE)
+> **Contract:** v0.2 = first Rust-native interpreter runs real Nova programs end-to-end;
+> Python bootstrap demoted to differential oracle. Ships as **v0.20.0**. Engine: bytecode
+> compiler + stack VM behind a swappable-backend boundary (LLVM/JIT can slot in later).
+> Types: dynamic core + opt-in annotations. Integers: arbitrary precision through 0.2.
+> Audience: devs scripting/CLI tools → stdlib order cli/csv/datetime/regex.
+> Uniqueness bets in 0.2: history/undo engine + Flow<T>. Tooling floor: nova test + LSP.
+
+| ID | Item | P | Size | Depends | Status |
+|---|---|---|---|---|---|
+| N00 | Normative Natural-skin EBNF grammar (`specs/syntax/grammar_natural.md`); gap-audit vs goldens; closes Q12 | P0 | L | — | ☐ |
+| N01 | Rust workspace scaffold + skin-aware lexer; English messages ported from `nova_messages.py` | P0 | M | — | ☐ |
+| N02 | Rust parser → AST **byte-compatible with Python golden dumps** (= E02) | P0 | XL | N00, N01 | ☐ |
+| N03 | Bytecode compiler + stack VM core: numbers/text/lists, control flow, functions (= E07 front half, pulled early) | P0 | L | N02 | ☐ |
+| N04 | Runtime completeness: bigint, dicts/things, `nova_eq` pinning, Optional/`?`, contracts, modules, stdlib v0 parity | P0 | L | N03 | ☐ |
+| N05 | Differential harness vs Python oracle: corpus runner + output diff (= E06 early cut) | P0 | M | N04 | ☐ |
+| N06 | Field stdlib pack: cli args/env/exit, csv, datetime parse+format, regex | P1 | L | N04 | ☐ |
+| N07 | `nova test` runner (= D01) targeting the native CLI | P1 | M | N05 | ☐ |
+| N08a | History/undo engine: design-freeze doc + v0 cut in native runtime | P1 | L | N05 | ☐ |
+| N08b | Flow<T>: design-freeze doc + v0 cut (lists first; streams/channels stubbed) | P1 | L | N08a | ☐ |
+| N09 | LSP v1: diagnostics, hover, completion (= F01 early) | P1 | XL | N02 | ☐ |
+
+> Exit criterion for the phase: N00–N09 done, Python oracle suite green throughout,
+> differential harness clean on the corpus → tag **v0.20.0**.
+
 ### Phase 0 — Bootstrap hardening (→ G0)
 | ID | Item | P | Size | Depends | Status |
 |---|---|---|---|---|---|
@@ -220,22 +245,17 @@ Statuses: ☐ Not started · ◐ In progress · ✅ Done (date) · ⏸ Blocked (
 
 ## 7. Priority list (flat, always sorted — work top-down skipping blocked)
 
-> ### NEXT-UP QUEUE (agreed 2026-08-23 — owner may append items here before work begins)
+> ### NEXT-UP QUEUE (owner-approved 2026-08-24 — the v0.2 native-release track, §6 Phase 0.2)
 >
-> | Order | Item | Note |
-> |---|---|---|
-> | 1 | **D01** `nova test` runner | discovers *.test.nova, assert lib, diff reports |
-> | 2 | **D05** tutorial + docs site skeleton | "Describe your first app" |
-> | 3 | **D06** unique-feature design freeze | Flow/Table/history/taint APIs on paper |
-> | 4 | **C04** Result pattern | completes the error story |
-> | 5 | **C10** lambdas + pipelines | T2 ergonomics |
-> | 6 | **E02** native Rust lexer/parser | byte-compatible with golden dumps |
+> Work top-down: **N00 → N01 → N02 → N03 → N04 → N05** (P0 spine), then
+> **N06 → N07 → N08a → N08b → N09** (P1), then tag v0.20.0.
 >
-> *(Owner: add rows above before saying go — nothing here is started until you approve the final queue.)*
+> *(Owner may reorder by editing this block — nothing outside it starts until it is empty or owner says go.)*
 
 1. ~~B05 golden dumps~~ ✅ · ~~B01~~ ✅ · ~~B02~~ ✅ · ~~C01+C02~~ ✅ · ~~C03~~ ✅ ·
-   ~~C05~~ ✅ · ~~C06–C08~~ ✅ · ~~B03/B04~~ ✅ · ~~C09~~ ✅
-2. **E00+E01 toolchain+CI** — E00 ✅ (Rust); **E01 is next** (P0)
+   ~~C05~~ ✅ · ~~C06–C08~~ ✅ · ~~B03/B04~~ ✅ · ~~C09~~ ✅ · ~~E00+E01~~ ✅
+2. **N-series 0.2 native-release track** — N00 first (see §6 Phase 0.2; supersedes the
+   former D01→D05→D06→C04→C10→E02 queue; D05/D06/C04/C10 fold in after the P0 spine)
 3. **D01/D05/D06** credibility pack (P1)
 4. **C04/C10/C11/C12** (P1/P2)
 5. **D02/D03/D04** (P1/P2)
@@ -306,7 +326,7 @@ CSV reading (blocks A4), date/formatting in time-lib, string-interpolation-as-AS
 | Q9 | String interpolation re-lexed at runtime; invisible to goldens | E02 landmine | ◐ parked (interpolation-as-AST) |
 | Q10 | No test-runner/formatter yet (D01/D02) | gates G2 | ☐ tracked as D-items |
 | Q11 | When is `X is E` a declaration vs a comparison? The context rule is implemented but never written down | T1 learnability; blocks the natural-syntax coverage audit (G1) | ☐ |
-| Q12 | No normative grammar doc for the Natural skin (`grammar.md` covers compact only; `natural_syntax.md` §3 is a sketch) | E02 native parser has no spec to build against — goldens are the de-facto spec | ☐ decide before E02 |
+| Q12 | No normative grammar doc for the Natural skin (`grammar.md` covers compact only; `natural_syntax.md` §3 is a sketch) | E02 native parser has no spec to build against — goldens are the de-facto spec | ◐ **N00 in progress (2026-08-24)**: grammar doc first, per owner |
 | Q13 | Map phrase `set the age of X in M to V` exists in natural_syntax.md but is not implemented in bootstrap | spec/impl gap misleads learners; breaks "no dead ends" trust | ☐ implement or move to parking lot |
 | Q14 | Integer model: bootstrap bigint now vs promised i32 later | E06 differential tester will diverge on big literals / overflow | ◐ revisit with corpus design at E02/E06 |
 
@@ -314,6 +334,7 @@ CSV reading (blocks A4), date/formatting in time-lib, string-interpolation-as-AS
 
 | Date | Change |
 |---|---|
+| 2026-08-24 | **v0.2 native-release contract locked (owner)**: N-series track added (§6 Phase 0.2) — Rust bytecode+stack VM behind swappable backend, dynamic + opt-in annotations, bigint through 0.2, audience = dev scripting/CLI, stdlib pack cli/csv/datetime/regex, uniqueness bets history/undo + Flow<T>, tooling floor nova-test + LSP, grammar-doc-first (N00). Old D01→E02 queue superseded; ships as v0.20.0. |
 | 2026-08-23 | **i18n docs sweep completed (for real)**: EXTENSIONS, language_reference, unique_features, standard_library, module_system, concurrency, memory_model, grammar → 100% English (grep-audited). Owner decisions: `it` reserved (protects check/try patterns; +2 tests → suite **236/236**), open questions Q11–Q14 added to §12. |
 | 2026-08-23 | **E01 ✅ + repo LIVE**: github.com/Carlingmarfred/nova public (Apache-2.0); CI green first run (windows+ubuntu, 39s). Q5/Q6/Q7/Q8 decisions resolved. v0.15.1 tagged. Suite: 234/234. Next: D01/D05/D06 → C04/C10.
 | 2026-08-23 | **Decisions landed (v0.15.1)**: Apache-2.0 LICENSE added; E01 CI workflow created (.github/workflows/ci.yml, windows+ubuntu); Q5 phrases-primary, Q6 verb-first methods, Q7 Ask/Act rule (+11 pin tests), Q8 license — all resolved in README log + §12. Suite: 234/234.
