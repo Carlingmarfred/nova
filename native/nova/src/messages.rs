@@ -291,6 +291,214 @@ pub mod interp {
     }
 }
 
+
+pub mod modules {
+    use super::interpolate;
+
+    pub fn module_file_not_found(path: &str, dir: &str) -> String {
+        interpolate(
+            "module file '{path}' not found (searched in '{dir}') \u{2014} check the path and the filename",
+            &[("path", path), ("dir", dir)],
+        )
+    }
+
+    pub fn circular_import(chain: &str) -> String {
+        interpolate(
+            "circular import: {chain} \u{2014} modules cannot import each other in a ring; break the chain by moving what they share into a third file",
+            &[("chain", chain)],
+        )
+    }
+
+    pub fn no_mains() -> String {
+        "a module must not contain 'when the program starts' \u{2014} move the program start to the main program".to_string()
+    }
+
+    pub fn not_a_module(name: &str) -> String {
+        interpolate(
+            "'{name}' is not a module \u{2014} dot-calls require 'the {name}-module in \"file.nova\"' first",
+            &[("name", name)],
+        )
+    }
+
+    pub fn module_no_function(path: &str, name: &str, hint: &str, call: &str) -> String {
+        interpolate(
+            "module '{path}' has no function '{name}'{hint} \u{2014} call: {call}",
+            &[("path", path), ("name", name), ("hint", hint), ("call", call)],
+        )
+    }
+
+    pub fn module_no_member(path: &str, name: &str, hint: &str, names: &str) -> String {
+        interpolate(
+            "module '{path}' has no '{name}'{hint} \u{2014} valid names: {names}",
+            &[("path", path), ("name", name), ("hint", hint), ("names", names)],
+        )
+    }
+}
+
+pub mod stdlib {
+    use super::interpolate;
+
+    pub fn use_form(text: &str) -> String {
+        interpolate(
+            "unknown 'use' form: '{text}' \u{2014} write: use the standard <name> library",
+            &[("text", text)],
+        )
+    }
+
+    pub fn unknown_lib(name: &str, libs: &str) -> String {
+        interpolate(
+            "unknown standard library '{name}' \u{2014} available libraries: {libs}",
+            &[("name", name), ("libs", libs)],
+        )
+    }
+
+    pub fn json_parse_needs_text() -> String {
+        "'json.parse' requires text \u{2014} give it a string containing json".to_string()
+    }
+
+    pub fn json_parse_invalid(line: usize) -> String {
+        interpolate(
+            "invalid json (line {line}) \u{2014} check the text, or catch the failure with 'try ... if it fails'",
+            &[("line", &line.to_string())],
+        )
+    }
+
+    pub fn file_write_needs_text() -> String {
+        "'file.write' requires text as the content".to_string()
+    }
+
+    pub fn missing_file(path: &str) -> String {
+        interpolate("'{path}' does not exist", &[("path", path)])
+    }
+
+    pub fn is_directory(path: &str) -> String {
+        interpolate("'{path}' is a directory, not a file", &[("path", path)])
+    }
+
+    pub fn not_utf8(path: &str) -> String {
+        interpolate("'{path}' is not a UTF-8 text file", &[("path", path)])
+    }
+
+    pub fn cannot_read(path: &str, err: &str) -> String {
+        interpolate("cannot read '{path}': {err}", &[("path", path), ("err", err)])
+    }
+
+    pub fn cannot_save(path: &str, err: &str) -> String {
+        interpolate("cannot save to '{path}': {err}", &[("path", path), ("err", err)])
+    }
+
+    pub fn random_between_needs_nums() -> String {
+        "'random.between' requires two numbers".to_string()
+    }
+
+    pub fn random_pick_needs_list() -> String {
+        "'random.pick' requires a non-empty list".to_string()
+    }
+
+    pub fn random_shuffle_needs_list(value: &str) -> String {
+        interpolate("'random.shuffle' requires a list \u{2014} found {value}", &[("value", value)])
+    }
+
+    pub fn time_sleep_needs_num() -> String {
+        "'time.sleep' requires a number (seconds)".to_string()
+    }
+
+    pub fn time_sleep_negative() -> String {
+        "'time.sleep' cannot sleep for a negative number of seconds".to_string()
+    }
+
+    pub fn math_sqrt_negative() -> String {
+        "'math.sqrt' requires a number that is 0 or greater".to_string()
+    }
+
+    pub fn math_needs_num(fn_name: &str) -> String {
+        interpolate("'math.{fn}' requires a number", &[("fn", fn_name)])
+    }
+
+    pub fn math_pow_needs_nums() -> String {
+        "'math.pow' requires two numbers (base and exponent)".to_string()
+    }
+
+    pub fn text_needs_text(fn_name: &str, value: &str) -> String {
+        interpolate(
+            "'text.{fn}' requires text \u{2014} found {value}",
+            &[("fn", fn_name), ("value", value)],
+        )
+    }
+
+    pub fn text_split_empty_sep() -> String {
+        "'text.split' requires a non-empty separator".to_string()
+    }
+
+    pub fn text_join_needs_list() -> String {
+        "'text.join' requires a list \u{2014} give it text.split(...) output first".to_string()
+    }
+
+    pub fn text_replace_empty_search() -> String {
+        "'text.replace' requires a non-empty search text".to_string()
+    }
+
+    pub fn text_at_needs_num() -> String {
+        "'text.at' requires a number as the position".to_string()
+    }
+
+    pub fn text_at_out_of_bounds(idx: i64, size: i64) -> String {
+        let max = size.max(1).to_string();
+        interpolate(
+            "position {idx} does not exist (the text has only {size} characters) \u{2014} valid positions are 1 to {max}",
+            &[("idx", &idx.to_string()), ("size", &size.to_string()), ("max", &max)],
+        )
+    }
+
+    pub fn text_slice_needs_nums() -> String {
+        "'text.slice' requires numbers for start/end (1-based, inclusive)".to_string()
+    }
+
+    pub fn text_slice_out_of_bounds(start: i64, end: i64, size: i64) -> String {
+        let max = size.max(1).to_string();
+        interpolate(
+            "slice {start} to {end} reaches outside the text \u{2014} valid end values are 1 to {max}",
+            &[("start", &start.to_string()), ("end", &end.to_string()), ("max", &max)],
+        )
+    }
+
+    pub fn list_needs_list(fn_name: &str, value: &str) -> String {
+        interpolate(
+            "'list.{fn}' requires a list \u{2014} found {value}",
+            &[("fn", fn_name), ("value", value)],
+        )
+    }
+
+    pub fn list_sort_mixed(types: &str) -> String {
+        interpolate(
+            "'list.sort' cannot mix types ({types}) \u{2014} give it a list of EITHER numbers OR text",
+            &[("types", types)],
+        )
+    }
+
+    pub fn list_min_max_empty(fn_name: &str) -> String {
+        interpolate("'list.{fn}' requires a non-empty list", &[("fn", fn_name)])
+    }
+
+    pub fn list_min_max_needs_nums(fn_name: &str) -> String {
+        interpolate("'list.{fn}' requires a list of numbers", &[("fn", fn_name)])
+    }
+
+    pub fn list_keys_needs_dict(value: &str) -> String {
+        interpolate(
+            "'list.keys' requires a dictionary (e.g. from json.parse) \u{2014} found {value}",
+            &[("value", value)],
+        )
+    }
+
+    pub fn list_values_needs_dict(value: &str) -> String {
+        interpolate(
+            "'list.values' requires a dictionary (e.g. from json.parse) \u{2014} found {value}",
+            &[("value", value)],
+        )
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

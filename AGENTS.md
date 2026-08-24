@@ -62,7 +62,7 @@ python bootstrap/nova_cli.py repl                           # interactive REPL
   N01 Rust lexer at parity + N02 parser (all 20 goldens byte-equal, E02 done) +
   N03 bytecode+stack VM (iterative dispatch, deep recursion) + N04 runtime wave
   (check/try/contracts/things/track-history) + N05-lite diff harness (18/18 vs oracle).
-  Remaining for v0.20.0: N04f modules+stdlib+Optional/phrases → full N05 corpus →
+  Done since: N04f COMPLETE (modules + stdlib v0 native; diff 29/29). Remaining for v0.20.0: N04f modules+stdlib+Optional/phrases → full N05 corpus →
   N06 stdlib field pack → N07 nova-test → N08a/b history+Flow → N09 LSP.**
   Engine: bytecode+stack VM behind swappable backend; integers arbitrary-precision
   through 0.2.

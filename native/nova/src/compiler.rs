@@ -94,7 +94,7 @@ pub fn compile_program(stmts: &[SNode]) -> Result<Program, CompileError> {
     c.push_nothing(0);
     c.builders[0].emit(Instr::Halt);
 
-    Ok(Program { funcs: c.builders.into_iter().map(|b| b.func).collect() })
+    Ok(Program { funcs: c.builders.into_iter().map(|b| b.func).collect(), env: Default::default() })
 }
 
 impl Compiler {
@@ -368,6 +368,18 @@ impl Compiler {
                 self.jump_to(target);
                 Ok(())
             }
+            SKind::UseLib { text } => {
+                let idx = self.b().name_index(text);
+                self.emit_in_cur(Instr::UseStdLib { text: idx });
+                Ok(())
+            }
+            SKind::UseModule { name, path } => {
+                let n = self.b().name_index(name);
+                let p = self.b().name_index(path);
+                let line = st.line.min(u16::MAX as usize) as u16;
+                self.emit_in_cur(Instr::UseModule { name: n, path: p, line });
+                Ok(())
+            }
             SKind::TrackStmt { name } => {
                 let idx = self.b().name_index(name);
                 self.emit_in_cur(Instr::Track(idx));
@@ -619,6 +631,16 @@ impl Compiler {
                 self.expr(obj)?;
                 let idx = self.b().name_index(name);
                 self.emit_in_cur(Instr::GetField(idx));
+                Ok(())
+            }
+            EKind::ModuleCall { module, name, args } => {
+                for a in args {
+                    self.expr(a)?;
+                }
+                let m = self.b().name_index(module);
+                let f = self.b().name_index(name);
+                let argc = args.len().min(u8::MAX as usize) as u8;
+                self.emit_in_cur(Instr::ModuleCall { module: m, func: f, argc });
                 Ok(())
             }
             EKind::CopyOf(inner) => {

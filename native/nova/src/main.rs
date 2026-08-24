@@ -85,7 +85,10 @@ fn run_prog(path: &str) -> ExitCode {
         }
     };
     let mut vm = Vm::new();
-    match vm.run_program(&program) {
+    if let Some(parent) = std::path::Path::new(path).parent() {
+        vm.set_base_dir(parent.to_path_buf());
+    }
+    match vm.run_program(std::rc::Rc::new(program)) {
         Ok(()) => {
             print!("{}", vm.take_output());
             ExitCode::SUCCESS

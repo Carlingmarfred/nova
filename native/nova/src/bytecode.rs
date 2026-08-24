@@ -70,7 +70,16 @@ pub enum Instr {
     RandomBetween,
     ToText,
     PushNothing,
+    /// `use the standard X library` — carries the full use-text; validation
+    /// and binding happen at runtime so error sentences match the oracle.
+    UseStdLib { text: u16 },
+    /// `the X-module in "path"` — loads (or reuses) a file module at runtime.
+    UseModule { name: u16, path: u16, line: u16 },
+    /// `modul.funktion(args)` — namespace call on an imported module value.
+    ModuleCall { module: u16, func: u16, argc: u8 },
 }
+
+pub type Env = std::rc::Rc<std::cell::RefCell<std::collections::HashMap<String, Value>>>;
 
 #[derive(Debug, Default)]
 pub struct Func {
@@ -90,9 +99,18 @@ impl Func {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Program {
     pub funcs: Vec<Func>,
+    /// The program's global namespace. Main programs own the "globals";
+    /// every loaded module gets its own — giving C05's full isolation.
+    pub env: Env,
+}
+
+impl Default for Program {
+    fn default() -> Self {
+        Program { funcs: vec![], env: std::rc::Rc::new(std::cell::RefCell::new(Default::default())) }
+    }
 }
 
 #[derive(Debug, Clone, Default)]

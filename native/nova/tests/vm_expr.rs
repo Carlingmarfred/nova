@@ -36,6 +36,7 @@ fn show(v: Value) -> String {
             format!("[{}]", inner.join(", "))
         }
         Value::Thing(t) => format!("{}(...)", t.borrow().cls),
+        Value::Dict(_) | Value::Module(_) => panic!("dict/module not expected here"),
     }
 }
 

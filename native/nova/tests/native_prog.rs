@@ -6,7 +6,7 @@ fn run(src: &str) -> Result<String, String> {
     let prog = parse_source(src).map_err(|e| e.to_string())?;
     let program = compile_program(&prog).map_err(|ce| format!("unsupported: {}", ce.kind))?;
     let mut vm = Vm::new();
-    vm.run_program(&program).map_err(|ve| ve.msg)?;
+    vm.run_program(std::rc::Rc::new(program)).map_err(|ve| ve.msg)?;
     Ok(vm.take_output())
 }
 
