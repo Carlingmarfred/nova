@@ -1,0 +1,6 @@
+{
+  "plugin": [
+    "oh-my-openagent",
+    "@different-ai/opencode-browser"
+  ]
+}
