@@ -1,6 +1,6 @@
 [package]
 name = "nova-lsp"
-version = "0.20.0"
+version = "0.21.0"
 edition = "2021"
 description = "Nova Language Server Protocol server"
 license = "Apache-2.0"

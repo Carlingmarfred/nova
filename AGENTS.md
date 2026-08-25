@@ -49,7 +49,7 @@ python bootstrap/nova_cli.py repl                           # interactive REPL
 
 ## Current state (update this date when it changes)
 
-- v0.15.1-bootstrap (G0 closed; G1 in progress): Python interpreter, **234/234**
+- v0.21.0 (Phase 0.2 code-complete, v0.20.0 tagged): native Rust VM + bootstrap oracle, **238/238** oracle + **82 Rust tests**, diff 31/31
   tests green, guessing_game + todo done. Public repo:
   **https://github.com/Carlingmarfred/nova** (Apache-2.0, CI green on windows+ubuntu). Diagnostics fully English.
 - Done 2026-08-22: B05 golden dumps · B01 error audit · B02 reserved words ·
@@ -62,7 +62,7 @@ python bootstrap/nova_cli.py repl                           # interactive REPL
   N01 Rust lexer at parity + N02 parser (all 20 goldens byte-equal, E02 done) +
   N03 bytecode+stack VM (iterative dispatch, deep recursion) + N04 runtime wave
   (check/try/contracts/things/track-history) + N05-lite diff harness (18/18 vs oracle).
-  Done since: N04f COMPLETE (modules + stdlib v0 native; diff 29/29). Remaining for v0.20.0: N04f modules+stdlib+Optional/phrases → full N05 corpus →
+  Done since: N04f COMPLETE (modules + stdlib v0 native; diff 29/29). Next: v0.21.0 tagged — C04 typed layer, D05 tutorial, N09 LSP hover.
   N06 stdlib field pack → N07 nova-test → N08a/b history+Flow → N09 LSP.**
   Engine: bytecode+stack VM behind swappable backend; integers arbitrary-precision
   through 0.2.
