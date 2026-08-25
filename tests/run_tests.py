@@ -706,7 +706,7 @@ def test_stdlib(tmp):
 
     err_cases = [
         ("unknown-lib", "use the standard turbo library",
-         ["unknown standard library 'turbo'", "file, json, list, math, random, text, time"]),
+         ["unknown standard library 'turbo'", "file, flow, json, list, math, random, text, time"]),
         ("bad-use-form", "use magic stuff",
          ["unknown 'use' form", "use the standard <name> library"]),
         ("missing-func", "use the standard json library\nsay \"{json.mangle(1)}\"",

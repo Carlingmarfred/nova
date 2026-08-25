@@ -9,7 +9,7 @@ import random as _random
 import sys
 import time
 
-from nova_parser import (FuncDef, ThingDef, WhenProgramStarts, ItemAt,
+from nova_parser import (Lambda, FuncDef, ThingDef, WhenProgramStarts, ItemAt,
                          UseModule, ModuleCall, parse_source, CopyOf,
                          NovaLexError, NovaParseError)
 
@@ -55,6 +55,15 @@ class NothingSignal(Exception):
 
 
 NOTHING = None
+
+
+class Closure:
+    __slots__ = ("params", "body", "scope")
+
+    def __init__(self, params, body, scope):
+        self.params = params
+        self.body = body
+        self.scope = scope
 
 
 class ThingInstance:
@@ -523,7 +532,16 @@ def _make_list_lib():
     return m
 
 
+def _make_flow_lib():
+    m = ModuleInstance("flow", "(standardbibliotek)")
+    for fn_name in ["map", "filter", "reduce", "take", "skip",
+                     "concat", "flatten", "unique", "chunk"]:
+        m.funcs[fn_name] = BuiltinFunction(fn_name, ["..."], lambda a, l: NOTHING)
+    return m
+
 STDLIB_FACTORIES = {
+    "flow": _make_flow_lib,
+
     "json": _make_json_lib,
     "file": _make_file_lib,
     "random": _make_random_lib,
@@ -954,6 +972,12 @@ class Interp:
                               "(use comparisons like 'is greater than')")
 
     # ---------------- udtryk ----------------
+    def call_closure(self, clo, args):
+        local = Scope(parent=clo.scope)
+        for pname, aval in zip(clo.params, args):
+            local.declare(pname, aval)
+        return self.eval(clo.body, local)
+
     def eval(self, e, scope):
         t = type(e).__name__
 
@@ -998,12 +1022,43 @@ class Interp:
         if t == "NotE":
             return not self.truth(self.eval(e.e, scope), e.e)
         if t == "Call":
+            # C10: check if variable holds a Closure before func lookup
+            if scope.has(e.name):
+                candidate = scope.get(e.name, e.line)
+                if isinstance(candidate, Closure):
+                    cargs = [self.eval(a, scope) for a in e.args]
+                    return self.call_closure(candidate, cargs)
             return self.call(e.name, [self.eval(a, scope) for a in e.args], e.line)
         if t == "ModuleCall":
             base = scope.get(e.mod, e.line)
             if not isinstance(base, ModuleInstance):
                 raise NovaError(e.line, f"'{e.mod}' is not a module — dot-calls "
                                         f"require 'the {e.mod}-module in \"file.nova\"' first")
+            if isinstance(base, ModuleInstance) and base.name == "flow":
+                all_args = [self.eval(a, scope) for a in e.args]
+                if e.name == "map":
+                    f_v = all_args[0]
+                    if not isinstance(f_v, Closure):
+                        raise NovaError(e.line, "flow.map requires a function")
+                    xs = all_args[1] if len(all_args) > 1 else []
+                    return [self.call_closure(f_v, [item]) for item in xs]
+                if e.name == "filter":
+                    f_v = all_args[0]
+                    if not isinstance(f_v, Closure):
+                        raise NovaError(e.line, "flow.filter requires a function")
+                    xs = all_args[1] if len(all_args) > 1 else []
+                    return [x for x in xs if self.call_closure(f_v, [x])]
+                if e.name == "reduce":
+                    xs = all_args[0]
+                    init = all_args[1] if len(all_args) > 1 else 0
+                    f_v = all_args[2] if len(all_args) > 2 else NOTHING
+                    if not isinstance(f_v, Closure):
+                        raise NovaError(e.line, "flow.reduce requires a function as third argument")
+                    acc = init
+                    for item in xs:
+                        acc = self.call_closure(f_v, [acc, item])
+                    return acc
+
             fn = base.funcs.get(e.name)
             if fn is None:
                 raise NovaError(e.line, f"module '{base.path}' has no function "
@@ -1021,6 +1076,8 @@ class Interp:
             return self.new_thing(e, scope)
         if t == "AskE":
             return self.ask(self.eval(e.prompt, scope), e.line)
+        if t == "Lambda":
+            return Closure(e.params, e.body, scope)
         if t == "QuestionE":
             # C03 boundary: whole-expression poisoning — one signal makes the whole expression nothing
             try:

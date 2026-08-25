@@ -1155,10 +1155,10 @@ impl Vm {
                 Ok(Value::List(Rc::new(RefCell::new(out))))
             }
             ("flow", "reduce") => {
-                let f_v = arg(args, 0)?.clone();
-                let f = match &f_v { Value::Closure(c) => c.clone(), _ => return Err(err("flow.reduce requires a function".to_string())) };
+                let v = arg(args, 0)?.clone();
                 let init = arg(args, 1)?.clone();
-                let v = arg(args, 2)?.clone();
+                let f_v = arg(args, 2)?.clone();
+                let f = match &f_v { Value::Closure(c) => c.clone(), _ => return Err(err("flow.reduce requires a function".to_string())) };
                 let xs = as_list("reduce", &v)?.clone();
                 let mut acc = init;
                 for item in xs {

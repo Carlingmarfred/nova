@@ -248,6 +248,12 @@ class CopyOf:
     e: object; line: int = 0
 
 @dataclass
+class Lambda:
+    params: list
+    body: object
+
+
+@dataclass
 class AskE:
     prompt: object; line: int = 0
 
@@ -1038,8 +1044,49 @@ class Parser:
                 break
         return e
 
+    def lambda_header_ahead(self):
+        k = 0
+        if self.at_kind("FATARROW"):
+            return None
+        if self.peek(k).kind == "WORD":
+            if self.peek(k + 1).kind == "FATARROW":
+                name = self.peek(k).value
+                return ([name], k + 2)
+            return None
+        if self.peek(k).kind != "LPAREN":
+            return None
+        k += 1
+        params = []
+        while True:
+            t = self.peek(k)
+            if t.kind == "WORD":
+                params.append(t.value)
+                k += 1
+                nk = self.peek(k).kind
+                if nk == "COMMA":
+                    k += 1
+                elif nk == "RPAREN":
+                    k += 1
+                    break
+                else:
+                    return None
+            else:
+                return None
+        if not params or self.peek(k).kind != "FATARROW":
+            return None
+        return (params, k + 1)
+
     def parse_primary(self):
         t = self.peek()
+
+        # C10 lambda: `x => expr` or `(a, b) => expr`
+        lam = self.lambda_header_ahead()
+        if lam is not None:
+            params, ntok = lam
+            for _ in range(ntok):
+                self.next()
+            body = self.parse_expr()
+            return Lambda(params=params, body=body)
 
         if t.kind == "NUMBER":
             self.next(); return Lit(t.value, t.line)

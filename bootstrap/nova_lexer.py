@@ -34,7 +34,7 @@ _SKIN_SINGLE = {"=": "EQUALS", "+": "PLUS", "-": "MINUS", "*": "STAR",
                 "/": "SLASH", "%": "PERCENT", "<": "LT", ">": "GT",
                 "!": "BANG", ".": "DOT", "{": "LBRACE", "}": "RBRACE",
                 "?": "QUESTION"}
-_SKIN_DOUBLE = {"==": "EQUALEQUAL", "!=": "BANGEQUAL", "<=": "LTE",
+_SKIN_DOUBLE = {"=>": "FATARROW", "==": "EQUALEQUAL", "!=": "BANGEQUAL", "<=": "LTE",
                 ">=": "GTE", "&&": "AMPAMP", "||": "PIPEPIPE"}
 
 
