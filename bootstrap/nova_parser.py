@@ -335,10 +335,16 @@ class Parser:
         return self.peek().kind in ("NEWLINE", "EOF")
 
     def expect_eol(self):
-        """Statement end: NEWLINE/EOF is left to the block loop."""
-        if not self.at_eol():
-            t = self.peek()
-            raise NovaParseError(t.line, M["parse.expected_eol"].format(found=t.value), t.col)
+        """Statement end: NEWLINE/EOF is left to the block loop.
+        Clause-boundary words (otherwise/done) are tolerated so the fully
+        inline form `if C then S1 otherwise S2` reaches the if-chain
+        (natural_syntax \u00a7Conditionals; Q15)."""
+        if self.at_eol():
+            return
+        t = self.peek()
+        if t.kind == "WORD" and t.value.lower() in ("otherwise", "done"):
+            return
+        raise NovaParseError(t.line, M["parse.expected_eol"].format(found=t.value), t.col)
 
     def err(self, msg):
         t = self.peek()

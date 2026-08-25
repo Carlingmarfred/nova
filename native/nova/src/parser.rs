@@ -89,15 +89,22 @@ impl Parser {
     }
 
     fn expect_eol(&self) -> Result<()> {
-        if !self.at_eol() {
-            let t = self.peek(0);
-            return Err(NovaError::new(
-                t.line,
-                Some(t.col),
-                messages::parse::expected_eol(&t.found()),
-            ));
+        if self.at_eol() {
+            return Ok(());
         }
-        Ok(())
+        let t = self.peek(0);
+        // Clause-boundary words are tolerated so the fully inline form
+        // `if C then S1 otherwise S2` reaches the if-chain (Q15).
+        if let Some(w) = lc_of(t) {
+            if w == "otherwise" || w == "done" {
+                return Ok(());
+            }
+        }
+        Err(NovaError::new(
+            t.line,
+            Some(t.col),
+            messages::parse::expected_eol(&t.found()),
+        ))
     }
 
     fn err_here(&self, msg: String) -> NovaError {

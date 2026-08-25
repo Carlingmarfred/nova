@@ -121,6 +121,14 @@ def test_phrases(tmp):
         ("nothing-check",
          'x is nothing\nif x is nothing then say "tom"', "", "tom"),
         ("wait-parse-only", "wait 0 seconds", "", None),
+        ("q11-decl-vs-comparison",
+         't1 is 2\nt2 is 3\nthe total is t1 plus t2\n'
+         'if the total is 5 then say "cmp"\nsay "{the total}"', "", "cmp"),
+        ("q15-inline-otherwise",
+         'x is 3\n'
+         'if x is less than 5 then say "low" otherwise say "high"\n'
+         'if x is greater than 5 then say "big" otherwise if x is 3 then say "three"',
+         "", "low\nthree"),
     ]
     for name, src, stdin, expect in cases:
         path = prog(src, tmp)

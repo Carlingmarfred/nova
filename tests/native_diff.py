@@ -47,6 +47,10 @@ CORPUS = [
     ("things", 'a dog is a thing with\nname set to "rex"\ndone\ndd is a new dog\nsay dd.name\nset the name of dd to "max"\nsay dd.name', {}),
     ("display-rules", 'say 1 is 1\nsay nothing\nsay [1, [2, "a"]]\nwrite "a"\nwrite "b"\nsay "c"', {}),
     ("syntax-error-exit", 'say 1 plus', {}),
+    ("inline-otherwise",
+     'x = 3\n'
+     'if x is less than 5 then say "low" otherwise say "high"\n'
+     'if x is greater than 5 then say "big" otherwise if x is 3 then say "three"', {}),
     # ---- N04f: stdlib v0 + modules ----
     ("stdlib-json",
      'use the standard json library\n'
