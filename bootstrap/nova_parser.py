@@ -687,8 +687,9 @@ class Parser:
             self.eat_word("of")
             return CountOf(self.parse_factor(), t.line)
         if self.at_word("of"):
+            # Bind at factor level so trailing arithmetic composes correctly
             self.next()
-            obj = self.parse_arith()
+            obj = self.parse_factor()
             return Field(obj, head_t.value, head_t.line)
         return Var(head_t.value, head_t.line)
 

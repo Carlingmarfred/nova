@@ -585,7 +585,8 @@ impl Parser {
         let name = nt.word_str().unwrap().to_string();
         if self.at_word(&["of"]) {
             self.next();
-            let obj = self.parse_arith()?;
+            // Bind at factor level so trailing arithmetic composes correctly
+            let obj = self.parse_factor()?;
             return Ok(ENode::new(EKind::Field { obj: Box::new(obj), name }, nt.line));
         }
         Ok(ENode::new(EKind::Var(name), nt.line))
@@ -642,7 +643,7 @@ impl Parser {
         }
         if self.at_word(&["of"]) {
             self.next();
-            let obj = self.parse_arith()?;
+            let obj = self.parse_factor()?;
             let name = head_t.word_str().unwrap().to_string();
             return Ok(ENode::new(EKind::Field { obj: Box::new(obj), name }, t.line));
         }
