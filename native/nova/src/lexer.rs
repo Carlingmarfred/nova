@@ -1,4 +1,4 @@
-﻿use crate::errors::{NovaError, Result};
+use crate::errors::{NovaError, Result};
 use crate::messages;
 use std::fmt;
 
@@ -25,6 +25,7 @@ pub enum TokKind {
     Bang,
     Dot,
     LBrace,
+    FatArrow,
     RBrace,
     Question,
     EqualEqual,
@@ -96,7 +97,8 @@ impl fmt::Display for Token {
             TokKind::Str => "STRING",
             TokKind::Number => "NUMBER",
             TokKind::Newline => "NEWLINE",
-            TokKind::Eof => "EOF",
+            TokKind::FatArrow => "FATARROW",
+        TokKind::Eof => "EOF",
             TokKind::LParen => "LPAREN",
             TokKind::RParen => "RPAREN",
             TokKind::LBracket => "LBRACKET",
@@ -147,6 +149,7 @@ const SKIN_DOUBLE: &[(&str, TokKind)] = &[
     (">=", TokKind::Gte),
     ("&&", TokKind::AmpAmp),
     ("||", TokKind::PipePipe),
+        ("=>", TokKind::FatArrow),
 ];
 
 fn skin_single(c: char) -> Option<TokKind> {

@@ -1,4 +1,4 @@
-﻿use crate::ast::{CheckArm, EKind, ENode, PyLit, SBlock, SKind, SNode};
+use crate::ast::{CheckArm, EKind, ENode, PyLit, SBlock, SKind, SNode};
 use crate::lexer::fmt_float;
 
 pub fn py_str(s: &str) -> String {
@@ -412,6 +412,13 @@ fn emit_expr(l: &mut Vec<String>, e: &ENode, prefix: &str, depth: usize) {
         EKind::QuestionE(child) => {
             header(l, e.line, prefix, "QuestionE", depth);
             node_field(l, "e", child, depth + 1);
+        }
+        EKind::Lambda { params, body } => {
+            header(l, e.line, prefix, "Lambda", depth);
+            let pad = "  ".repeat(depth + 1);
+            let items: Vec<String> = params.iter().map(|pp| format!("'{}'", pp)).collect();
+            l.push(format!("{}params: {}", pad, py_str(&items.join(", "))));
+            node_field(l, "body", body, depth + 1);
         }
     }
 }

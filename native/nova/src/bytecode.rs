@@ -1,4 +1,4 @@
-﻿use crate::ast::{EKind, ENode, PyLit};
+use crate::ast::{EKind, ENode, PyLit};
 use crate::value::Value;
 
 pub fn compile_expr(e: &ENode, chunk: &mut Chunk) -> Result<(), CompileError> {
@@ -72,7 +72,9 @@ pub enum Instr {
     PushNothing,
     /// `use the standard X library` — carries the full use-text; validation
     /// and binding happen at runtime so error sentences match the oracle.
-    UseStdLib { text: u16 },
+    MakeClosure { fidx: u16, name: u16 },
+    CallValue(u8),
+        UseStdLib { text: u16 },
     /// `the X-module in "path"` — loads (or reuses) a file module at runtime.
     UseModule { name: u16, path: u16, line: u16 },
     /// `modul.funktion(args)` — namespace call on an imported module value.
@@ -251,6 +253,7 @@ fn variant_name(e: &EKind) -> &'static str {
         EKind::CopyOf(_) => "CopyOf",
         EKind::AskE(_) => "AskE",
         EKind::QuestionE(_) => "QuestionE",
+        EKind::Lambda { .. } => "Lambda",
     }
 }
 

@@ -1197,9 +1197,58 @@ impl Parser {
         Ok(e)
     }
 
+    /// Returns Some((params, tokens-to-consume)) when the upcoming tokens form
+    /// a lambda header: `ident =>` or `( ident , ident* ) =>`.
+    fn lambda_header_ahead(&self) -> Option<(Vec<String>, usize)> {
+        let mut k = 0usize;
+        if self.peek(k).kind == TokKind::Word {
+            if self.peek(k + 1).kind == TokKind::FatArrow {
+                let name = self.peek(k).word_str().unwrap().to_string();
+                return Some((vec![name], k + 2));
+            }
+            return None;
+        }
+        if self.peek(k).kind != TokKind::LParen {
+            return None;
+        }
+        k += 1;
+        let mut params = Vec::new();
+        loop {
+            let t = self.peek(k);
+            if t.kind == TokKind::Word {
+                // reject reserved-ish? keep simple: any word is a param name
+                params.push(t.word_str().unwrap().to_string());
+                k += 1;
+                match self.peek(k).kind {
+                    TokKind::Comma => { k += 1; }
+                    TokKind::RParen => {
+                        k += 1;
+                        break;
+                    }
+                    _ => return None,
+                }
+            } else {
+                return None;
+            }
+        }
+        if self.peek(k).kind != TokKind::FatArrow || params.is_empty() {
+            return None;
+        }
+        Some((params, k + 1))
+    }
+
     fn parse_primary(&mut self) -> Result<ENode> {
         let t = self.peek(0).clone();
         let line = t.line;
+
+        // C10 lambda: `x => expr` or `(a, b) => expr` (compact skin)
+        if let Some((params, after_arrow)) = self.lambda_header_ahead() {
+            for _ in 0..after_arrow {
+                self.next();
+            }
+            let body = self.parse_expr()?;
+            return Ok(ENode::new(EKind::Lambda { params, body: Box::new(body) }, line));
+        }
 
         match t.kind {
             TokKind::Number => {

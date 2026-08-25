@@ -41,6 +41,7 @@ pub enum EKind {
     CopyOf(Box<ENode>),
     AskE(Box<ENode>),
     QuestionE(Box<ENode>),
+    Lambda { params: Vec<String>, body: Box<ENode> },
 }
 
 impl ENode {

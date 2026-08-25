@@ -1,4 +1,4 @@
-﻿use crate::ast::{EKind, ENode, SBlock, SKind, SNode};
+use crate::ast::{EKind, ENode, SBlock, SKind, SNode};
 use crate::bytecode::{Chunk, Func, Instr, Program};
 
 pub struct CompileError {
@@ -35,6 +35,7 @@ impl Builder {
 pub struct Compiler {
     builders: Vec<Builder>,
     cur: usize,
+    lambdas: usize,
 }
 
 pub fn compile_program(stmts: &[SNode]) -> Result<Program, CompileError> {
@@ -54,6 +55,7 @@ pub fn compile_program(stmts: &[SNode]) -> Result<Program, CompileError> {
             pending_ensures: vec![],
         }],
         cur: 0,
+        lambdas: 0,
     };
 
     for def in stmts.iter().filter(|s| matches!(s.kind, SKind::FuncDef { .. } | SKind::ThingDef { .. })) {
@@ -633,6 +635,32 @@ impl Compiler {
                 self.emit_in_cur(Instr::GetField(idx));
                 Ok(())
             }
+            EKind::Lambda { params, body } => {
+                let name = format!("<lambda:{}>", self.lambdas);
+                self.lambdas += 1;
+                self.builders.push(Builder {
+                    func: Func {
+                        name: name.clone(),
+                        params: params.clone(),
+                        names: vec![],
+                        chunk: Chunk::default(),
+                    },
+                    loops: vec![],
+                    pending_ensures: vec![],
+                });
+                let saved = self.cur;
+                self.cur = self.builders.len() - 1;
+                self.expr(body)?;
+                let ret_idx = self.b().name_index("@ret");
+                self.emit_in_cur(Instr::StoreName(ret_idx));
+                self.emit_in_cur(Instr::LoadName(ret_idx));
+                self.emit_in_cur(Instr::Ret);
+                self.restore(saved);
+                let idx = (self.builders.len() - 1) as u16;
+                let nidx = self.b().name_index(&name);
+                self.emit_in_cur(Instr::MakeClosure { fidx: idx, name: nidx });
+                Ok(())
+            }
             EKind::ModuleCall { module, name, args } => {
                 for a in args {
                     self.expr(a)?;
@@ -871,6 +899,7 @@ fn ekind_name(k: &EKind) -> &'static str {
         EKind::CopyOf(_) => "CopyOf",
         EKind::AskE(_) => "AskE",
         EKind::QuestionE(_) => "QuestionE",
+        EKind::Lambda { .. } => "Lambda",
     }
 }
 

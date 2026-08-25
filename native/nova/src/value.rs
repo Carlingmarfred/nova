@@ -25,6 +25,17 @@ pub struct LoadedModule {
     pub path: String,
 }
 
+/// C10: a lambda value. `fidx` indexes into the owning program's funcs;
+/// `env` is the program-global namespace captured at creation (v0 cut:
+/// surrounding locals are not captured).
+#[derive(Debug, Clone)]
+pub struct ClosureVal {
+    pub prog: std::rc::Rc<crate::bytecode::Program>,
+    pub fidx: usize,
+    pub env: crate::bytecode::Env,
+    pub name: String,
+}
+
 #[derive(Debug, Clone)]
 pub enum ModuleVal {
     Native(Rc<NativeModule>),
@@ -45,6 +56,7 @@ pub enum Value {
     /// Dictionary (from json.parse). Insertion-ordered to match the oracle.
     Dict(Rc<RefCell<DictMap>>),
     Module(ModuleVal),
+    Closure(Rc<ClosureVal>),
 }
 
 impl Value {
@@ -71,6 +83,7 @@ impl Value {
             Value::Nothing => "nothing",
             Value::List(_) => "list",
             Value::Thing(_) => "thing",
+            Value::Closure(_) => "function",
             Value::Dict(_) => "dictionary",
             Value::Module(_) => "module",
         }
@@ -156,6 +169,7 @@ pub fn nova_eq(a: &Value, b: &Value) -> bool {
             x.len() == y.len() && x.iter().zip(y.iter()).all(|((ka, va), (kb, vb))| ka == kb && nova_eq(va, vb))
         }
         (Value::Module(a), Value::Module(b)) => module_ptr_eq(a, b),
+        (Value::Closure(x), Value::Closure(y)) => Rc::ptr_eq(x, y),
         (Value::Nothing, _) | (_, Value::Nothing) => false,
         _ => {
             if a.is_number() && b.is_number() {

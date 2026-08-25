@@ -1,7 +1,7 @@
 use crate::ast::SKind;
 use crate::bytecode::{Chunk, Env, Func, Instr, Program};
 use crate::messages;
-use crate::value::{arith, nova_eq, num_cmp, ArithError, LoadedModule, ModuleVal, NativeModule, Value};
+use crate::value::{arith, nova_eq, num_cmp, ArithError, ClosureVal, LoadedModule, ModuleVal, NativeModule, Value};
 use std::cell::RefCell;
 use std::cmp::Ordering;
 use std::collections::HashMap;
@@ -144,7 +144,7 @@ impl Vm {
         Ok(self.stack.pop().unwrap_or(Value::Nothing))
     }
 
-    fn step(&mut self, prog: &Program, instr: Instr) -> Result<(), VmError> {
+    fn step(&mut self, prog: &Rc<Program>, instr: Instr) -> Result<(), VmError> {
         let fi = self.frames.last().ok_or_else(|| err("no frame".into()))?.func_idx;
         match instr {
                 Instr::Halt => return Ok(()),
@@ -670,6 +670,52 @@ impl Vm {
                         }
                     }
                 }
+                Instr::MakeClosure { fidx, name } => {
+                    let cname = prog.funcs[fi].names[name as usize].clone();
+                    let cl = ClosureVal {
+                        prog: std::rc::Rc::clone(prog),
+                        fidx: fidx as usize,
+                        env: prog.env.clone(),
+                        name: cname,
+                    };
+                    self.stack.push(Value::Closure(Rc::new(cl)));
+                }
+                Instr::CallValue(argc) => {
+                    let total = argc as usize + 1;
+                    let at = self.stack.len() - total;
+                    let clo_v = self.stack[at].clone();
+                    let args: Vec<Value> = self.stack.split_off(at + 1);
+                    self.stack.truncate(at);
+                    match &clo_v {
+                        Value::Closure(cl) => {
+                            let params = cl.prog.funcs[cl.fidx].params.clone();
+                            if params.len() != args.len() {
+                                let hint = format!("{} with {}", cl.name, params.join(" and "));
+                                return Err(err(messages::interp::func_arity(
+                                    &cl.name, params.len(), args.len(), &hint,
+                                )));
+                            }
+                            let mut locals = HashMap::new();
+                            for (pname, aval) in params.iter().cloned().zip(args) {
+                                locals.insert(pname, aval);
+                            }
+                            self.frames.push(Frame {
+                                prog: cl.prog.clone(),
+                                func_idx: cl.fidx,
+                                ip: 0,
+                                locals: Some(locals),
+                                iters: vec![],
+                                handlers: vec![],
+                            });
+                        }
+                        other => {
+                            return Err(err(format!(
+                                "cannot call {} — only functions and closures are callable",
+                                render(other)
+                            )));
+                        }
+                    }
+                }
                 Instr::EnsureCheck => {
                     let v = self.stack.pop().ok_or_else(|| err("stack underflow".into()))?;
                     if !truth(&v)? {
@@ -876,6 +922,7 @@ pub fn render(v: &Value) -> String {
             format!("[{}]", inner.join(", "))
         }
         Value::Thing(t) => format!("{}(...)", t.borrow().cls),
+        Value::Closure(c) => format!("function {}(...)", c.name),
         Value::Dict(d) => py_repr_dict(&d.borrow()),
         Value::Module(m) => match m {
             ModuleVal::Native(n) => format!("module {}(...)", n.name),
@@ -995,6 +1042,35 @@ impl Vm {
         Ok(Value::Module(ModuleVal::Loaded(lm)))
     }
 
+    /// Invokes a closure value: pushes its frame and runs to completion.
+    /// Reentrant with module loading (same exec_until_depth pattern).
+    fn call_closure(&mut self, cl: &ClosureVal, args: &[Value]) -> Result<Value, VmError> {
+        let params = cl.prog.funcs[cl.fidx].params.clone();
+        if params.len() != args.len() {
+            return Err(err(messages::interp::func_arity(
+                &cl.name,
+                params.len(),
+                args.len(),
+                &format!("{} with {}", cl.name, params.join(" and ")),
+            )));
+        }
+        let mut locals = HashMap::new();
+        for (pname, aval) in params.iter().cloned().zip(args.iter().cloned()) {
+            locals.insert(pname, aval);
+        }
+        let depth = self.frames.len();
+        self.frames.push(Frame {
+            prog: cl.prog.clone(),
+            func_idx: cl.fidx,
+            ip: 0,
+            locals: Some(locals),
+            iters: vec![],
+            handlers: vec![],
+        });
+        self.exec_until_depth(depth)?;
+        Ok(self.stack.pop().unwrap_or(Value::Nothing))
+    }
+
     fn call_native(&mut self, module: &str, fname: &str, args: &[Value]) -> Result<Value, VmError> {
         match (module, fname) {
             ("history", "snapshots") => {
@@ -1025,6 +1101,44 @@ impl Vm {
                 };
                 let n = self.history.get(&name).map(|h| h.len()).unwrap_or(0);
                 Ok(Value::Int(n.into()))
+            }
+            ("flow", "map") => {
+                let f_v = arg(args, 0)?.clone();
+                let f = match &f_v { Value::Closure(c) => c.clone(), _ => return Err(err("flow.map requires a function".to_string())) };
+                let v = arg(args, 1)?.clone();
+                let xs = as_list("map", &v)?.clone();
+                let mut out: Vec<Value> = Vec::with_capacity(xs.len());
+                for item in xs {
+                    let item2 = item.clone();
+                    out.push(self.call_closure(&f, &[item2])?);
+                }
+                Ok(Value::List(Rc::new(RefCell::new(out))))
+            }
+            ("flow", "filter") => {
+                let f_v = arg(args, 0)?.clone();
+                let f = match &f_v { Value::Closure(c) => c.clone(), _ => return Err(err("flow.filter requires a function".to_string())) };
+                let v = arg(args, 1)?.clone();
+                let xs = as_list("filter", &v)?.clone();
+                let mut out: Vec<Value> = Vec::new();
+                for item in xs {
+                    let keep = truth(&self.call_closure(&f, std::slice::from_ref(&item))?)?;
+                    if keep {
+                        out.push(item);
+                    }
+                }
+                Ok(Value::List(Rc::new(RefCell::new(out))))
+            }
+            ("flow", "reduce") => {
+                let f_v = arg(args, 0)?.clone();
+                let f = match &f_v { Value::Closure(c) => c.clone(), _ => return Err(err("flow.reduce requires a function".to_string())) };
+                let init = arg(args, 1)?.clone();
+                let v = arg(args, 2)?.clone();
+                let xs = as_list("reduce", &v)?.clone();
+                let mut acc = init;
+                for item in xs {
+                    acc = self.call_closure(&f, &[acc, item])?;
+                }
+                Ok(acc)
             }
             ("flow", "take") | ("flow", "skip") => {
                 let v = arg(args, 1)?.clone();
