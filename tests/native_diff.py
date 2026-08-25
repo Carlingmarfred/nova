@@ -47,6 +47,18 @@ CORPUS = [
     ("things", 'a dog is a thing with\nname set to "rex"\ndone\ndd is a new dog\nsay dd.name\nset the name of dd to "max"\nsay dd.name', {}),
     ("display-rules", 'say 1 is 1\nsay nothing\nsay [1, [2, "a"]]\nwrite "a"\nwrite "b"\nsay "c"', {}),
     ("syntax-error-exit", 'say 1 plus', {}),
+    ("lambdas",
+     'use the standard flow library\n'
+     'use the standard list library\n'
+     'double = x => x times 2\n'
+     'say double(21)\n'
+     'nums = [1, 2, 3]\n'
+     'doubled = flow.map(double, nums)\n'
+     'say doubled\n'
+     'evens = flow.filter(n => n mod 2 is 0, nums)\n'
+     'say evens\n'
+     'total = flow.reduce(nums, 0, (acc, v) => acc plus v)\n'
+     'say total\n', {}),
     ("inline-otherwise",
      'x = 3\n'
      'if x is less than 5 then say "low" otherwise say "high"\n'

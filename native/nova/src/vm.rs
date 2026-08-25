@@ -170,13 +170,37 @@ impl Vm {
                     let at = self.stack.len() - argc as usize;
                     let args: Vec<Value> = self.stack.split_off(at);
                     let name = prog.funcs[fi].names[nidx as usize].clone();
-                    let fidx = prog
-                        .funcs
-                        .iter()
-                        .position(|f| f.name == name)
-                        .ok_or_else(|| err(messages::interp::func_not_found(&name)))?;
-                    let fprog = self.frames.last().unwrap().prog.clone();
-                    self.enter_func(fprog, fidx, args)?;
+                    // C10: check if variable holds a Closure before func lookup
+                    let env = self.frames.last().unwrap().prog.env.clone();
+                    let candidate = env.borrow().get(&name).cloned();
+                    if let Some(Value::Closure(cl)) = candidate {
+                        let params = cl.prog.funcs[cl.fidx].params.clone();
+                        if params.len() != args.len() {
+                            let hint = format!("{} with {}", cl.name, params.join(" and "));
+                            return Err(err(messages::interp::func_arity(
+                                &cl.name, params.len(), args.len(), &hint,
+                            )));
+                        }
+                        let mut locals = HashMap::new();
+                        for (pname, aval) in params.iter().cloned().zip(args) {
+                            locals.insert(pname, aval);
+                        }
+                        self.frames.push(Frame {
+                            prog: cl.prog.clone(),
+                            func_idx: cl.fidx,
+                            ip: 0,
+                            locals: Some(locals),
+                            iters: vec![],
+                            handlers: vec![],
+                        });
+                    } else {
+                        let fidx = prog
+                            .funcs
+                            .iter()
+                            .position(|f| f.name == name)
+                            .ok_or_else(|| err(messages::interp::func_not_found(&name)))?;
+                        self.enter_func(prog.clone(), fidx, args)?;
+                    }
                 }
                 Instr::Print(count, newline) => {
                     let at = self.stack.len() - count as usize;
