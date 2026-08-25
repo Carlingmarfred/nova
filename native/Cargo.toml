@@ -1,5 +1,5 @@
 [workspace]
-members = ["nova"]
+members = ["nova", "nova-lsp"]
 resolver = "2"
 
 [profile.release]

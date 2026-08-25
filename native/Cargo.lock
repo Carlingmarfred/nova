@@ -62,6 +62,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "nova-lsp"
+version = "0.20.0"
+dependencies = [
+ "nova",
+ "serde_json",
+]
+
+[[package]]
 name = "num-bigint"
 version = "0.4.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
