@@ -91,6 +91,7 @@ pub struct Vm {
     history: HashMap<String, Vec<Value>>,
     redo: HashMap<String, Vec<Value>>,
     rng_state: u64,
+    halted: bool,
     /// Loaded file modules, cached by absolute path (C05 idempotent import).
     modules: HashMap<PathBuf, Rc<RefCell<LoadedModule>>>,
     /// Active import chain for circular-import detection.
@@ -147,7 +148,10 @@ impl Vm {
     fn step(&mut self, prog: &Rc<Program>, instr: Instr) -> Result<(), VmError> {
         let fi = self.frames.last().ok_or_else(|| err("no frame".into()))?.func_idx;
         match instr {
-                Instr::Halt => return Ok(()),
+                Instr::Halt => {
+                    self.halted = true;
+                    return Ok(());
+                }
                 Instr::Ret => {
                     let v = self.stack.pop().unwrap_or(Value::Nothing);
                     self.frames.pop();
@@ -550,6 +554,23 @@ impl Vm {
                     };
                     self.stack.push(out);
                 }
+                Instr::RemoveItemAt => {
+                    let hay = self.stack.pop().ok_or_else(|| err("stack underflow".into()))?;
+                    let needle_idx = self.stack.pop().ok_or_else(|| err("stack underflow".into()))?;
+                    let idx = as_i64(&needle_idx).ok_or_else(|| {
+                        err(messages::interp::item_needs_num_index())
+                    })?;
+                    match &hay {
+                        Value::List(items) => {
+                            let len = items.borrow().len() as i64;
+                            if idx < 1 || idx > len {
+                                return Err(err(messages::interp::item_out_of_bounds(idx, len)));
+                            }
+                            items.borrow_mut().remove(idx as usize - 1);
+                        }
+                        _ => return Err(err(messages::interp::item_needs_list())),
+                    }
+                }
                 Instr::CountOf => {
                     let v = self.stack.pop().ok_or_else(|| err("stack underflow".into()))?;
                     let n = match &v {
@@ -731,6 +752,11 @@ impl Vm {
     /// loading pushes an isolated base frame and recurses through here.
     fn exec_until_depth(&mut self, depth: usize) -> Result<(), VmError> {
         loop {
+            if self.halted {
+                self.halted = false;
+                self.frames.truncate(depth);
+                return Ok(());
+            }
             if self.frames.len() <= depth {
                 return Ok(());
             }

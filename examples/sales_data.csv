@@ -1,0 +1,9 @@
+product,region,amount
+Widget,North,150
+Widget,South,200
+Gadget,North,300
+Gadget,South,100
+Widget,East,250
+Gadget,West,400
+Doohickey,North,50
+Doohickey,South,75

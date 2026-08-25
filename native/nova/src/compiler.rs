@@ -39,6 +39,7 @@ pub struct Compiler {
 }
 
 pub fn compile_program(stmts: &[SNode]) -> Result<Program, CompileError> {
+    // Flatten a lone WhenProgramStarts into its body.
     let stmts: Vec<SNode> = if stmts.len() == 1 {
         match &stmts[0].kind {
             SKind::WhenProgramStarts { body } => body.stmts.clone(),
@@ -58,6 +59,7 @@ pub fn compile_program(stmts: &[SNode]) -> Result<Program, CompileError> {
         lambdas: 0,
     };
 
+    // Pre-declare functions and thing constructors.
     for def in stmts.iter().filter(|s| matches!(s.kind, SKind::FuncDef { .. } | SKind::ThingDef { .. })) {
         let (ctor_name, is_thing) = match &def.kind {
             SKind::FuncDef { name, .. } => (name.clone(), false),
@@ -89,8 +91,19 @@ pub fn compile_program(stmts: &[SNode]) -> Result<Program, CompileError> {
         }
     }
 
-    for st in stmts {
-        c.stmt(&st)?;
+    // Compile all non-WhenProgramStarts statements into main; collect
+    // WhenProgramStarts bodies and append them at the end of main so they
+    // run after top-level setup (matching oracle run() semantics).
+    let mut main_bodies: Vec<SBlock> = Vec::new();
+    for st in &stmts {
+        if let SKind::WhenProgramStarts { body } = &st.kind {
+            main_bodies.push(body.clone());
+        } else {
+            c.stmt(st)?;
+        }
+    }
+    for body in &main_bodies {
+        c.block(body)?;
     }
 
     c.push_nothing(0);
@@ -443,6 +456,17 @@ impl Compiler {
                 self.restore(saved);
                 Ok(())
             }
+            SKind::RemoveStmt { expr } => {
+                if let EKind::ItemAt { idx, e } = &expr.kind {
+                    self.expr(idx)?;
+                    self.expr(e)?;
+                    self.emit_in_cur(Instr::RemoveItemAt);
+                    Ok(())
+                } else {
+                    Err(CompileError { kind: "remove requires item N of LIST" })
+                }
+            }
+
             other => Err(CompileError { kind: skind_name(other) }),
         }
     }

@@ -63,6 +63,7 @@ pub enum Instr {
     Undo(u16),
     Redo(u16),
     ItemAt,
+    RemoveItemAt,
     FirstItem,
     LastItem,
     CountOf,

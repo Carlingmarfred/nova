@@ -1,0 +1,67 @@
+use the standard cli library
+use the standard csv library
+use the standard file library
+use the standard text library
+use the standard list library
+use the standard math library
+use the standard flow library
+
+args = cli.args()
+arg-count = how many items are in args
+
+if arg-count is 0 then
+    say "Usage: nova run csv_report.nova <file.csv>"
+    stop the program
+done
+
+data-file = item 1 of args
+if file.exists(data-file) then
+    raw = file.read(data-file)
+    rows = csv.parse(raw)
+    header = item 1 of rows
+    data-rows = flow.skip(1, rows)
+    row-count = the length of data-rows
+    col-count = the length of header
+
+    say "=== CSV Report: {data-file} ==="
+    say "Rows: {row-count}  Columns: {col-count}"
+    say ""
+
+    col-idx = 0
+    repeat col-count times
+        add 1 to col-idx
+        col-name = item col-idx of header
+        values-text = an empty list
+        repeat for each row in data-rows
+            val = item col-idx of row
+            add val to values-text
+        done
+        all-numeric = true
+        repeat for each v in values-text
+            nv = the number value of v
+            if nv is nothing then set all-numeric to false
+        done
+        if all-numeric then
+            nums = an empty list
+            repeat for each v in values-text
+                nv = the number value of v
+                add nv to nums
+            done
+            col-min = list.min(nums)
+            col-max = list.max(nums)
+            total-sum = 0
+            repeat for each nv in nums
+                set total-sum to total-sum plus nv
+            done
+            avg = total-sum divided by row-count
+            say "{col-name}: min={col-min} max={col-max} sum={total-sum} avg={avg}"
+        otherwise
+            uniq-values = flow.unique(values-text)
+            uniq-count = the length of uniq-values
+            sample = item 1 of uniq-values
+            say "{col-name}: {uniq-count} unique values (e.g. {sample})"
+        done
+    done
+otherwise
+    say "Error: file '{data-file}' does not exist."
+done

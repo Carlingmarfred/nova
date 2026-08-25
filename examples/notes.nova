@@ -1,0 +1,143 @@
+#!/usr/bin/env nova
+# ============================================================
+# Notes CLI — argument-driven notes manager
+#
+# Usage:
+#   nova run notes.nova add "buy milk"
+#   nova run notes.nova add "call dentist" --priority high
+#   nova run notes.nova list
+#   nova run notes.nova search milk
+#   nova run notes.nova delete 2
+#
+# Notes stored as JSON in notes.json next to this script.
+# ============================================================
+
+use the standard cli library
+use the standard json library
+use the standard file library
+use the standard datetime library
+use the standard text library
+use the standard flow library
+
+the notes-file is "notes.json"
+
+to load-notes
+    if file.exists(the notes-file) then give back json.parse(file.read(the notes-file))
+    give back an empty list
+done
+
+to save-notes with data
+    file.write(the notes-file, json.stringify(data))
+done
+
+to make-note with note-text
+    stamp = datetime.now_text()
+    give back json.parse(json.stringify(json.make-object))
+done
+
+when the program starts
+    args = cli.args()
+    arg-count = how many items are in args
+
+    if arg-count is 0 then
+        say "Usage: nova run notes.nova <add|list|search|delete> [arguments]"
+        stop the program
+    done
+
+    command = item 1 of args
+
+    if command is "add" then
+        rest = flow.skip(1, args)
+        if the length of rest is 0 then
+            say "Error: add requires a note text."
+            stop the program
+        done
+        note-body = text.join(rest, " ")
+        old-notes = an empty list
+        if file.exists(the notes-file) then
+            raw = file.read(the notes-file)
+            old-notes = json.parse(raw)
+        done
+        new-num = the length of old-notes plus 1
+        stamp = datetime.now_text()
+        entry-text = "{note-body}"
+        new-list = flow.concat(old-notes, [entry-text])
+        file.write(the notes-file, json.stringify(new-list))
+        say "Added note {new-num}: {note-body}"
+    done
+
+    if command is "list" then
+        if file.exists(the notes-file) then
+            raw = file.read(the notes-file)
+            all-notes = json.parse(raw)
+            count = 0
+            repeat for each note-item in all-notes
+                add 1 to count
+                say "{count}) {note-item}"
+            done
+            if count is 0 then say "(no notes)"
+        otherwise
+            say "(no notes file found)"
+        done
+    done
+
+    if command is "search" then
+        rest = flow.skip(1, args)
+        needle = text.join(rest, " ")
+        if file.exists(the notes-file) then
+            raw = file.read(the notes-file)
+            all-notes = json.parse(raw)
+            num = 0
+            found = 0
+            repeat for each note-item in all-notes
+                add 1 to num
+                if note-item contains needle then
+                    say "{num}) {note-item}"
+                    add 1 to found
+                done
+            done
+            if found is 0 then say "No matches for '{needle}'"
+        otherwise
+            say "(no notes file)"
+        done
+    done
+
+    if command is "delete" then
+        rest = flow.skip(1, args)
+        if the length of rest is 0 then
+            say "Error: delete requires a note number."
+            stop the program
+        done
+        target-text = item 1 of rest
+        target = the number value of target-text
+        if target is nothing then
+            say "Error: '{target-text}' is not a number."
+            stop the program
+        done
+        if file.exists(the notes-file) then
+            raw = file.read(the notes-file)
+            all-notes = json.parse(raw)
+            total = the length of all-notes
+            if target is greater than total then
+                say "Error: note {target} does not exist ({total} notes)."
+                stop the program
+            done
+            remove item target of all-notes
+            file.write(the notes-file, json.stringify(all-notes))
+            say "Deleted note {target}."
+        otherwise
+            say "(no notes file)"
+        done
+    done
+
+    if command is not "add" then
+    if command is not "list" then
+    if command is not "search" then
+    if command is not "delete" then
+        say "Unknown command '{command}'."
+        say "Usage: add | list | search | delete"
+    done
+    done
+    done
+    done
+done
