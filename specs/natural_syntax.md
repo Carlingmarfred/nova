@@ -85,6 +85,8 @@ done
 ```
 
 `otherwise if` = else if. `unless C then ... done` = `if not C`.
+The fully inline form `if C then S1 otherwise S2` is supported (Q15 resolved).
+Clause-boundary words (`otherwise`, `done`) terminate inline statements.
 
 ### Repetition
 
