@@ -259,9 +259,13 @@ Rules against ambiguity:
    take if unless repeat to check try use create wait when in at stop skip go return
    give`). Variable names must therefore not collide with the verbs (compiler error
    with suggestion).
-2. **`is` has two roles**, separated by context: `X is <expression>` =
-   comparison/declaration; `set X to V` = assignment. Declaration with arithmetic:
-   `the total is a plus b`.
+2. **`is` has two roles**, separated by POSITION, not by lookahead (Q11, decided
+   2026-08-24): at SENTENCE START, `[the] NAME is EXPR` is a declaration/assignment;
+   anywhere INSIDE an expression, `X is E` is a comparison; `set X to V` is always
+   assignment. Declaration with arithmetic: `the total is t1 plus t2`. Boundary
+   consequence: right after `is`, the article form `a/an WORD` is always the
+   number-test family (`is a number`) — never a variable named `a` — so avoid
+   article-like variable names in comparisons.
 3. **Ownership always with `of`:** `the health of the hero` — never just two names side
    by side.
 4. Symbol operators (`+ > ==`) accepted everywhere as stenography for the word forms.
